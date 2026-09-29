@@ -1,0 +1,23 @@
+{
+  "repository": "common-pile/news",
+  "revision": "13e76bdc8d49ed14d710fac7e3b61186cf74c8d3",
+  "source_url": "https://huggingface.co/datasets/common-pile/news",
+  "selection": "Require a nonempty source, ID and HTTP(S) attribution URL and at least 100 [A-Za-z0-9]+ tokens; this is a heuristic, not a guarantee that every retained page is an article. Preserve upstream attribution and licence metadata without independently asserting reuse rights.",
+  "files": [
+    {
+      "path": "v0/documents/00000_360info.jsonl.gz",
+      "size_bytes": 3088904,
+      "sha256": "6b2f94dd7f79fb72c9765067f6c96549d7e43fe2bc42329ca1fabbe38a78a78c"
+    },
+    {
+      "path": "v0/documents/00000_milwaukeenns.jsonl.gz",
+      "size_bytes": 10722059,
+      "sha256": "7fb59cfd27f53d440b46ce7d1cd2e317fe8089a8119681a5479d5f71ab237e7b"
+    },
+    {
+      "path": "v0/documents/00000_newcanadianmedia.jsonl.gz",
+      "size_bytes": 6823765,
+      "sha256": "87442c2e2f783358dc61b6383e4a503077abaf3a8d604a0f04fd596f215cf81a"
+    }
+  ]
+}

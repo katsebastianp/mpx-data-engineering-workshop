@@ -1,0 +1,11 @@
+[project]
+name = "ringier-data-eng-workshop"
+version = "0.1.0"
+description = "A reproducible Spark investigation workshop"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = ["integration: starts a local Spark session"]

@@ -1,0 +1,67 @@
+name: ringier-data-eng-ws
+
+x-runtime: &runtime
+  image: ringier-data-eng-ws:0.1.0
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+
+services:
+  init:
+    <<: *runtime
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "mkdir -p /state/cache /state/data /state/runs /state/spark-events && chown 185:0 /state /state/cache /state/data /state/runs /state/spark-events"
+    volumes:
+      - state:/state
+    restart: "no"
+
+  history:
+    <<: *runtime
+    entrypoint: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.history.HistoryServer"]
+    command: []
+    environment:
+      SPARK_LOCAL_IP: "0.0.0.0"
+      SPARK_HISTORY_OPTS: "-Dspark.history.fs.logDirectory=file:/state/spark-events -Dspark.history.fs.update.interval=2s -Dspark.history.ui.port=18080"
+      SPARK_DAEMON_MEMORY: "512m"
+    volumes:
+      - state:/state:ro
+    ports:
+      - "127.0.0.1:18080:18080"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    mem_limit: 1g
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:18080/api/v1/applications', timeout=3).read()"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+    restart: unless-stopped
+
+  pipeline:
+    <<: *runtime
+    profiles: ["jobs"]
+    init: true
+    environment:
+      SPARK_CONF_DIR: /workspace/config
+      SPARK_LOCAL_IP: "0.0.0.0"
+    volumes:
+      - state:/state
+      - ./src:/workspace/src:ro
+      - ./config:/workspace/config:ro
+      - ./tests:/workspace/tests:ro
+      - ./pyproject.toml:/workspace/pyproject.toml:ro
+    ports:
+      - "127.0.0.1:4040:4040"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    mem_limit: 4g
+    cpus: 2
+    restart: "no"
+
+volumes:
+  state:
