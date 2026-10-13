@@ -1,0 +1,867 @@
+{
+  "download_bytes": 573849047,
+  "files": [
+    {
+      "eligible_rows": 7383,
+      "group": "signal",
+      "measurement_columns": [
+        "jet_pt",
+        "jet_sdmass",
+        "jet_nparticles",
+        "part_energy",
+        "part_deta",
+        "part_dphi"
+      ],
+      "path": "data/Res2P_0000.parquet",
+      "publisher_sha256": "07e294721880d91457a7405d45b337c257ef990d6d77a648ffdf70f8bce4a723",
+      "ranges": [
+        {
+          "kind": "footer",
+          "length": 65536,
+          "sha256": "2d7d6c56138c066169ecf898e46b6a3ff6678261ae63d0af1bceacbaea3d9247",
+          "start": 324909439
+        },
+        {
+          "kind": "part_energy",
+          "length": 14677716,
+          "sha256": "a268ffc697f49699cbaebd72ad2e8d8cb5a73e8de9a2f68386cf16f5ec4bcf43",
+          "start": 45431504
+        },
+        {
+          "kind": "part_deta",
+          "length": 14704774,
+          "sha256": "02af884a21ebf7551d275be7525352ab8a2a65645c989e5922460894bb859138",
+          "start": 60109317
+        },
+        {
+          "kind": "part_dphi",
+          "length": 14365743,
+          "sha256": "e4e57a1b39715c147380fa5f58707d00794bfdd2e5a8812e16722c6d3ce1e8df",
+          "start": 74814186
+        },
+        {
+          "kind": "jet_pt",
+          "length": 355598,
+          "sha256": "2dcdd4a49b843574714d6fa79eb91fff45e66896d4a0a8616ef8324b79c4f293",
+          "start": 116033351
+        },
+        {
+          "kind": "jet_sdmass",
+          "length": 360989,
+          "sha256": "ef8a509375b98fafe5d29316bb4565318c5226e5904e2e1b6db25c18666ceadd",
+          "start": 117484075
+        },
+        {
+          "kind": "jet_nparticles",
+          "length": 123498,
+          "sha256": "afd551c2e6f6db4c2fbcfd85ac47db7051d01b85400ba74655e92c565eaa809a",
+          "start": 117845147
+        },
+        {
+          "kind": "jet_label",
+          "length": 80933,
+          "sha256": "08df8b24030ad11831234aca9726249cbc779b51ac29ae3feb971f6fe29b104c",
+          "start": 119397525
+        }
+      ],
+      "row_count": 100000,
+      "row_groups": [
+        0
+      ],
+      "size_bytes": 324974975,
+      "split": "train"
+    },
+    {
+      "eligible_rows": 100000,
+      "group": "background",
+      "measurement_columns": [
+        "jet_pt",
+        "jet_sdmass",
+        "jet_nparticles",
+        "part_energy",
+        "part_deta",
+        "part_dphi"
+      ],
+      "path": "data/QCD_0000.parquet",
+      "publisher_sha256": "6fe03f3a172c34785e3c3547e7e803d5fbf01c7cac07dca6b46d9b67f300a5f6",
+      "ranges": [
+        {
+          "kind": "footer",
+          "length": 65536,
+          "sha256": "95d9dcbcccc4f6cf00f2d5b31e75de953c2b4d9139f626ac461748c965ae29f7",
+          "start": 352579070
+        },
+        {
+          "kind": "part_energy",
+          "length": 15574074,
+          "sha256": "2a35a74c454cae8df1db1ec69ed63b4e61cc7a038c6c6c29cf7226f06c5e1665",
+          "start": 48254052
+        },
+        {
+          "kind": "part_deta",
+          "length": 15554978,
+          "sha256": "acae398b2927b9be837b9233aed7d08839b1493527df9493ded7c07ee6c3594e",
+          "start": 63828223
+        },
+        {
+          "kind": "part_dphi",
+          "length": 15180007,
+          "sha256": "c2660f316445c023a30fb3f30bf995ffc798ef67486f0158142eba7fed984b43",
+          "start": 79383296
+        },
+        {
+          "kind": "jet_pt",
+          "length": 359545,
+          "sha256": "b0f955d0d549600f681b358d2c50b96a429e2760ae89cdd6e21d3225260e9a80",
+          "start": 124022545
+        },
+        {
+          "kind": "jet_sdmass",
+          "length": 365107,
+          "sha256": "0d7c5105b90b14827bded26ce75e9878c81602d63cb3663552a3f1db992faa67",
+          "start": 125480832
+        },
+        {
+          "kind": "jet_nparticles",
+          "length": 122141,
+          "sha256": "895a07f6e747779050b5e4800b3cd5febe09a70b4f153658e7486547c1fb970b",
+          "start": 125846022
+        },
+        {
+          "kind": "jet_label",
+          "length": 56679,
+          "sha256": "62175e9b0e347e87c59436476e014b10a2dacf7a74788a014c84dae0b1883615",
+          "start": 127404540
+        }
+      ],
+      "row_count": 100000,
+      "row_groups": [
+        0
+      ],
+      "size_bytes": 352644606,
+      "split": "train"
+    },
+    {
+      "eligible_rows": 7339,
+      "group": "signal",
+      "measurement_columns": [
+        "jet_pt",
+        "jet_sdmass",
+        "jet_nparticles",
+        "jet_energy",
+        "part_px",
+        "part_py",
+        "part_pz",
+        "part_energy",
+        "part_deta",
+        "part_dphi",
+        "part_charge",
+        "part_d0val",
+        "part_d0err",
+        "part_dzval",
+        "part_dzerr",
+        "part_isElectron",
+        "part_isMuon",
+        "part_isPhoton",
+        "part_isChargedHadron",
+        "part_isNeutralHadron"
+      ],
+      "path": "data/Res2P_0200.parquet",
+      "publisher_sha256": "9f75fddf587c4a265371b06d9646385fc4e0d1f0ecbcae1810c3f50ca41d5fb4",
+      "ranges": [
+        {
+          "kind": "footer",
+          "length": 65536,
+          "sha256": "4029dd0da80cd7f934a48f287fb78ada896d3e3d448a1e02f288ed49b0acf421",
+          "start": 318675461
+        },
+        {
+          "kind": "part_px",
+          "length": 14849976,
+          "sha256": "5600ebb410c6acda661e976ecff75202e19fe65366a4e2824113396293ec8348",
+          "start": 4
+        },
+        {
+          "kind": "part_py",
+          "length": 14850193,
+          "sha256": "54fce9010dad3d8dabbf4db22b26aac069c515f7f0cdcae66b35711221e04d85",
+          "start": 14850070
+        },
+        {
+          "kind": "part_pz",
+          "length": 14868532,
+          "sha256": "9677924ac926a04dc0b7ec67426d30ad7605aa58274fe87f7e79837f6599dff2",
+          "start": 29700356
+        },
+        {
+          "kind": "part_energy",
+          "length": 14397902,
+          "sha256": "3172456fa47e5ce072f473d370221497e10252ede0e781c2b42868de4498d68b",
+          "start": 44568981
+        },
+        {
+          "kind": "part_deta",
+          "length": 14423607,
+          "sha256": "240027c46302be5162b477fe7aa572f246a46a56651198a66a0e97d732ce9695",
+          "start": 58966980
+        },
+        {
+          "kind": "part_dphi",
+          "length": 14098637,
+          "sha256": "9febed55c5b6b100010b2175a1dc1d9f5a5ae43a67208beae26f6193bc785872",
+          "start": 73390682
+        },
+        {
+          "kind": "part_d0val",
+          "length": 8902762,
+          "sha256": "da261052b0b5aafeed82c9b4a337a92e3ed2442da5fec087d0e983699d233aba",
+          "start": 87489414
+        },
+        {
+          "kind": "part_d0err",
+          "length": 2963581,
+          "sha256": "b1d6bdfab44d0b8b416e6f9c638799e37e179b05142a4025574bf3a26b066525",
+          "start": 96392272
+        },
+        {
+          "kind": "part_dzval",
+          "length": 7341695,
+          "sha256": "99981f0134d3845f34f0797c3f30d4f96fb964fa3c91b88c70145129b68d7574",
+          "start": 99355949
+        },
+        {
+          "kind": "part_dzerr",
+          "length": 3037529,
+          "sha256": "570c17496e1b35e3c1bc788b26732aecf5b09306a9a92883535078f49bf9a0d8",
+          "start": 106697740
+        },
+        {
+          "kind": "part_charge",
+          "length": 2069407,
+          "sha256": "1653d3631c6fad1d76838c6d3704774dc5e755ee4ca463a27139421cba11622a",
+          "start": 109735365
+        },
+        {
+          "kind": "part_isElectron",
+          "length": 192622,
+          "sha256": "ece100cccc96038d33f1613f1da926af5a828ad48582948ef8f62bb4a1d884bc",
+          "start": 111804869
+        },
+        {
+          "kind": "part_isMuon",
+          "length": 172701,
+          "sha256": "ca839b8d84b0817afd0ef2208343172a98fafa3998e9128b25ef0f929ed417d7",
+          "start": 111997578
+        },
+        {
+          "kind": "part_isPhoton",
+          "length": 584699,
+          "sha256": "e1348bf8ff2c85761ad7d74deef643ed4180d70f5704c809222d003cb1acef05",
+          "start": 112170362
+        },
+        {
+          "kind": "part_isChargedHadron",
+          "length": 599173,
+          "sha256": "4ea6d2446f733c3020fa371abc0c93b6b8a86351349ab17c1bf4e78c885b5e45",
+          "start": 112755146
+        },
+        {
+          "kind": "part_isNeutralHadron",
+          "length": 388031,
+          "sha256": "f5ec3992180bb4e6d0d139c6d62741935fecb55391f963f68f9c297d602f5e46",
+          "start": 113354411
+        },
+        {
+          "kind": "jet_pt",
+          "length": 355040,
+          "sha256": "1a8e323b55a6775d2dab748fe524acb7427b2b062f06de5e42fbe7f96b6e2857",
+          "start": 113742534
+        },
+        {
+          "kind": "jet_energy",
+          "length": 354895,
+          "sha256": "af5721080a9229134391f5692169b8e5182caf9e298e4464242f3bad771b7292",
+          "start": 114837341
+        },
+        {
+          "kind": "jet_sdmass",
+          "length": 361404,
+          "sha256": "ad175f37a95fc2bb93c66cb73b75e79e156824eb5f5527a31ee647c08e3cd710",
+          "start": 115192319
+        },
+        {
+          "kind": "jet_nparticles",
+          "length": 123247,
+          "sha256": "0e9b012e3efd9fd1a5925753d5c5aafef6d5e98a4fff80f35faf046246e86cd3",
+          "start": 115553806
+        },
+        {
+          "kind": "jet_label",
+          "length": 80779,
+          "sha256": "1fa753c3138fbafa7f45681a513c8f6bdb6eff5f8a6804fe1a5455aadd05c92d",
+          "start": 117106950
+        }
+      ],
+      "row_count": 100000,
+      "row_groups": [
+        0
+      ],
+      "size_bytes": 318740997,
+      "split": "validation"
+    },
+    {
+      "eligible_rows": 100000,
+      "group": "background",
+      "measurement_columns": [
+        "jet_pt",
+        "jet_sdmass",
+        "jet_nparticles",
+        "jet_energy",
+        "part_px",
+        "part_py",
+        "part_pz",
+        "part_energy",
+        "part_deta",
+        "part_dphi",
+        "part_charge",
+        "part_d0val",
+        "part_d0err",
+        "part_dzval",
+        "part_dzerr",
+        "part_isElectron",
+        "part_isMuon",
+        "part_isPhoton",
+        "part_isChargedHadron",
+        "part_isNeutralHadron"
+      ],
+      "path": "data/QCD_0280.parquet",
+      "publisher_sha256": "fe80d7dacb5e2af77290f69ce0110d55a28ad45fbe3ee4dca62a340a0b0093fc",
+      "ranges": [
+        {
+          "kind": "footer",
+          "length": 65536,
+          "sha256": "685f30e356e93f981803deda67cf7a48081778a9ea0aebb4fb369b63c51b357f",
+          "start": 347988967
+        },
+        {
+          "kind": "part_px",
+          "length": 15932191,
+          "sha256": "b08a3624d0d7b812915d4f50d7ffc427c22769ce86b3ab57781e4143b12cf575",
+          "start": 4
+        },
+        {
+          "kind": "part_py",
+          "length": 15931770,
+          "sha256": "1a786e77ff3747a3d087b82b4c146533902d00439f45bc7798afeb047e6fbe1b",
+          "start": 15932285
+        },
+        {
+          "kind": "part_pz",
+          "length": 15948464,
+          "sha256": "ca3e740673297014cf34820264b92a5b1c73b513d858e4bf7ccd70e9f54f0afa",
+          "start": 31864148
+        },
+        {
+          "kind": "part_energy",
+          "length": 15429146,
+          "sha256": "218dd611d931587ae6034172eb2851d1f5fedb7b51e0db03d89a7ae5ad4f00d3",
+          "start": 47812705
+        },
+        {
+          "kind": "part_deta",
+          "length": 15404976,
+          "sha256": "e3d7e0fd6b9dcbacb00c51df7fe8441a035367ad1db6449fd34917b2069b0724",
+          "start": 63241948
+        },
+        {
+          "kind": "part_dphi",
+          "length": 15049972,
+          "sha256": "7e9816a10f1b4eb278fc6d34ada56c013fc00df72d415d8571f0d85480c4822b",
+          "start": 78647019
+        },
+        {
+          "kind": "part_d0val",
+          "length": 9991955,
+          "sha256": "f85da788a4e2de18941bb67d422c8cd6276d4e54c3791a6d400c539371fc5eba",
+          "start": 93697086
+        },
+        {
+          "kind": "part_d0err",
+          "length": 3320825,
+          "sha256": "2bd56c95cc67e1293002cde418190d98cadb79f84ee62349fa3c3e637e154114",
+          "start": 103689137
+        },
+        {
+          "kind": "part_dzval",
+          "length": 8215888,
+          "sha256": "f20f62fa2adbe65677bf2848dc1019edff7a2e203c3efba8317ebcced724f34c",
+          "start": 107010058
+        },
+        {
+          "kind": "part_dzerr",
+          "length": 3378524,
+          "sha256": "86f6ea50af89334f733757246da2a65266e7c03349f4423bf8bab76b867ca08d",
+          "start": 115226042
+        },
+        {
+          "kind": "part_charge",
+          "length": 2236202,
+          "sha256": "2ca970ed988e8328d662dbab63ae79cefe43a2e41f814b5745ac47325a025bf7",
+          "start": 118604662
+        },
+        {
+          "kind": "part_isElectron",
+          "length": 165396,
+          "sha256": "b3cdea3fd9ee3730e105e05b7bdda809c440e47c18a10871be5ad92b7f950c43",
+          "start": 120840961
+        },
+        {
+          "kind": "part_isMuon",
+          "length": 138283,
+          "sha256": "9b40020a3abf4fb41f0cd5e365b630f65b5fd295cf219d1842c7d41f70ca53a1",
+          "start": 121006444
+        },
+        {
+          "kind": "part_isPhoton",
+          "length": 604964,
+          "sha256": "42342d0bdbf82135fe4e9ffcd4c5273341b0c9a162198f489c4f9ef6bf592d87",
+          "start": 121144810
+        },
+        {
+          "kind": "part_isChargedHadron",
+          "length": 628090,
+          "sha256": "7e8c0a0a350028968a983a45cd8eb789587d5a9c78290c3b5b29404ee2a3445d",
+          "start": 121749859
+        },
+        {
+          "kind": "part_isNeutralHadron",
+          "length": 398995,
+          "sha256": "024eb9a67630cf1d7d8253cd530ee8bff90387e0c8a6c0be03225ab78a30290b",
+          "start": 122378041
+        },
+        {
+          "kind": "jet_pt",
+          "length": 359292,
+          "sha256": "a3b7d3faadc4b0ff669b0105ff69564079f87066d49c3586b2d9087696d7a635",
+          "start": 122777128
+        },
+        {
+          "kind": "jet_energy",
+          "length": 358297,
+          "sha256": "3a89581bb353c7094e329e97b5c5f806c538847c6621a1fbdd40e564975c31b3",
+          "start": 123876346
+        },
+        {
+          "kind": "jet_sdmass",
+          "length": 365082,
+          "sha256": "dba43f633f75dc2ce54e193138e4a1005655b7d861576b42d98d6533affb6c6a",
+          "start": 124234726
+        },
+        {
+          "kind": "jet_nparticles",
+          "length": 122146,
+          "sha256": "4715e923afebfe6efe803b8fc9b8f446a25e0ee0782621213f1b53af792574a0",
+          "start": 124599891
+        },
+        {
+          "kind": "jet_label",
+          "length": 55940,
+          "sha256": "0b08e7fbfadaab5515ca6bda29f0095b90f71f69aa88763a3a25a1d3e85a1996",
+          "start": 126157386
+        }
+      ],
+      "row_count": 100000,
+      "row_groups": [
+        0
+      ],
+      "size_bytes": 348054503,
+      "split": "validation"
+    },
+    {
+      "eligible_rows": 7294,
+      "group": "signal",
+      "measurement_columns": [
+        "jet_pt",
+        "jet_sdmass",
+        "jet_nparticles",
+        "jet_energy",
+        "part_px",
+        "part_py",
+        "part_pz",
+        "part_energy",
+        "part_deta",
+        "part_dphi",
+        "part_charge",
+        "part_d0val",
+        "part_d0err",
+        "part_dzval",
+        "part_dzerr",
+        "part_isElectron",
+        "part_isMuon",
+        "part_isPhoton",
+        "part_isChargedHadron",
+        "part_isNeutralHadron"
+      ],
+      "path": "data/Res2P_0251.parquet",
+      "publisher_sha256": "c9628177189327c9040658004fddef65995743be583d0709eb1e4f88d85e5494",
+      "ranges": [
+        {
+          "kind": "footer",
+          "length": 65536,
+          "sha256": "df518be16599bab942f8c7656a4acdaf6eeded20fbc9dd35ff6cdb8894009b73",
+          "start": 325091841
+        },
+        {
+          "kind": "part_px",
+          "length": 15133144,
+          "sha256": "fccfa2e49d150606abfd4cdd3378eaab2c89adb61161ddab404be0a256791ae0",
+          "start": 4
+        },
+        {
+          "kind": "part_py",
+          "length": 15134429,
+          "sha256": "1ff0f1afd7b49ce5bdd0126ee85b939f539164c6198f3008030d66c9d3eb7283",
+          "start": 15133238
+        },
+        {
+          "kind": "part_pz",
+          "length": 15154759,
+          "sha256": "53708fcbb2ee8da6bf51c7d7c5ef50bbe0a3018c6507638a57d4e715043ba177",
+          "start": 30267760
+        },
+        {
+          "kind": "part_energy",
+          "length": 14672663,
+          "sha256": "b981ed6d6bc0c3d1f8490e0febb536f738996cc76a4aad47f7cc232ac4549ff7",
+          "start": 45422612
+        },
+        {
+          "kind": "part_deta",
+          "length": 14701448,
+          "sha256": "fb11b18489d2350067a8658427c4c02d305d8d16b0aa332d335917021ee4016a",
+          "start": 60095372
+        },
+        {
+          "kind": "part_dphi",
+          "length": 14370533,
+          "sha256": "6b054711e9038e185569ca82f854a08164081255255a91952892448805c821e2",
+          "start": 74796915
+        },
+        {
+          "kind": "part_d0val",
+          "length": 9082775,
+          "sha256": "cd007a844019f1ebbba4a3cb28f4444454e2b92f250e70c9db5efb05905fd1d4",
+          "start": 89167543
+        },
+        {
+          "kind": "part_d0err",
+          "length": 3022207,
+          "sha256": "ad471bef9d8acf92360532560c453800fdcb0e8810d6f8432eb313f0bf87b92e",
+          "start": 98250414
+        },
+        {
+          "kind": "part_dzval",
+          "length": 7484819,
+          "sha256": "cb570814e4bc02792992315fa2faafcdd2dc2e40906967e8a7970f076d82005e",
+          "start": 101272717
+        },
+        {
+          "kind": "part_dzerr",
+          "length": 3094183,
+          "sha256": "65f697cf9cba29bac00184fe3d3498e1243a2634b585b396022435a09c4177ee",
+          "start": 108757632
+        },
+        {
+          "kind": "part_charge",
+          "length": 2106501,
+          "sha256": "47d2503f0c7dcee00f3b55a99e809c5de9d0af7c1d23103871797e49a2b68f9e",
+          "start": 111851911
+        },
+        {
+          "kind": "part_isElectron",
+          "length": 194336,
+          "sha256": "383694aaf93944ca5fec67fec5f799b8e428ea83043e64815c7f3cb784a9c8a7",
+          "start": 113958509
+        },
+        {
+          "kind": "part_isMuon",
+          "length": 173614,
+          "sha256": "060c09c4c1f767e5270d03cbdd0af8b62bca1ee950fb78f052739743ac86b172",
+          "start": 114152932
+        },
+        {
+          "kind": "part_isPhoton",
+          "length": 593657,
+          "sha256": "776380015ad8a0e3e6b0028ae270b9e91db58b1d194756aaab848765c5dcde9e",
+          "start": 114326629
+        },
+        {
+          "kind": "part_isChargedHadron",
+          "length": 608619,
+          "sha256": "811e474e90881d84b0ec2951ee972ba17436b4c3cf9e1a507a3a5afdca7b19a2",
+          "start": 114920371
+        },
+        {
+          "kind": "part_isNeutralHadron",
+          "length": 393160,
+          "sha256": "02720781ae5a829dc4292a3034d8c986651f8646ac8f770c3801e649d0d1d2cf",
+          "start": 115529082
+        },
+        {
+          "kind": "jet_pt",
+          "length": 355123,
+          "sha256": "8d203997b9dfda2201e2b412e48ae95ccc97d48693a208cdf8e44c22fa90663a",
+          "start": 115922334
+        },
+        {
+          "kind": "jet_energy",
+          "length": 355072,
+          "sha256": "6fa1cfd8e2e40821675df5d44a53462b682506a48d990e45eafc7152b8d2769e",
+          "start": 117017133
+        },
+        {
+          "kind": "jet_sdmass",
+          "length": 360520,
+          "sha256": "79f47f82e5aff3f79d4ee7e0e5a72a0b4ec77089d3bfd1d877abf50826b4053c",
+          "start": 117372288
+        },
+        {
+          "kind": "jet_nparticles",
+          "length": 123578,
+          "sha256": "00c7253399041e270545cdb5004216043f8f3c88372830873660ee1819686057",
+          "start": 117732891
+        },
+        {
+          "kind": "jet_label",
+          "length": 80927,
+          "sha256": "77299a1a6167b52d49f5fd555c38c2fbc46f3de49312138387c1d5b23fd5802b",
+          "start": 119285247
+        }
+      ],
+      "row_count": 100000,
+      "row_groups": [
+        0
+      ],
+      "size_bytes": 325157377,
+      "split": "test"
+    },
+    {
+      "eligible_rows": 100000,
+      "group": "background",
+      "measurement_columns": [
+        "jet_pt",
+        "jet_sdmass",
+        "jet_nparticles",
+        "jet_energy",
+        "part_px",
+        "part_py",
+        "part_pz",
+        "part_energy",
+        "part_deta",
+        "part_dphi",
+        "part_charge",
+        "part_d0val",
+        "part_d0err",
+        "part_dzval",
+        "part_dzerr",
+        "part_isElectron",
+        "part_isMuon",
+        "part_isPhoton",
+        "part_isChargedHadron",
+        "part_isNeutralHadron"
+      ],
+      "path": "data/QCD_0351.parquet",
+      "publisher_sha256": "a05e6dd1b80272f28e4b6f7c066bc09bd688a0197d3c19ff92ab000732d7b3eb",
+      "ranges": [
+        {
+          "kind": "footer",
+          "length": 65536,
+          "sha256": "517be02bc8bc2b960c5495f816a0d2ca598ee712bc0100c9a1adf9620daffe39",
+          "start": 353794368
+        },
+        {
+          "kind": "part_px",
+          "length": 16088860,
+          "sha256": "c05057208666e9eacd71f57f594d750e4955155cbe4dd6f82c2f07c5f60d9ca8",
+          "start": 4
+        },
+        {
+          "kind": "part_py",
+          "length": 16088748,
+          "sha256": "38e399687e7739d811c45d6c3d13efbc3d3b23c50faf2037c38da9c16aef4e46",
+          "start": 16088954
+        },
+        {
+          "kind": "part_pz",
+          "length": 16105845,
+          "sha256": "f7f69a806e308cf39e8f0fb6496c9d45beb8d95d78c70e4cc601f3be91fe9833",
+          "start": 32177795
+        },
+        {
+          "kind": "part_energy",
+          "length": 15585050,
+          "sha256": "bda6b718362941f5ecd0ce227325e18af5f8dd31de63150557283321229adba2",
+          "start": 48283733
+        },
+        {
+          "kind": "part_deta",
+          "length": 15562417,
+          "sha256": "f4addce4af4ca44c7db674b75c42725fa454f83b793a923a2f9fd8183b9591b0",
+          "start": 63868880
+        },
+        {
+          "kind": "part_dphi",
+          "length": 15186975,
+          "sha256": "dc66d25ab66d193329914f8d8ae3edd2e8d04565a43c1a7063cd66936cc7500f",
+          "start": 79431392
+        },
+        {
+          "kind": "part_d0val",
+          "length": 10163819,
+          "sha256": "a59e8487d199d8a0f73ae24b91185ee35de686b8a0b9e6efebbe56eb5257bdfa",
+          "start": 94618462
+        },
+        {
+          "kind": "part_d0err",
+          "length": 3339372,
+          "sha256": "e789b674af888b6ec6a6d7093742a1d692ab4b936bccb86ab968217a71265cc4",
+          "start": 104782377
+        },
+        {
+          "kind": "part_dzval",
+          "length": 8341914,
+          "sha256": "acb5a7a5cf26d2d724f3c82fcbbb8d7ad4fded235356892f6366ff1b58b32569",
+          "start": 108121845
+        },
+        {
+          "kind": "part_dzerr",
+          "length": 3400350,
+          "sha256": "bb3244f2795574f6bfdf09bde190832cf0f503809c73064961040f12b6af9269",
+          "start": 116463855
+        },
+        {
+          "kind": "part_charge",
+          "length": 2258759,
+          "sha256": "317da372aee7b57db46ad1f507992d1a17125134c1ab075e1cdc45a86b80bbab",
+          "start": 119864301
+        },
+        {
+          "kind": "part_isElectron",
+          "length": 165778,
+          "sha256": "0805098f8536893bb422aadd285269d6b3189736c3e7946c6ee90653f6b46d0b",
+          "start": 122123157
+        },
+        {
+          "kind": "part_isMuon",
+          "length": 138745,
+          "sha256": "55ea8a962651c13622e85eb9f0db19341a1834342ca4ac201340d7a37e8ca733",
+          "start": 122289022
+        },
+        {
+          "kind": "part_isPhoton",
+          "length": 608233,
+          "sha256": "df422530cafb20f47169c4aa8d5833b399f77309891d97d8b9776a292dd6f514",
+          "start": 122427850
+        },
+        {
+          "kind": "part_isChargedHadron",
+          "length": 631940,
+          "sha256": "e691dd8138dabc1ec24cf4eef57a76bd842f24b4595566b6ce11f7a4bd1a2435",
+          "start": 123036168
+        },
+        {
+          "kind": "part_isNeutralHadron",
+          "length": 397324,
+          "sha256": "1d7029b928acd09dd0f3da2cf10f70f461097d04da65e292ebd055ac83d635b2",
+          "start": 123668200
+        },
+        {
+          "kind": "jet_pt",
+          "length": 359419,
+          "sha256": "e27d27c1696e04321ae25545e79b743035ebef1de75e73bd48cad81ec99479d0",
+          "start": 124065616
+        },
+        {
+          "kind": "jet_energy",
+          "length": 358292,
+          "sha256": "74d81756103dcb2ad66cb0878ef5f7599995c64242c6328990cf3d595a8a5f4d",
+          "start": 125165375
+        },
+        {
+          "kind": "jet_sdmass",
+          "length": 365071,
+          "sha256": "71d758dfdf52ae8db9bd17e52e3402ed12306d08aa9c7b40967895802f1f8058",
+          "start": 125523750
+        },
+        {
+          "kind": "jet_nparticles",
+          "length": 122147,
+          "sha256": "9286971054a40f6bbf61497f6bf3aa992e4690027315a6ca89d86526538c1e31",
+          "start": 125888904
+        },
+        {
+          "kind": "jet_label",
+          "length": 56114,
+          "sha256": "6e38cc08c591d793cb1cd9a826b5779b074cfa5cf42b28b70ff82ceedd280a6b",
+          "start": 127446962
+        }
+      ],
+      "row_count": 100000,
+      "row_groups": [
+        0
+      ],
+      "size_bytes": 353859904,
+      "split": "test"
+    }
+  ],
+  "license": {
+    "declared": "MIT",
+    "evidence_url": "https://huggingface.co/datasets/jet-universe/jetclass2/blob/0701417bfdb1659e2206e958e07870ab74cc2283/README.md"
+  },
+  "repository": "jet-universe/jetclass2",
+  "revision": "0701417bfdb1659e2206e958e07870ab74cc2283",
+  "sampling": "Within each pinned official split/shard, keep label 0 for signal and labels 161..187 for background; sort eligible rows by SHA256(42:record_id), take half the split size per group, and sort output by record_id. These balanced educational cohorts do not represent natural class prevalence. No rows cross official splits.",
+  "seed": 42,
+  "source_verification": "Every downloaded column/footer byte range is SHA256-verified against the local lock. Whole-shard SHA256 values are publisher LFS metadata; complete shards were not downloaded or locally hashed.",
+  "split_rows": {
+    "test": 1000,
+    "train": 4000,
+    "validation": 1000
+  },
+  "task": {
+    "background_labels": [
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      183,
+      184,
+      185,
+      186,
+      187
+    ],
+    "id": "xbb-vs-qcd-v1",
+    "signal_labels": [
+      0
+    ]
+  },
+  "version": 1
+}

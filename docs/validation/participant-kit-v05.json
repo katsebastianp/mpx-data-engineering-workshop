@@ -1,0 +1,248 @@
+{
+  "all_repeated_predictions_identical": true,
+  "dataset_id": "4f94bfde07e778e7dd0edd9e15fde722b32efae4c3c79d528c5803f5ce9260e0",
+  "extraction": "Two clean ZIP extractions in different folders containing spaces; no prepared files or saved models supplied.",
+  "limits": [
+    "Native ARM64 Docker on the facilitator machine; not a physical Windows or 8-GB MacBook Air certification.",
+    "Two local rehearsals, not a cross-hardware ranking.",
+    "One initial unshared temporary-directory mount attempt and one accumulated-results timing diagnostic were excluded and retained locally."
+  ],
+  "matched_runtime_data_model_hashes_checked_in_each_extraction": {
+    "round-1": true,
+    "round-2": true
+  },
+  "oom_events": 0,
+  "peak_memory_bytes": 956080128,
+  "prepared_parquet_checksums_identical": true,
+  "resources": {
+    "architecture": "aarch64",
+    "cpus": 2,
+    "memory_limit_bytes": 2147483648,
+    "network": "none"
+  },
+  "rounds": [
+    {
+      "commands": {
+        "compare": {
+          "elapsed_seconds": 1.0410923089948483,
+          "host_wall_seconds_including_container": 1.3033477080170996,
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory_peak_bytes": 265138176
+        },
+        "experiment": {
+          "elapsed_seconds": 25.148545822012238,
+          "host_wall_seconds_including_container": 25.436675584001932,
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory_peak_bytes": 253845504
+        },
+        "preprocess": {
+          "elapsed_seconds": 8.27651572402101,
+          "host_wall_seconds_including_container": 8.725110583996866,
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory_peak_bytes": 956080128
+        }
+      },
+      "model_experiments": 4,
+      "preprocessing_jets": 6000,
+      "preprocessing_jets_per_second": 724.9427416160333,
+      "round": 1,
+      "saved_validation_predictions": 4000,
+      "saved_validation_predictions_per_total_host_second": 112.78682928376286,
+      "scheduled_spark_tasks": 68,
+      "total_command_seconds": 34.4661538550281,
+      "total_host_wall_seconds_including_containers": 35.4651338760159,
+      "validation_jets_per_model": 1000
+    },
+    {
+      "commands": {
+        "compare": {
+          "elapsed_seconds": 0.9381902730092406,
+          "host_wall_seconds_including_container": 1.1995614590123296,
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory_peak_bytes": 263639040
+        },
+        "experiment": {
+          "elapsed_seconds": 25.200214073993266,
+          "host_wall_seconds_including_container": 25.4311424579937,
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory_peak_bytes": 253931520
+        },
+        "preprocess": {
+          "elapsed_seconds": 8.34202748502139,
+          "host_wall_seconds_including_container": 8.61939754197374,
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory_peak_bytes": 846036992
+        }
+      },
+      "model_experiments": 4,
+      "preprocessing_jets": 6000,
+      "preprocessing_jets_per_second": 719.2496081765925,
+      "round": 2,
+      "saved_validation_predictions": 4000,
+      "saved_validation_predictions_per_total_host_second": 113.47485069382749,
+      "scheduled_spark_tasks": 68,
+      "total_command_seconds": 34.480431832023896,
+      "total_host_wall_seconds_including_containers": 35.25010145897977,
+      "validation_jets_per_model": 1000
+    }
+  ],
+  "saved_models_reloaded_and_rescored": [
+    {
+      "experiment_id": "linear-basic",
+      "model": "logistic",
+      "model_sha256": "66eebedc1f2550fa6d22bce204bf6069af3f184bf901c6f73c7c9f3abecfcf16",
+      "quality_recomputed": true,
+      "round": 1,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.75268
+    },
+    {
+      "experiment_id": "sophon-reference",
+      "model": "sophon",
+      "model_sha256": "f54e9fd56b12e22ef4266e40b683dbf8533139b55cdab1b1c127d6e7cb8e2fd4",
+      "quality_recomputed": true,
+      "round": 1,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.99638
+    },
+    {
+      "experiment_id": "trees-basic",
+      "model": "xgboost",
+      "model_sha256": "1f7180a9d70b5702c1c8dd8c00465e5ac1e480cf98edac4cb30e20d408b2c53f",
+      "quality_recomputed": true,
+      "round": 1,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.830294
+    },
+    {
+      "experiment_id": "trees-shape",
+      "model": "xgboost",
+      "model_sha256": "bdc8644ae90f37121a73b1fa629345b5c2563937aab8b6f799032949f4083229",
+      "quality_recomputed": true,
+      "round": 1,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.854414
+    },
+    {
+      "experiment_id": "linear-basic",
+      "model": "logistic",
+      "model_sha256": "66eebedc1f2550fa6d22bce204bf6069af3f184bf901c6f73c7c9f3abecfcf16",
+      "quality_recomputed": true,
+      "round": 2,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.75268
+    },
+    {
+      "experiment_id": "sophon-reference",
+      "model": "sophon",
+      "model_sha256": "f54e9fd56b12e22ef4266e40b683dbf8533139b55cdab1b1c127d6e7cb8e2fd4",
+      "quality_recomputed": true,
+      "round": 2,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.99638
+    },
+    {
+      "experiment_id": "trees-basic",
+      "model": "xgboost",
+      "model_sha256": "1f7180a9d70b5702c1c8dd8c00465e5ac1e480cf98edac4cb30e20d408b2c53f",
+      "quality_recomputed": true,
+      "round": 2,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.830294
+    },
+    {
+      "experiment_id": "trees-shape",
+      "model": "xgboost",
+      "model_sha256": "bdc8644ae90f37121a73b1fa629345b5c2563937aab8b6f799032949f4083229",
+      "quality_recomputed": true,
+      "round": 2,
+      "saved_predictions_equal_reloaded_model": true,
+      "validation_jets": 1000,
+      "validation_roc_auc": 0.854414
+    }
+  ],
+  "source_note": "The delivered ZIP may add documentation and compact validation evidence after this rehearsal; its runtime/data/model hashes must match source_runtime_sha256.",
+  "source_runtime_sha256": {
+    "Dockerfile": "2209125aa97dae03562424d8bed9fb0af8b440c60c190f32416ca2cd91a6b578",
+    "artifacts/sophon/model/Interacting_with_JetClassII_and_Sophon.ipynb": "3f241fbd8880ddd7cd84c890a474ab6a68a8f84a293e5e4cc5c9f8523ce6a748",
+    "artifacts/sophon/model/JetClassII_full.yaml": "df45b6b9dd0f3e0726ea18132fef7d8525dc9d7e750ecd82ee5fa60cb441e625",
+    "artifacts/sophon/model/LICENSE": "e554a08a15d5ea5648b2607e91e075a16218bd112bc8dcbc1a1c9370b3b2829b",
+    "artifacts/sophon/model/model.lock.json": "a64850feb475cacb397481ab5f96589153fe17e3b1b95a5e32a294d49b6837a1",
+    "artifacts/sophon/model/model.onnx": "f54e9fd56b12e22ef4266e40b683dbf8533139b55cdab1b1c127d6e7cb8e2fd4",
+    "compare.py": "23825c2698ceda9c2e0fbe4ba7b8d77233ed47772e60399eed82c67d96db0b7b",
+    "competition.py": "f2642095814bddc9d0e000128e91d8797b846db60529790fb5d5ea42c1e23fba",
+    "compose.yaml": "4bddd779f492bbbcce5c944ad8e77dcb7deb70d60cbd6ebc6e3a4713092bb314",
+    "config/sophon-contract.json": "e8af59a17f93d0c698af0fbcd8f27af8db2aa7aa0fe8f5dc67cea267c059924d",
+    "config/sophon-model.lock.json": "a64850feb475cacb397481ab5f96589153fe17e3b1b95a5e32a294d49b6837a1",
+    "config/workshop-data.lock.json": "4b285fe07638d0dcd6ffe15aa8c946123598b112f04acf4224ee3d177f898b46",
+    "data/raw/manifest.json": "caccdd4d6e0754999bbde17e5c0500e7945ffded6a830753abd58e37e7a99480",
+    "data/raw/test.parquet": "4ce85bb17e532c1a41dbd23f3f88861384ddd2fb0176e58c226066fb72f18041",
+    "data/raw/train.parquet": "c4f74c336677b40f6772f0758513c40c93c5e20d932b6dc83594c93d7fc370aa",
+    "data/raw/validation.parquet": "745d749fbb538f9a2da6a245c1c7a0218cf6adc2e1bffd9d67fe5728145cd34d",
+    "experiment.py": "aff1aff5342ebcb1d993ad9d142c2f8243fd5a3e9612f2da8116348eb1bc804b",
+    "experiments.yaml": "1797e9d2cf2e7932931eb8ced3a9ec1f7f0d1c267078fc48c777519be308a282",
+    "features.py": "2331604aeb974960fc0057a089e3f09f03fee565cdbdf341dac74a8bc5540491",
+    "models.py": "fcfc2c111486c9b1add52cda956c0d846c663391ceefba34e101d1d5fd04fea1",
+    "preprocess.py": "592b17a4a702d7220df882ef48c677ab449b6ed8ad6e4b3609981f82c1ae45d4",
+    "requirements.txt": "9822349654288c07d86f87c206ff4206de6e993fda7e1494cf625bdbaf709433",
+    "support/__init__.py": "e45ec5ee575be37953ee7ccf782ab028aae7c6ef5df3e4e8d9d0c9d9033ade3e",
+    "support/io.py": "c1322f1ce5eff27945718274555acd93ad57d3e61334f12f8f673bdb7eabf3b1",
+    "support/sophon.py": "94f085f747887339da30d6eed2a6b03f29069c2e966df7bfe1617fe606ba7beb",
+    "support/sophon_adapter.py": "c9121da2bbdf10a979a1a7e61e5e5f611b35ae8b5a7a1e46a094fc1c073e7757"
+  },
+  "tested_archive_sha256": "e79c2862f447835e7d72342ea191e9c4a7c3124553d2dbd44bd6eb1d6700b4c8",
+  "tested_archive_size_bytes": 16879237,
+  "timing_scope": "Complete participant Python command including imports and startup; Docker container startup is excluded. Model timing includes all four fits/evaluations plus each fixed 128-row warmup and three latency repeats.",
+  "verified": true,
+  "version": 1,
+  "workshop_version": "0.5.0"
+}

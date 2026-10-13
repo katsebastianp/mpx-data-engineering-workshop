@@ -1,0 +1,19 @@
+# Ask Codex to change models, features or a few training parameters here.
+team: example-team
+explanation: "Replace this with what you changed and why."
+evaluation: validation  # Set to test once, after selecting your final approach.
+seed: 42
+max_workers: 1  # Two training jobs are supported; timings are always measured serially.
+experiments:
+  - id: linear-basic
+    model: logistic
+    features: basic
+  - id: trees-basic
+    model: xgboost
+    features: basic
+  - id: trees-shape
+    model: xgboost
+    features: shape
+  - id: sophon-reference
+    model: sophon
+    features: particles

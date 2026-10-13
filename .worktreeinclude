@@ -1,0 +1,4 @@
+# Input copies for local Codex-managed worktrees; outputs stay independent.
+data/01_raw/**
+data/02_preprocessed/**
+models/pretrained/sophon/**

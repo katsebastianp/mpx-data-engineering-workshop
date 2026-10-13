@@ -1,8 +1,11 @@
 .git
 .cache
-.venv
-__pycache__
+.venv*
+**/__pycache__
 .pytest_cache
 data
-artifacts
+models
+dist
 .env*
+site
+tools/results-preview

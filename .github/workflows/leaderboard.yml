@@ -1,0 +1,59 @@
+name: Optional static results viewer
+
+# Exports only the portable viewer. The authenticated Vinext/D1 workshop in
+# site/ is deployed through Sites, never GitHub Pages.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - data/04_submissions/*.json
+      - src/postprocessing/**
+      - src/common.py
+      - config/evaluation.json
+      - tools/results-preview/**
+      - .github/workflows/leaderboard.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: particle-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Validate JSON and build leaderboard
+        env:
+          PYTHONPATH: src
+        run: python3 -m postprocessing.leaderboard --output tools/results-preview/leaderboard.json
+      - name: Check static frontend
+        run: test -f tools/results-preview/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: tools/results-preview
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish optional static results viewer
+        id: deployment
+        uses: actions/deploy-pages@v4

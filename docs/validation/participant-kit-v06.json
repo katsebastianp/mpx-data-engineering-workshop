@@ -1,0 +1,74 @@
+{
+  "archive": {
+    "bytes": 16892155,
+    "file": "ringier-particle-workshop.zip",
+    "members": 66,
+    "payload_files": 65,
+    "sha256": "dd52be58779c6433292ed92f5f87bff1a3df3123369849a5d94fabb9da6e3860"
+  },
+  "canonical_config_read_only": true,
+  "commands": [
+    "docker compose run --rm lab -m preprocessing",
+    "docker compose run --rm lab -m predict",
+    "docker compose run --rm lab -m postprocessing"
+  ],
+  "current_input_files_verified": 61,
+  "database_counts": {
+    "experiments": 4,
+    "jets": 6000,
+    "metrics": 4,
+    "particles": 272403,
+    "predictions": 4000
+  },
+  "dataset_id": "4f94bfde07e778e7dd0edd9e15fde722b32efae4c3c79d528c5803f5ce9260e0",
+  "extraction_folder_had_spaces": true,
+  "fresh_models": 4,
+  "fresh_results": 4,
+  "initial_generated_models": 0,
+  "initial_generated_runs": 0,
+  "limits": {
+    "cpus": 2,
+    "memory_gib": 2,
+    "network": "none"
+  },
+  "model_comparisons": [
+    {
+      "experiment": "linear-basic",
+      "metrics_equal": true,
+      "model_reference_valid": true,
+      "native_model_sha256_equal": true,
+      "predictions_equal": true,
+      "rows": 1000
+    },
+    {
+      "experiment": "sophon-reference",
+      "metrics_equal": true,
+      "model_reference_valid": true,
+      "native_model_sha256_equal": true,
+      "predictions_equal": true,
+      "rows": 1000
+    },
+    {
+      "experiment": "trees-basic",
+      "metrics_equal": true,
+      "model_reference_valid": true,
+      "native_model_sha256_equal": true,
+      "predictions_equal": true,
+      "rows": 1000
+    },
+    {
+      "experiment": "trees-shape",
+      "metrics_equal": true,
+      "model_reference_valid": true,
+      "native_model_sha256_equal": true,
+      "predictions_equal": true,
+      "rows": 1000
+    }
+  ],
+  "runtime_modules_verified": 15,
+  "scope": "One functional fresh-kit rehearsal; not a repeated performance benchmark or native Windows/laptop certification.",
+  "source_archive_excluded_generated_outputs": true,
+  "status": "passed",
+  "submission_files": 0,
+  "version": "0.6.0"
+}

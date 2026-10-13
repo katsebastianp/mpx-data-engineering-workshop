@@ -1,0 +1,16 @@
+.personal-workspace.section-wrap{padding-top:8px;padding-bottom:30px}
+.personal-workspace>div{display:flex;align-items:baseline;gap:24px;flex-wrap:wrap}
+.personal-workspace>div>p{font-size:12px;color:var(--muted)}
+.personal-workspace dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:20px 0 12px;border:1px solid var(--line);background:#2e343b}
+.personal-workspace dl>div{min-width:0;padding:18px 20px;border-right:1px solid var(--line)}
+.personal-workspace dl>div:last-child{border-right:0}
+.personal-workspace dt{font-size:10px;color:var(--muted);margin-bottom:10px}
+.personal-workspace dd{margin:0;display:flex;align-items:center;gap:12px}
+.personal-workspace dd code{font-size:12px;color:var(--ink);overflow-wrap:anywhere;min-width:0}
+.personal-workspace dd .copy-button{position:static;flex-shrink:0;margin-left:auto}
+.personal-workspace .muted-note{font-size:11px;margin:0;padding:0;border:0}
+.personal-prompt-notice{display:flex;gap:14px;padding:24px;border:1px solid var(--line);margin-top:20px}
+.personal-prompt-notice>svg{flex-shrink:0;color:var(--accent);margin-top:3px}
+.personal-prompt-notice strong{font-size:14px;font-weight:500}
+.personal-prompt-notice p{font-size:12px;color:var(--muted);line-height:1.7;margin:8px 0}
+@media(max-width:1100px){.personal-workspace dl{grid-template-columns:1fr}.personal-workspace dl>div{border-right:0;border-bottom:1px solid var(--line)}.personal-workspace dl>div:last-child{border-bottom:0}}
