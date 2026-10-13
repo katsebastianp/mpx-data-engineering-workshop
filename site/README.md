@@ -47,7 +47,7 @@ This `site/` directory is the canonical website source and belongs to the parent
 
 The Sites publishing helper requires a standalone Git root. For publication, open the existing Site through the Sites plugin in an ignored checkout such as `.sites-runtime/publish`, sync the current `site/` source into that checkout, then build and publish through the plugin. Exclude `.git`, dependencies, caches, local databases, `.sites-runtime`, `.env*`, tool state, and generated output when syncing. Do not initialize `site/.git`, publish the parent repository wholesale, or create a new Site for an update. The previous standalone Site Git history is preserved locally at `.sites-runtime/previous-source.git` and is not part of the parent repository.
 
-The offline comparison viewer is now `../tools/results-preview/`; it remains in the portable participant kit. The authenticated workshop Site source and local runtime data are excluded from that kit. GitHub Pages can publish the offline viewer; it cannot host this app’s server routes or D1 database.
+The offline comparison viewer is `../tools/results-preview/`; it remains in the portable participant kit. The authenticated workshop Site source and local runtime data are excluded from that kit. This repository has no GitHub Pages deployment workflow; the authenticated app is deployed through Sites.
 
 For a separate Ringier-owned deployment, export clean source without the existing `project_id`, retain `d1: "DB"` and all migrations, and register a new Site in the intended workspace. Never copy source credentials or runtime data. Verify sharing with actual participant accounts before the session.
 

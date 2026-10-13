@@ -54,7 +54,7 @@ def test_allowlist_has_current_commands_and_no_hosting_or_submission_identity(tm
     names = bundle.repository_files(tmp_path) + bundle.ASSET_FILES + bundle.EMPTY_OUTPUT_FILES
     assert {"src/preprocessing/__main__.py", "src/predict/__main__.py", "src/postprocessing/__main__.py",
             "config/experiments.yaml", "config/evaluation.json", "scripts/prepare_data.py", ".worktreeinclude",
-            ".github/workflows/leaderboard.yml", "data/01_raw/train.parquet", "data/01_raw/validation.parquet",
+            "data/01_raw/train.parquet", "data/01_raw/validation.parquet",
             "data/01_raw/test.parquet", "models/pretrained/sophon/model.onnx",
             "tools/results-preview/index.html", "tools/results-preview/app.js",
             "tools/results-preview/style.css", "tools/results-preview/comparison.json",

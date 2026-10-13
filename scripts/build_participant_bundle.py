@@ -37,7 +37,7 @@ STATIC_REPOSITORY_FILES = (
     "docs/validation/parallel.json", "docs/validation/participant-kit-v05.json", "docs/validation/amd64-v05.json",
     "docs/validation/layout-v06.json",
     "scripts/build_participant_bundle.py", "scripts/prepare_data.py",
-    "config/evaluation.json", ".github/workflows/leaderboard.yml",
+    "config/evaluation.json",
     "tools/results-preview/index.html", "tools/results-preview/app.js", "tools/results-preview/style.css",
     "tools/results-preview/comparison.json", "tools/results-preview/leaderboard.json",
 )

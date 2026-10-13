@@ -17,4 +17,4 @@ Quality ranks final test ROC-AUC for participant-trained models. Efficiency rank
 
 Normalized time is `(inference seconds / 128 jets) / (CPU reference seconds / 64 iterations)`. Timings and scores are participant-reported; quality is recomputed against fixed labels, but inference is not rerun centrally. Hardware correction is approximate. Sophon has richer inputs and prior training.
 
-The optional `.github/workflows/leaderboard.yml` builds the offline viewer on GitHub Pages. It is separate from the workshop Site and its account-bound uploads; code PRs in the workshop target participants’ personal branches.
+The offline viewer in `tools/results-preview/` reads exported JSON locally. The authenticated workshop Site is deployed through Sites; this repository has no GitHub Pages deployment workflow.
