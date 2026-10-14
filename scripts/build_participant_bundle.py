@@ -1,7 +1,8 @@
-"""Build the small v0.6 participant ZIP from an explicit list of local files.
+"""Build a legacy offline v0.6 archive from an explicit list of local files.
 
 Run: docker compose run --rm lab scripts/build_participant_bundle.py
-Rebuild after final source/docs changes. The kit contains teaching subsets and
+The current participant flow uses Site downloads and Python setup, not this ZIP.
+The archive contains teaching subsets and
 the pinned CPU model and offline results viewer. The hosted Site source, Docker
 images, historical runs and hosting identity do not ship.
 """
@@ -31,12 +32,13 @@ STATIC_REPOSITORY_FILES = (
     "src/predict/models.py", "src/predict/sophon.py", "src/predict/sophon_adapter.py",
     "src/postprocessing/__init__.py", "src/postprocessing/__main__.py",
     "src/postprocessing/compare.py", "src/postprocessing/database.py", "src/postprocessing/leaderboard.py",
-    "config/workshop-data.lock.json", "config/sophon-contract.json", "config/sophon-model.lock.json",
+    "config/workshop-data.lock.json", "config/workshop-sample.lock.json", "config/sophon-contract.json", "config/sophon-model.lock.json",
     "docs/data.md", "docs/results.md", "docs/problem-guide.md",
     "docs/assets/jet-examples.json", "docs/assets/jet-examples.png", "docs/competition.md",
     "docs/validation/parallel.json", "docs/validation/participant-kit-v05.json", "docs/validation/amd64-v05.json",
     "docs/validation/layout-v06.json",
-    "scripts/build_participant_bundle.py", "scripts/prepare_data.py",
+    "scripts/build_participant_bundle.py", "scripts/prepare_data.py", "scripts/setup_workshop.py",
+    "scripts/stage_site_sample.py",
     "config/evaluation.json",
     "tools/results-preview/index.html", "tools/results-preview/app.js", "tools/results-preview/style.css",
     "tools/results-preview/comparison.json", "tools/results-preview/leaderboard.json",

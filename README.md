@@ -15,7 +15,7 @@ Docker-based Spark preprocessing, logistic/XGBoost experiments, a frozen Sophon 
 | `config/*lock.json`, `config/sophon-contract.json` | Pinned data/model provenance and adapter contract |
 | `config/evaluation.json` | Fixed evaluation IDs and labels used to validate submissions |
 | `tests/` | Pipeline, model, export and bundle checks |
-| `scripts/` | Maintainer data preparation and deterministic participant ZIP packaging |
+| `scripts/` | Verified sample setup, pinned model download, and maintainer data preparation |
 | `tools/results-preview/` | Offline viewer for exported comparison JSON |
 | `site/` | Hosted workshop UI, accounts and leaderboard; full repository only |
 
@@ -24,16 +24,18 @@ The `Predictor` interface is in `src/predict/base.py`; each model has its own mo
 ## Data and artifacts
 
 ```text
-data/01_raw/                 supplied train/validation/test Parquet and manifest
+data/01_raw/                 Site-hosted train/validation/test Parquet and manifest
 data/02_preprocessed/        measured features and source-hashed manifest
 data/03_predictions/<run>/   predictions, metrics and model references
 data/04_submissions/         generated final-result JSON
 data/05_analytics/           DuckDB database and comparison JSON
-models/pretrained/sophon/    supplied frozen model and provenance
+models/pretrained/sophon/    downloaded frozen model and provenance
 models/<run>/               separately saved trained models
 evidence/                   local immutable experiment snapshots
 ```
 
-Payloads and generated outputs are ignored by Git. The participant ZIP contains the raw data, frozen Sophon assets, runtime code and offline viewer; it excludes hosted Site source and participant results. `.worktreeinclude` copies ignored raw/prepared inputs and pretrained Sophon into local Codex-managed worktrees. Generated outputs remain separate.
+Payloads and generated outputs are ignored by Git. The Site hosts the fixed 6,000-row sample as four individual files; `config/workshop-sample.lock.json` pins their sizes and SHA-256 hashes. `scripts/setup_workshop.py` validates them and downloads the pinned Sophon weights and publisher provenance through the network-enabled Compose `setup` service. The `lab` service remains offline. No Hugging Face account is required.
+
+`.worktreeinclude` copies ignored raw/prepared inputs and pretrained Sophon into local Codex-managed worktrees. Generated outputs remain separate. The ZIP builder is retained only for legacy offline archives; the participant workflow uses the Site and Git checkout.
 
 [Data/schema reference](docs/data.md) · [Feature meanings](docs/problem-guide.md) · [Submission contract](docs/competition.md) · [Historical validation](docs/results.md) · [Site development](site/README.md)

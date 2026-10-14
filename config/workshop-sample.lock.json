@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "dataset_id": "4f94bfde07e778e7dd0edd9e15fde722b32efae4c3c79d528c5803f5ce9260e0",
+  "files": {
+    "manifest.json": {
+      "sha256": "caccdd4d6e0754999bbde17e5c0500e7945ffded6a830753abd58e37e7a99480",
+      "size_bytes": 27382
+    },
+    "train.parquet": {
+      "sha256": "c4f74c336677b40f6772f0758513c40c93c5e20d932b6dc83594c93d7fc370aa",
+      "size_bytes": 3761915
+    },
+    "validation.parquet": {
+      "sha256": "745d749fbb538f9a2da6a245c1c7a0218cf6adc2e1bffd9d67fe5728145cd34d",
+      "size_bytes": 2153463
+    },
+    "test.parquet": {
+      "sha256": "4ce85bb17e532c1a41dbd23f3f88861384ddd2fb0176e58c226066fb72f18041",
+      "size_bytes": 2174382
+    }
+  }
+}

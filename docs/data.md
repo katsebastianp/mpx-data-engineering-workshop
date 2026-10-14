@@ -12,9 +12,11 @@ Start with the [audience guide](problem-guide.md) for the problem, feature meani
 | Validation | 1,000 | 500 / 500 | Res2P_0200 / QCD_0280 |
 | Test | 1,000 | 500 / 500 | Res2P_0251 / QCD_0351 |
 
-Seed 42 and hashed source identities define disjoint, balanced samples. Balance is educational, not natural collider prevalence. [The data lock](../config/workshop-data.lock.json) pins revision, columns and downloaded-range hashes. Whole-shard hashes are publisher metadata; complete shards were not downloaded. The facilitator prepares the **8.1 MB** bundle once.
+Seed 42 and hashed source identities define disjoint, balanced samples. Balance is educational, not natural collider prevalence. [The data lock](../config/workshop-data.lock.json) pins revision, columns and downloaded-range hashes. Whole-shard hashes are publisher metadata; complete shards were not downloaded. The facilitator prepares the **8.1 MB** sample once. The workshop Site distributes its three Parquet files and manifest directly, without an archive or a full upstream download.
 
 `data/01_raw/manifest.json` records split hashes and dataset identity. The facilitator’s `scripts/prepare_data.py` also freezes `config/evaluation.json`; participant postprocessing only validates it. Null, nonfinite or misaligned measured arrays are rejected; raw arrays retain their complete lengths. Validation/test include all Sophon measurements; training carries the smaller numerical-feature inputs.
+
+`config/workshop-sample.lock.json` independently pins all four downloadable files. `scripts/setup_workshop.py` verifies their bytes and raw-data contract before downloading the revision-pinned Sophon ONNX model from public Hugging Face. Its supporting publisher references and MIT license come from pinned upstream GitHub files. Existing matching assets are reused; incomplete downloads never become model files. The sample and model payloads are excluded from the GitHub repository.
 
 ## Features and scores
 

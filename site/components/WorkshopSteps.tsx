@@ -7,6 +7,7 @@ import { workshopParts } from "./workshop-content";
 import type { useParticipantProgress } from "./useParticipantProgress";
 import { ParticipantAccountPanel } from "./ParticipantAccount";
 import { WorktreeJourney } from "./WorktreeJourney";
+import { SampleDownloads } from "./SampleDownloads";
 import { personaliseWorkshopText } from "../lib/participant";
 
 const exercises = workshopParts.flatMap(part => part.exercises);
@@ -102,6 +103,7 @@ export function WorkshopSteps({participant}:{participant:ReturnType<typeof usePa
         <div className="step-detail-meta"><span>{placeLabels[selected.location]}</span><span>{part.time}</span></div>
         <div className="step-detail-title"><h2 id="selected-step-title">{selected.title}</h2><span className={`step-status ${done?"complete":remainingPrerequisites.length?"upcoming":"ready"}`}>{done?<CheckCircle2 size={13}/>:<Circle size={12}/>} {done?"Complete":remainingPrerequisites.length?"Upcoming":"Ready"}</span></div>
         <p className="step-instruction">{selected.instruction}</p>
+        {selected.id==="project"&&<SampleDownloads/>}
         {prerequisites.length>0&&<div className="step-prerequisites"><span>{remainingPrerequisites.length?"BEFORE THIS STEP":"PREREQUISITES COMPLETE"}</span><div>{prerequisites.map(exercise=><button key={exercise.id} onClick={()=>selectStep(exercise.id)}>{completed.includes(exercise.id)?<Check size={12}/>:<Circle size={10}/>} {exercise.title}</button>)}</div></div>}
         {selected.id==="project"&&<div className="repo-config"><form onSubmit={saveRepository}><label htmlFor="workshop-repository">Workshop repository</label><p id="repository-description">{repository?"Your facilitator’s link, saved to your account":"Use the repository URL supplied by your facilitator"}</p><div className="repo-input-row"><input id="workshop-repository" type="url" autoComplete="off" spellCheck={false} placeholder="https://github.com/owner/repository" value={repositoryDraft} onChange={event=>{setRepositoryDraft(event.target.value);setRepositoryError("");setRepositoryNotice("")}} aria-describedby="repository-description" aria-invalid={!!repositoryError} disabled={!canSave} required/><button className="button button-secondary" type="submit" disabled={!canSave}>Save link</button></div>{repositoryError&&<p className="repo-status is-error" role="alert">{repositoryError}</p>}{repositoryNotice&&<p className="repo-status" role="status">{repositoryNotice}</p>}</form>{repository&&<><a href={repository} className="text-link" target="_blank" rel="noreferrer">Open repository <ExternalLink size={12}/></a><Commands>{`git clone ${repository}`}</Commands></>}</div>}
         <details className="exercise-hint" key={`${selected.id}-hint`}><summary><span>Reveal a hint</span><ChevronDown size={14}/></summary><p>{selected.hint}</p></details>

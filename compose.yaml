@@ -1,5 +1,15 @@
 name: particle-workshop
 services:
+  setup:
+    image: particle-workshop:0.6.0
+    build: .
+    init: true
+    cpus: 2
+    mem_limit: 2g
+    command: ["scripts/setup_workshop.py"]
+    volumes:
+      - .:/workspace:ro
+      - ./models:/workspace/models
   lab:
     image: particle-workshop:0.6.0
     build: .

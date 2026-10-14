@@ -10,7 +10,9 @@ __pycache__/
 .DS_Store
 .cache/
 /dist/
-# Data/model payloads ship in the participant ZIP; results are uploaded through the Site.
+# Sample files are hosted on the Site; model weights are downloaded during setup.
+# These staged Site assets must never be pushed to GitHub.
+/site/public/downloads/
 data/01_raw/*
 data/02_preprocessed/*
 data/03_predictions/*
