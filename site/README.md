@@ -67,7 +67,7 @@ Fonts are bundled locally with licenses in `public/fonts/`; there are no runtime
 
 ## Physics controls
 
-Use **Zoom into the detector** for the animated camera journey, or drag the zoom slider to control it. Select Collision, Decay, Shower or Jet to replay that process. Pause and Replay controls apply to the selected animation. Reduced-motion mode shows a completed schematic and skips camera motion. All geometry, distances and times are illustrative.
+Use **Zoom into the detector** to play two synchronized examples through Collision, Origin, Shower and Jet, or drag the zoom slider to control the camera journey. Pink follows the X → bb signal; blue follows QCD background. Both retain the same trajectories and camera position across steps. Stage buttons seek along the shared timeline; Pause holds it and **Replay full sequence** restarts from collision. Jet reconstruction only adds boundaries around the existing showers. Reduced-motion mode shows a completed schematic; stage buttons select still views. All geometry, distances and times are illustrative.
 
 ## Participant accounts and access
 

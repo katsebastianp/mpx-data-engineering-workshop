@@ -98,7 +98,8 @@ code,pre{font-family:var(--mono)}
 .event-bottom .text-link{font-size:11px}
 .data-section{padding-top:100px}
 .classification{display:grid;grid-template-columns:1fr 110px 1fr;gap:50px;padding:48px 0 64px;border-bottom:1px solid var(--line)}
-.classification h3{font-size:43px;margin:19px 0}
+.classification h3{font-size:clamp(28px,3vw,43px);margin:19px 0;line-height:1.2}
+.classification h3 span{display:block;font-size:.65em;color:var(--muted);margin-top:10px}
 .classification p{font-size:15px;line-height:1.8;max-width:450px}
 .classification-separator{align-self:center;text-align:center;font-family:var(--display);font-size:24px;color:#b5bac0}
 .feature-list{padding-top:60px}
@@ -500,3 +501,25 @@ td{font-size:11px;padding:18px 12px}
 /* Copyable prompts use the same bullet text in the UI and clipboard. */
 .prompt-bullets{list-style:disc;margin:0;padding-left:20px;display:grid;gap:12px;font-size:13px;line-height:1.75;color:#d3dce6;overflow-wrap:anywhere}
 .prompt-bullets li::marker{color:var(--accent)}
+
+/* Labels point into the same 3D comparison; both complete jets remain visible. */
+.jet-comparison-labels{position:absolute;inset:0;z-index:2;pointer-events:none}
+.jet-leaders{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.jet-callout{position:absolute;right:28px;width:250px;min-height:76px;padding:12px 16px;border:1px solid;border-left-width:4px;border-radius:4px;background:#282e35f5;display:grid;gap:6px;max-width:300px}
+.jet-callout strong{font-size:19px;font-weight:550;line-height:1.25}
+.jet-callout strong span{font-size:14px;font-weight:400}
+.jet-callout>span{font-size:12px;color:#e2e6eb;line-height:1.4}
+.jet-callout-signal{top:25px;border-color:#ff929d;color:#ffb1ba}
+.jet-callout-background{bottom:72px;border-color:#86caff;color:#b9deff}
+@media(max-width:760px){
+  .journey-viewport.is-comparing{height:440px}
+  .jet-callout{right:14px;width:205px;min-height:64px;padding:9px 11px;max-width:205px;gap:4px}
+  .jet-callout strong{font-size:15px}.jet-callout strong span{font-size:12px}.jet-callout>span{font-size:10px}
+  .jet-callout-signal{top:16px}.jet-callout-background{bottom:58px}
+  .classification h3{font-size:clamp(24px,4.5vw,32px)}
+}
+
+.journey-playback{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 28px;border-top:1px solid #59616a;background:#30363d;color:#c5ced8;font-size:11px}
+.journey-playback button{display:flex;align-items:center;gap:7px;padding:8px 10px;background:#414a54;border:1px solid #697786;border-radius:3px;color:#f3f5f7;cursor:pointer;white-space:nowrap}
+.journey-playback button:hover{background:#535f6c}
+@media(max-width:760px){.journey-playback{padding:12px 16px;gap:10px;font-size:9px}.journey-playback>span{max-width:170px;line-height:1.6}.journey-playback button{font-size:9px;white-space:normal;text-align:left}}

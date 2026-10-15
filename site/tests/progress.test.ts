@@ -15,7 +15,7 @@ const request = (body: BodyInit | null, headers: Record<string, string> = {}) =>
 const isStatus = (status: number) => (error: unknown) => error instanceof ProgressError && error.status === status;
 
 test("every current workshop step can be saved independently", () => {
-  assert.equal(stepIds.size, 15);
+  assert.equal(stepIds.size, 17);
   for (const stepId of stepIds) {
     for (const completed of [true, false]) {
       const value = { action: "complete", stepId, completed };

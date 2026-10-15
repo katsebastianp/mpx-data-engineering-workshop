@@ -8,53 +8,51 @@ const ColliderJourneyScene = lazy(() => import("./ColliderJourneyScene"));
 const stages = [
   {
     label: "Collision",
-    title: "Protons collide",
-    formula: "p + p → interaction",
+    title: "Two examples start with a collision",
     bullets: [
-      "Two proton beams travel in opposite directions around the LHC",
-      "Quarks or gluons inside the protons interact at the collision point",
-      "The interaction can produce new particles"
+      "Proton collisions can produce different kinds of particles",
+      "Pink follows a simulated signal example; blue follows a QCD background example",
+      "We show the two examples together for comparison, not as one measured event"
     ],
-    animation: "Watch the two proton bunches meet at the centre of the detector"
+    animation: "Both examples follow the same timeline, with fixed positions and paths."
   },
   {
-    label: "Decay",
-    title: "Particle decay",
-    formula: "X → b + b̄",
+    label: "Origin",
+    title: "Different origins, different patterns",
     bullets: [
-      "In our simulated signal, a hypothetical particle X decays into a bottom quark and a bottom antiquark",
-      "X is a generic signal particle, not necessarily the Higgs boson",
-      "A large boost can bring the two decay branches close together"
+      "Signal: a hypothetical particle X decays into a bottom quark and a bottom antiquark",
+      "QCD background: an ordinary collision produces an outgoing quark or gluon",
+      "Only the signal example contains the target X decay; both examples continue into a shower"
     ],
-    animation: "Watch X travel briefly, then split into two moving decay branches"
+    animation: "Follow the pink X decay and the blue outgoing quark or gluon."
   },
   {
     label: "Shower",
-    title: "The particle shower",
-    formula: "radiation → hadronisation",
+    title: "Both examples form particle showers",
     bullets: [
-      "Quarks radiate, producing a branching shower of quarks and gluons",
-      "The shower forms hadrons, some of which decay further",
-      "The detector measures the resulting particles, not isolated quarks"
+      "The quarks and gluons radiate, creating branching showers",
+      "They form hadrons, which leave measurements in the detector",
+      "The pink and blue showers grow along the same paths established in the previous step"
     ],
-    animation: "Watch the branches grow as the shower develops"
+    animation: "Watch both showers develop together. The camera and trajectories stay in place."
   },
   {
     label: "Jet",
-    title: "Reconstructing a jet",
-    formula: "particle measurements → jet",
+    title: "Group the particles into jets",
     bullets: [
-      "Particles close in direction are grouped into a jet",
-      "For a boosted X decay, both branches can sit inside one large-radius jet",
-      "Our models distinguish this pattern from ordinary quark and gluon jets"
+      "The outlines group the existing particle measurements into jets; no new particles are added",
+      "The two nearby branches from the boosted X decay fit inside one signal jet",
+      "The model scores each whole jet as more signal-like or more like QCD background"
     ],
-    animation: "Watch the jet boundary appear around the two particle branches"
+    animation: "Only the jet boundaries are added. Real signal and QCD background jets can look similar."
   }
 ];
 
 export default function PhysicsJourney() {
   const [zoom, setZoom] = useState(0);
   const [stage, setStage] = useState(0);
+  const [playAll, setPlayAll] = useState(true);
+  const [staticPreview, setStaticPreview] = useState(false);
   const [paused, setPaused] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
   const [travelling, setTravelling] = useState(false);
@@ -93,16 +91,23 @@ export default function PhysicsJourney() {
       zoomRef.current = start + (target - start) * eased;
       setZoom(zoomRef.current);
       if (t < 1) frame.current = requestAnimationFrame(tick);
-      else { setTravelling(false); if (target === 1) setReplayKey(key => key + 1); }
+      else setTravelling(false);
     };
     frame.current = requestAnimationFrame(tick);
   }
 
   function chooseStage(next: number) {
     setPaused(false);
+    setPlayAll(false);
     setStage(next);
-    setReplayKey(key => key + 1);
     if (!inside) travel(1);
+  }
+
+  function replaySequence() {
+    setStage(0);
+    setPlayAll(true);
+    setPaused(false);
+    setReplayKey(key => key + 1);
   }
 
   return <section className="physics-journey">
@@ -114,27 +119,26 @@ export default function PhysicsJourney() {
 
     <div className={`journey-exhibit${inside ? " is-inside" : ""}`} id="collision">
       <div className="journey-exhibit-header">
-        <div><span className="live-dot"/><span>{inside ? "INSIDE THE DETECTOR" : travelling ? "ENTERING THE DETECTOR" : "CERN / LARGE HADRON COLLIDER"}</span></div>
-        <span className="journey-location">{inside ? "Illustrative X → bb̄ event" : "Geneva · Switzerland / France"}</span>
+        <div><span className="live-dot"/><span>{inside ? "SIGNAL & QCD BACKGROUND" : travelling ? "ENTERING THE DETECTOR" : "CERN / LARGE HADRON COLLIDER"}</span></div>
+        <span className="journey-location">{inside ? "Two synchronized examples · not one event" : "Geneva · Switzerland / France"}</span>
       </div>
-      <div className="journey-viewport">
+      <div className={`journey-viewport${inside ? " is-comparing" : ""}`}>
         <Suspense fallback={<img className="journey-poster" src="/collider-v2-poster.png" alt="Schematic cutaway model of the Large Hadron Collider"/>}>
-          <ColliderJourneyScene zoom={zoom} stage={stage} paused={paused} replayKey={replayKey}/>
+          <ColliderJourneyScene zoom={zoom} stage={stage} paused={paused} replayKey={replayKey} playAll={playAll} onStageChange={setStage} onFallbackChange={setStaticPreview}/>
         </Suspense>
         {!inside && zoom < 0.2 && <div className="journey-scale"><strong>27 <span>km</span></strong><span>Ring circumference</span></div>}
-        {inside && <div className="journey-formula" aria-hidden="true">{current.formula}</div>}
         {zoom > 0.08 && zoom < 0.95 && <div className="zoom-caption">{zoom < 0.48 ? "Approaching the collision point" : "Inside the detector"}</div>}
         <div className="journey-viewport-footer">
-          <span>{inside ? "Schematic event · not to scale" : "Schematic cutaway · drag to rotate"}</span>
-          <div className="scene-buttons">
+          <span>{inside ? "Two synchronized examples · not to scale" : "Schematic cutaway · drag to rotate"}</span>
+          {!staticPreview && <div className="scene-buttons">
             <button onClick={() => setPaused(!paused)} aria-label={paused ? "Play animation" : "Pause animation"} title={paused ? "Play animation" : "Pause animation"}>{paused ? <Play size={15}/> : <Pause size={15}/>}</button>
-            {inside && <button onClick={() => {setReplayKey(key=>key+1);setPaused(false)}} aria-label="Replay this stage" title="Replay this stage"><RotateCcw size={15}/></button>}
-          </div>
+            {inside && <button onClick={replaySequence} aria-label="Replay full sequence" title="Replay full sequence"><RotateCcw size={15}/></button>}
+          </div>}
         </div>
       </div>
 
       <div className="journey-navigation">
-        <button className="journey-travel-button" onClick={() => travel(inside ? 0 : 1)} disabled={travelling}>
+        <button className="journey-travel-button" onClick={() => {if (!inside) replaySequence(); travel(inside ? 0 : 1)}} disabled={travelling}>
           {inside ? <ArrowLeft size={17}/> : <Maximize2 size={16}/>}
           {travelling ? "Moving through the collider…" : inside ? "Back to the LHC" : "Zoom into the detector"}
           {!inside && !travelling && <ArrowRight size={17}/>}
@@ -145,6 +149,7 @@ export default function PhysicsJourney() {
           <span>Collision point</span>
         </div>
       </div>
+      {inside && <div className="journey-playback"><span>{staticPreview ? "Static preview · select a stage below (3D unavailable)" : playAll ? "Collision → Origin → Shower → Jet" : "Selected stage · both examples stay synchronized"}</span>{!staticPreview && <button onClick={replaySequence}><RotateCcw size={13}/> Replay full sequence</button>}</div>}
       <div className="journey-stages" role="tablist" aria-label="Particle event stages">
         {stages.map((s,i)=><button key={s.label} id={`event-stage-${i}`} role="tab" aria-selected={inside && stage===i} aria-controls="event-explanation" onClick={()=>chooseStage(i)} onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const next=(i+(e.key==='ArrowRight'?1:3))%4;chooseStage(next);document.getElementById(`event-stage-${next}`)?.focus()}}}><span>0{i+1}</span>{s.label}<span className="stage-arrow" aria-hidden="true">→</span></button>)}
       </div>

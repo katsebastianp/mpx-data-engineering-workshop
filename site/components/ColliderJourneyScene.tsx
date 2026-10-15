@@ -7,6 +7,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { buildColliderOverview } from "./scene/collider-overview";
 import { buildParticleEvent } from "./scene/particle-event";
+import { advanceTime, stageAtTime, STAGE_ENDS } from "./scene/event-timeline";
 import { clamp, disposeObject, EVENT_SCALE, glowTexture, smooth, STATION } from "./scene/scene-primitives";
 
 type Props = {
@@ -14,30 +15,49 @@ type Props = {
   stage: number;
   paused: boolean;
   replayKey: number;
+  playAll: boolean;
+  onStageChange: (stage: number) => void;
+  onFallbackChange: (fallback: boolean) => void;
   onReady?: () => void;
 };
 
 function SceneFallback({ zoom, stage }: { zoom: number; stage: number }) {
   if (zoom < .55) return <Image unoptimized src="/collider-v2-poster.png" alt="Schematic cutaway of the Large Hadron Collider" width={1800} height={1100} draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none" }} />;
-  return <svg viewBox="0 0 900 520" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-    <defs><radialGradient id="journey-fallback-glow"><stop stopColor="#ef5b61" stopOpacity=".21"/><stop offset="1" stopColor="#ef5b61" stopOpacity="0"/></radialGradient></defs>
-    <ellipse cx="435" cy="270" rx="340" ry="230" fill="url(#journey-fallback-glow)"/>
-    <g fill="none" strokeWidth="8" stroke="#b9c1c9" strokeOpacity=".6">
-      {[235, 310, 385, 460, 535].map((x, index) => <ellipse key={x} cx={x} cy="260" rx="85" ry="170" stroke={index % 2 ? "#ef5b61" : undefined} />)}
-    </g>
-    <path d="M120 260H670" stroke="#e7e8e9" strokeWidth="2" strokeDasharray="4 7"/>
-    <circle cx="380" cy="260" r="7" fill="#fff"/>
-    {stage > 0 && <g fill="none" strokeWidth="3"><path d="M380 260L425 260L700 160" stroke="#ef5b61"/><path d="M425 260L710 320" stroke="#c6deeb"/></g>}
-    {stage > 1 && <g fill="none" strokeWidth="1.5">{Array.from({ length: 24 }, (_, i) => <path key={i} d={`M${485 + i % 3 * 25} ${i < 12 ? 235 : 278}L${585 + i % 4 * 12} ${i < 12 ? 192 + i * 2 : 300 + i}L${720 + i % 3 * 12} ${120 + i * 10}`} stroke={i < 12 ? "#ef5b61" : "#c6deeb"} strokeOpacity=".7"/>)}</g>}
-    {stage === 3 && <path d="M380 260L760 95A58 160 0 0 1 760 425Z" fill="#ef5b61" fillOpacity=".06" stroke="#ef5b61" strokeOpacity=".45"/>}
+  return <svg viewBox="0 0 900 520" preserveAspectRatio="none" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+    <g fill="none" stroke="#83909d" strokeWidth="7" opacity=".55">{[170,220,270,320].map(x=><ellipse key={x} cx={x} cy="260" rx="75" ry="175"/>)}</g>
+    <path d="M100 260H350" stroke="#e7e8e9" strokeWidth="2" strokeDasharray="5 6"/>
+    <path d="M350 260L420 223" stroke="#ff929d" strokeWidth="3"/>
+    <path d="M350 260L420 280" stroke="#86caff" strokeWidth="3"/>
+    {stage >= 1 && <>
+      <g fill="none" stroke="#ff929d" strokeWidth="3"><path d="M420 223L580 137L720 111M420 223L570 203L720 206"/></g>
+      <path d="M420 280L510 310L730 351" fill="none" stroke="#86caff" strokeWidth="3"/>
+    </>}
+    {stage >= 2 && <>
+      <g fill="none" stroke="#ff929d" strokeWidth="2">{Array.from({length:10},(_,i)=><path key={i} d={`M${i<5?580:570} ${i<5?137:203}L${650+i%3*12} ${i<5?110+i*10:182+(i-5)*10}L${716+i%3*8} ${i<5?92+i*12:179+(i-5)*13}`}/>)}</g>
+      <g fill="none" stroke="#86caff" strokeWidth="2">{Array.from({length:11},(_,i)=><path key={i} d={`M${470+i%3*30} ${299+i%3*8}L${610+i%4*14} ${310+i*6}L${718+i%3*8} ${298+i*10}`}/>)}</g>
+    </>}
+    {stage >= 3 && <>
+      <path d="M350 260L740 80Q790 165 740 245Z" fill="#f15f6718" stroke="#ff929d" strokeWidth="2"/>
+      <path d="M350 260L740 285Q778 350 740 415Z" fill="#86caff18" stroke="#86caff" strokeWidth="2"/>
+    </>}
+    <circle cx="350" cy="260" r="6" fill="#fff"/>
   </svg>;
 }
 
-export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, onReady }: Props) {
+export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, playAll, onStageChange, onFallbackChange, onReady }: Props) {
   const host = useRef<HTMLDivElement>(null);
-  const parameters = useRef({ zoom, stage, paused, replayKey, onReady });
+  const signalLabel = useRef<HTMLDivElement>(null);
+  const backgroundLabel = useRef<HTMLDivElement>(null);
+  const signalLeader = useRef<SVGLineElement>(null);
+  const backgroundLeader = useRef<SVGLineElement>(null);
+  const parameters = useRef({ zoom, stage, paused, replayKey, playAll, onStageChange, onReady });
   const [status, setStatus] = useState<"loading" | "ready" | "fallback">("loading");
-  useEffect(() => { parameters.current = { zoom, stage, paused, replayKey, onReady }; }, [zoom, stage, paused, replayKey, onReady]);
+  useEffect(() => { onFallbackChange(status === "fallback"); }, [status, onFallbackChange]);
+  useEffect(() => {
+    // Without WebGL, show a useful static comparison; tabs still select stages.
+    if (status === "fallback" && playAll) onStageChange(3);
+  }, [status, playAll, replayKey, onStageChange]);
+  useEffect(() => { parameters.current = { zoom, stage, paused, replayKey, playAll, onStageChange, onReady }; }, [zoom, stage, paused, replayKey, playAll, onStageChange, onReady]);
 
   useEffect(() => {
     const container = host.current;
@@ -122,8 +142,9 @@ export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, o
     let disposed = false;
     let frame = 0;
     let elapsed = 0;
+    let flowTime = 0;
     let beamTime = 0;
-    let lastStage = parameters.current.stage;
+    let lastReportedStage = -1;
     let lastReplay = parameters.current.replayKey;
     let previous = performance.now();
     let firstFrame = true;
@@ -133,7 +154,8 @@ export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, o
     const positionCamera = () => {
       const position = cameraPath.getPoint(renderedZoom);
       const target = lookPath.getPoint(renderedZoom);
-      position.sub(target).multiplyScalar(fit).add(target);
+      const comparisonFit = 1 + renderedZoom * .22;
+      position.sub(target).multiplyScalar(fit * comparisonFit).add(target);
       camera.position.copy(position);
       controls.target.copy(target);
       camera.lookAt(target);
@@ -183,7 +205,8 @@ export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, o
     const render = (now: number) => {
       if (failed || disposed) return;
       frame = requestAnimationFrame(render);
-      const delta = Math.min((now - previous) / 1000, .065);
+      // The first frame timestamp can precede initialization finishing.
+      const delta = clamp((now - previous) / 1000, 0, .065);
       previous = now;
       if (!visible || document.hidden) return;
       const current = parameters.current;
@@ -194,27 +217,61 @@ export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, o
       controls.enabled = (renderedZoom < .003 || renderedZoom > .997) && Math.abs(requestedZoom - renderedZoom) < .001;
       controls.minPolarAngle = renderedZoom < .5 ? .25 : .4;
       controls.maxPolarAngle = renderedZoom < .5 ? 1.38 : 2.1;
-      if (current.stage !== lastStage || current.replayKey !== lastReplay) {
+      if (current.replayKey !== lastReplay) {
         elapsed = 0;
-        lastStage = current.stage;
+        flowTime = 0;
+        lastReportedStage = -1;
         lastReplay = current.replayKey;
+      }
+      const targetTime = current.playAll ? STAGE_ENDS[3] : STAGE_ENDS[current.stage];
+      if (renderedZoom > .96) {
+        if (motion.matches) elapsed = targetTime;
+        else if (!current.paused) elapsed = advanceTime(elapsed, targetTime, delta);
+        if (current.playAll) {
+          const activeStage = stageAtTime(elapsed);
+          if (activeStage !== lastReportedStage) {
+            lastReportedStage = activeStage;
+            current.onStageChange(activeStage);
+          }
+        }
       }
       if (!current.paused && !motion.matches) {
         beamTime += delta;
-        // Start the process as the close-up becomes readable, so the fly-in
-        // never drops participants halfway through a decay sequence.
-        if (renderedZoom > .86) elapsed += delta;
-        else elapsed = 0;
+        if (renderedZoom > .96) flowTime += delta;
       }
-      overview.update(motion.matches ? 2.5 : beamTime, 1 - smooth(.58, .89, renderedZoom));
-      event.update(elapsed, current.stage, smooth(.35, .75, renderedZoom), motion.matches);
-      controls.update();
-      renderer.render(scene, camera);
-      if (firstFrame) {
-        firstFrame = false;
-        renderer.domElement.style.opacity = "1";
-        setStatus("ready");
-        current.onReady?.();
+      try {
+        overview.update(motion.matches ? 2.5 : beamTime, 1 - smooth(.58, .89, renderedZoom));
+        event.update(elapsed, smooth(.35, .75, renderedZoom), flowTime, motion.matches);
+        controls.update();
+        renderer.render(scene, camera);
+        if (renderedZoom > .96) {
+          const anchors = event.comparisonAnchors();
+          const bounds = container.getBoundingClientRect();
+          for (const [anchor, callout, leader] of [
+            [anchors.signal, signalLabel.current, signalLeader.current],
+            [anchors.background, backgroundLabel.current, backgroundLeader.current],
+          ] as const) {
+            if (!callout || !leader) continue;
+            const point = anchor.project(camera);
+            const labelBounds = callout.getBoundingClientRect();
+            leader.setAttribute("x1", String(labelBounds.left - bounds.left + labelBounds.width / 2));
+            leader.setAttribute("y1", String(labelBounds.top - bounds.top + labelBounds.height / 2));
+            leader.setAttribute("x2", String((point.x + 1) * bounds.width / 2));
+            leader.setAttribute("y2", String((1 - point.y) * bounds.height / 2));
+          }
+        }
+        if (firstFrame) {
+          firstFrame = false;
+          renderer.domElement.style.opacity = "1";
+          setStatus("ready");
+          current.onReady?.();
+        }
+      } catch (error) {
+        failed = true;
+        cancelAnimationFrame(frame);
+        renderer.domElement.style.visibility = "hidden";
+        console.warn("[collision-lab] 3D rendering failed; displaying the labelled schematic", error);
+        setStatus("fallback");
       }
     };
     frame = requestAnimationFrame(render);
@@ -236,8 +293,19 @@ export default function ColliderJourneyScene({ zoom, stage, paused, replayKey, o
     };
   }, []);
 
-  return <div ref={host} role="img" tabIndex={0} aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown" aria-label="Interactive schematic of the LHC and a detector cutaway. Use the zoom control to enter the detector, then choose collision, decay, shower, or jet. Drag or use arrow keys to rotate the overview and close-up. Geometry, particle sizes, and time are illustrative, not to scale." style={{ position: "relative", width: "100%", height: "100%", minHeight: 340, overflow: "hidden", outlineOffset: -4 }}>
+  return <div ref={host} role="group" tabIndex={0} aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown" aria-label="Interactive schematic of the LHC and a detector cutaway. Pink follows a signal example and blue follows a QCD background example through collision, origin, shower and jet reconstruction. These are two illustrative examples, not one event. Use the zoom control and stage buttons; drag or use arrow keys to rotate. Geometry, particle sizes, and time are illustrative, not to scale." style={{ position: "relative", width: "100%", height: "100%", minHeight: 340, overflow: "hidden", outlineOffset: -4 }}>
     {status !== "ready" && <SceneFallback zoom={zoom} stage={stage} />}
-    {status === "fallback" && <span style={{ position: "absolute", left: 22, bottom: 20, fontSize: 12, color: "#d0d2d6", letterSpacing: ".025em" }}>Schematic preview · 3D unavailable on this device</span>}
+    {zoom > .96 && <div key={status === "fallback" ? "fallback" : "scene"} className="jet-comparison-labels">
+      <svg className="jet-leaders" aria-hidden="true">
+        <defs>
+          <marker id="signal-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#ff929d"/></marker>
+          <marker id="background-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#86caff"/></marker>
+        </defs>
+        <line ref={signalLeader} x1="80%" y1="17%" x2={stage === 0 ? "46%" : "70%"} y2={stage === 0 ? "44%" : "35%"} stroke="#ff929d" strokeWidth="2" markerEnd="url(#signal-arrow)"/>
+        <line ref={backgroundLeader} x1="80%" y1="79%" x2={stage === 0 ? "46%" : "70%"} y2={stage === 0 ? "54%" : "63%"} stroke="#86caff" strokeWidth="2" markerEnd="url(#background-arrow)"/>
+      </svg>
+      <div ref={signalLabel} className="jet-callout jet-callout-signal"><strong>Signal <span>(X → bb)</span></strong><span>{["Collision → X production", "X decays to b + b̄", "Both b branches form a shower", "Both branches grouped into one jet"][stage]}</span></div>
+      <div ref={backgroundLabel} className="jet-callout jet-callout-background"><strong>QCD background</strong><span>{["Collision → quark or gluon", "Outgoing quark or gluon", "The quark or gluon forms a shower", "Particles grouped into one jet"][stage]}</span></div>
+    </div>}
   </div>;
 }

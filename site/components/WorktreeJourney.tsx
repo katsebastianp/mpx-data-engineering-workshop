@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, Circle, GitBranch, GitMerge, Laptop, MoveDown } from "lucide-react";
-import { workshopParts, type WorkshopExercise } from "./workshop-content";
+import { Check, GitBranch, GitMerge, Laptop } from "lucide-react";
+import { workshopParts } from "./workshop-content";
 
 type WorktreeJourneyProps = {
   completed: string[];
@@ -11,55 +11,26 @@ type WorktreeJourneyProps = {
 
 const exercises = workshopParts.flatMap((part) => part.exercises);
 const exerciseById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
-const nodeLabels: Record<string, { title: string; detail: string }> = {
-  project: { title: "Create your personal branch", detail: "Pull main + verify GitHub access" },
-  overview: { title: "Map the code and data flow", detail: "Markdown diagram + folder guide" },
-  smoke: { title: "Run the baseline", detail: "Smoke tests + prepared data" },
-  worktrees: { title: "Create two worktrees", detail: "Two Codex chats, one starting commit" },
-  profile: { title: "Profile the pipeline", detail: "Measure the bottleneck" },
-  optimise: { title: "Optimise + verify", detail: "Same outputs, measured timings" },
-  "pr-review": { title: "/review + pipeline PR", detail: "Codex reviews and creates the PR" },
-  experiments: { title: "Plan model experiments", detail: "Models + features + parameters" },
-  train: { title: "Train + compare", detail: "Use validation results" },
-  select: { title: "Select + /review + model PR", detail: "Freeze and review the chosen model" },
-  integrate: { title: "Merge back to your branch", detail: "Both worktrees → your final branch" },
-  preprocess: { title: "Verify the combined result", detail: "Features + selected model" },
-  "results-site": { title: "Build your results Site", detail: "Explain the validation evidence" },
-  "final-test": { title: "Run the final test", detail: "One frozen model, one evaluation" },
-  upload: { title: "Submit to the leaderboard", detail: "Upload + share your findings" },
-};
-
-function getStatus(exercise: WorkshopExercise, completed: string[]) {
-  if (completed.includes(exercise.id)) return "Complete";
-  return exercise.dependsOn.every((id) => completed.includes(id)) ? "Ready" : "Upcoming";
-}
-
 function JourneyNode({ id, completed, selectedId, onSelect }: WorktreeJourneyProps & { id: string }) {
   const exercise = exerciseById.get(id);
   if (!exercise) return null;
-  const label = nodeLabels[id];
-  const status = getStatus(exercise, completed);
+  const done = completed.includes(id);
   const selected = id === selectedId;
   const number = String(exercises.findIndex((entry) => entry.id === id) + 1).padStart(2, "0");
 
   return (
     <button
-      className={`worktree-node worktree-node--${exercise.location}${selected ? " is-selected" : ""}${status === "Complete" ? " is-complete" : ""}`}
+      className={`worktree-node worktree-node--${exercise.location}${selected ? " is-selected" : ""}${done ? " is-complete" : ""}`}
       type="button"
-      aria-label={`Step ${number}: ${label?.title || exercise.title}, ${status}`}
+      aria-label={`Step ${number}: ${exercise.title}${done ? ", complete" : ""}`}
       aria-pressed={selected}
       aria-controls="workshop-step-details"
       data-step-id={id}
-      data-status={status.toLowerCase()}
       onClick={() => onSelect(id)}
     >
-      <span className="worktree-node-number" aria-hidden="true">{status === "Complete" ? <Check size={13} strokeWidth={2.5} /> : number}</span>
+      <span className="worktree-node-number" aria-hidden="true">{done ? <Check size={13} strokeWidth={2.5} /> : number}</span>
       <span className="worktree-node-copy">
-        <strong>{label?.title || exercise.title}</strong>
-        <span>{label?.detail || exercise.title}</span>
-      </span>
-      <span className={`worktree-node-status is-${status.toLowerCase()}`}>
-        <i aria-hidden="true" />{status}
+        <strong>{exercise.title}</strong>
       </span>
     </button>
   );
@@ -99,13 +70,13 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
   return (
     <section className="journey-map" aria-labelledby="journey-map-heading">
       <header className="journey-map-header">
-        <div><GitBranch size={18} aria-hidden="true" /><h2 id="journey-map-heading">Your workshop journey</h2></div>
-        <p>Select a step for instructions and prompts</p>
+        <div><GitBranch size={18} aria-hidden="true" /><h2 id="journey-map-heading">Workshop steps</h2></div>
+        <p>Select a step to get started</p>
       </header>
 
       <div className="journey-map-spine">
-        <div className="journey-map-stage-label"><Laptop size={13} aria-hidden="true" /><span>Your branch <em>/ frozen baseline</em></span></div>
-        <NodeSequence ids={["project", "overview", "smoke", "worktrees"]} {...props} />
+        <div className="journey-map-stage-label"><Laptop size={13} aria-hidden="true" /><span>Get set up</span></div>
+        <NodeSequence ids={["codex-project", "download-data", "project", "overview", "smoke", "worktrees"]} {...props} />
       </div>
 
       <div className="journey-map-parallel-caption"><span>Work in parallel</span></div>
@@ -123,14 +94,9 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
       <BranchConnector join />
 
       <div className="journey-map-spine journey-map-integration">
-        <div className="journey-map-stage-label"><GitMerge size={13} aria-hidden="true" /><span>Your branch <em>/ both changes merged</em></span></div>
+        <div className="journey-map-stage-label"><GitMerge size={13} aria-hidden="true" /><span>Bring it together</span></div>
         <NodeSequence ids={["integrate", "preprocess", "results-site", "final-test", "upload"]} {...props} />
       </div>
-
-      <footer className="journey-map-footer">
-        <span><MoveDown size={12} aria-hidden="true" /> Connectors show prerequisites</span>
-        <span><Circle size={9} aria-hidden="true" /> Any step can be explored</span>
-      </footer>
     </section>
   );
 }

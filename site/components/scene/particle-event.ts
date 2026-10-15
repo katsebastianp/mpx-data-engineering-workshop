@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { addGlow, addLine, addMesh, clamp, EVENT_SCALE, ICE, label, RED, smooth, STATION, trail, type Trail, WHITE } from "./scene-primitives";
+import { buildQcdJet } from "./qcd-jet";
+import { addGlow, addLine, addMesh, clamp, EVENT_SCALE, ICE, RED, smooth, STATION, trail, type Trail, WHITE } from "./scene-primitives";
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -99,19 +100,24 @@ function detectorShell(root: THREE.Group) {
   }
 }
 
+/** Two pedagogical examples share one detector view and one absolute clock. */
 export function buildParticleEvent(scene: THREE.Scene, texture: THREE.Texture) {
   const root = new THREE.Group();
+  root.name = "particle-event";
   root.position.copy(STATION);
   root.scale.setScalar(EVENT_SCALE);
   scene.add(root);
   const shell = new THREE.Group();
+  shell.name = "detector-shell";
   root.add(shell);
   detectorShell(shell);
   const process = new THREE.Group();
+  process.name = "collision-examples";
   root.add(process);
 
   const bunches = [-1, 1].map((sign, index) => {
     const group = new THREE.Group();
+    group.name = `incoming-bunch-${index}`;
     process.add(group);
     for (let particle = 0; particle < 9; particle++) {
       const angle = particle * 2.4;
@@ -125,40 +131,51 @@ export function buildParticleEvent(scene: THREE.Scene, texture: THREE.Texture) {
   const impact = addMesh(new THREE.SphereGeometry(.033, 12, 12), new THREE.MeshBasicMaterial({ color: WHITE }), process);
   const impactWave = addMesh(new THREE.TorusGeometry(.5, .012, 5, 56), new THREE.MeshBasicMaterial({ color: WHITE, transparent: true, depthWrite: false }), process);
 
-  const X = addGlow(texture, WHITE, .68, process);
-  const xLabel = label("X", "#f4eee6", process, .75);
-  const decayLabel = label("b", "#f15f67", process, .65);
-  const decayBarLabel = label("b̄", "#c6deeb", process, .65);
-  const stem = trail([V(), V(.37, .025, 0), V(.88, .03, 0)], WHITE, .036, texture, process);
+  // The final comparison orientation is established once. Every subsequent
+  // step reveals the same curves without rotating or rescaling either example.
+  const signal = new THREE.Group();
+  signal.name = "signal-example";
+  signal.rotation.z = .52;
+  signal.scale.setScalar(.86);
+  process.add(signal);
+  const X = addGlow(texture, RED, .68, signal);
+  X.name = "signal-x";
+  const stem = trail([V(), V(.37, .025, 0), V(.88, .03, 0)], RED, .036, texture, signal);
+  stem.mesh.name = "signal-stem";
   const origin = V(.88, .03, 0);
   const axes = [V(1, .30, .03).normalize(), V(1, -.28, -.09).normalize()];
-  const roots = axes.map((axis, index) => trail([origin, origin.clone().addScaledVector(axis, 1.1), origin.clone().addScaledVector(axis, 4.25)], index ? ICE : RED, .036, texture, process));
+  const roots = axes.map((axis, index) => {
+    const path = trail([origin, origin.clone().addScaledVector(axis, 1.1), origin.clone().addScaledVector(axis, 4.25)], index ? 0xff7f9a : RED, .036, texture, signal);
+    path.mesh.name = `signal-root-${index}`;
+    return path;
+  });
 
   const showerGroup = new THREE.Group();
-  process.add(showerGroup);
-  const branches: { path: Trail; start: number; duration: number; family: number }[] = [];
-  const leaves: { curve: THREE.CatmullRomCurve3; color: THREE.Color; family: number; phase: number }[] = [];
+  showerGroup.name = "signal-shower";
+  signal.add(showerGroup);
+  const branches: { path: Trail; start: number; end: number }[] = [];
+  const leaves: { curve: THREE.CatmullRomCurve3; color: THREE.Color; phase: number }[] = [];
   for (let family = 0; family < 2; family++) {
     const axis = axes[family];
-    const color = family ? ICE : RED;
+    const color = family ? 0xff7f9a : RED;
     const first = origin.clone().addScaledVector(axis, 1.05);
     for (let branch = 0; branch < 3; branch++) {
       const angle = branch * 2.3 + family * .7;
       const middle = origin.clone().addScaledVector(axis, 2.35).add(V(0, Math.cos(angle) * .28, Math.sin(angle) * .3));
-      branches.push({ path: trail([first, first.clone().lerp(middle, .46).add(V(0, .06, -.05)), middle], color, .014, texture, showerGroup), start: 1.35 + branch * .065, duration: .9, family });
+      branches.push({ path: trail([first, first.clone().lerp(middle, .46).add(V(0, .06, -.05)), middle], color, .014, texture, showerGroup), start: 4 + branch * .065, end: 4.85 + branch * .065 });
       for (let twig = 0; twig < 4; twig++) {
         const seed = family * 11 + branch * 4 + twig;
         const phase = seed * 2.399963;
         const end = origin.clone().addScaledVector(axis, 4.45 + Math.sin(seed * 1.7) * .32).add(V(0, Math.cos(phase) * (.26 + twig * .08), Math.sin(phase) * (.25 + twig * .08)));
         const fork = middle.clone().lerp(end, .46).add(V(0, Math.sin(seed) * .08, Math.cos(seed) * .08));
-        branches.push({ path: trail([middle, fork, end], color, .010 + twig % 2 * .002, texture, showerGroup), start: 2.12 + branch * .09 + twig * .07, duration: 1.4 + twig * .1, family });
-        leaves.push({ curve: new THREE.CatmullRomCurve3([first, middle, fork, end]), color: new THREE.Color(color), family, phase: seed * .173 });
+        branches.push({ path: trail([middle, fork, end], color, .010 + twig % 2 * .002, texture, showerGroup), start: 4.85 + branch * .09 + twig * .07, end: 6.7 + branch * .15 + twig * .2 });
+        leaves.push({ curve: new THREE.CatmullRomCurve3([first, middle, fork, end]), color: new THREE.Color(color), phase: seed * .173 });
       }
     }
   }
 
-  // Hundreds of moving constituents share one outer jet envelope. The two
-  // colours track the two nearby branches of the boosted X → b b̄ decay.
+  // The two pink branches belong to ONE boosted X → b b̄ jet. Constituents
+  // follow fixed curves; their optional decorative flow has its own clock.
   const count = leaves.length * 8;
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
@@ -169,83 +186,70 @@ export function buildParticleEvent(scene: THREE.Scene, texture: THREE.Texture) {
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const particles = new THREE.Points(geometry, new THREE.PointsMaterial({ size: .115, map: texture, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
-  process.add(particles);
+  particles.name = "signal-constituents";
+  signal.add(particles);
+
+  // Reconstruction adds a boundary around the existing shower. This envelope
+  // never grows, changes the trajectories, or moves the particles into place.
   const envelope = new THREE.Group();
-  process.add(envelope);
-  const cone = addMesh(new THREE.ConeGeometry(2.02, 5.92, 64, 1, true), new THREE.MeshBasicMaterial({ color: RED, transparent: true, opacity: .045, side: THREE.DoubleSide, depthWrite: false }), envelope);
+  envelope.name = "signal-envelope";
+  signal.add(envelope);
+  const cone = addMesh(new THREE.ConeGeometry(2.02, 5.92, 64, 1, true), new THREE.MeshBasicMaterial({ color: RED, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }), envelope);
   cone.rotation.z = Math.PI / 2;
   cone.position.x = 2.96;
-  const rim = addLine(Array.from({ length: 97 }, (_, i) => V(5.92, Math.cos(i / 96 * Math.PI * 2) * 2.02, Math.sin(i / 96 * Math.PI * 2) * 2.02)), RED, .57, envelope);
-  for (const angle of [.2, 1.9, 3.4, 5.1]) addLine([V(), V(5.92, Math.cos(angle) * 2.02, Math.sin(angle) * 2.02)], RED, .2, envelope);
-  const jetLabel = label("ONE JET", "#f4eee6", envelope, 1.38);
-  jetLabel.position.set(5.55, 2.3, .0);
-  const subLabels = [label("b subjet", "#f15f67", process, 1.35), label("b̄ subjet", "#c6deeb", process, 1.35)];
-  subLabels[0].position.set(4.3, 1.45, .2);
-  subLabels[1].position.set(4.3, -1.4, -.2);
-
-  const collisionTracks = Array.from({ length: 17 }, (_, index) => {
-    const angle = index * 2.399963;
-    const direction = V(Math.cos(angle) * 2.8, Math.sin(angle) * 2.4, Math.sin(index * 1.3) * 2.9);
-    return trail([V(), direction.clone().multiplyScalar(.48).add(V(.14, -.08, 0)), direction], index % 4 === 0 ? RED : ICE, .016, texture, process);
-  });
-  const recoil = Array.from({ length: 8 }, (_, index) => {
-    const end = V(-3.9 + Math.cos(index) * .35, Math.sin(index * 2.4) * .6, Math.cos(index * 2.4) * .65);
-    return trail([V(), end.clone().multiplyScalar(.4), end], ICE, .009, texture, process);
-  });
+  const rim = addLine(Array.from({ length: 97 }, (_, i) => V(5.92, Math.cos(i / 96 * Math.PI * 2) * 2.02, Math.sin(i / 96 * Math.PI * 2) * 2.02)), RED, 0, envelope);
+  const edges = [.2, 1.9, 3.4, 5.1].map(angle => addLine([V(), V(5.92, Math.cos(angle) * 2.02, Math.sin(angle) * 2.02)], RED, 0, envelope));
+  const background = buildQcdJet(process, texture);
+  let currentTime = 0;
 
   return {
     root,
-    update(elapsed: number, rawStage: number, reveal: number, reducedMotion: boolean) {
-      const stage = clamp(rawStage, 0, 3);
+    comparisonAnchors() {
+      root.updateWorldMatrix(true, true);
+      const stemExtent = .2 + smooth(1.4, 2.4, currentTime) * .68;
+      const signalExtent = stemExtent + smooth(2.4, 4, currentTime) * (4.65 - .88);
+      const backgroundExtent = .2 + smooth(1.4, 4, currentTime) * 4.45;
+      return {
+        signal: signal.localToWorld(V(signalExtent, .03, 0)),
+        background: background.root.localToWorld(V(backgroundExtent, 0, 0)),
+      };
+    },
+    update(time: number, reveal: number, flowTime: number, reducedMotion: boolean) {
+      const t = clamp(time, 0, 9.6);
+      currentTime = t;
       root.visible = reveal > .01;
-      if (!root.visible) return;
-      // Stage loops include a generous completed-state hold, then a gentle fade.
-      const t = reducedMotion ? 5.8 : elapsed % 8.4;
-      const tail = 1 - smooth(7.5, 8.35, t);
-      const arrival = stage === 0 ? 2.25 : .65;
+      background.update(t, flowTime, reducedMotion);
+      const arrival = 1.4;
       bunches.forEach((bunch, index) => {
         bunch.visible = t < arrival;
         bunch.position.z = (index ? -1 : 1) * (6.1 * (1 - smooth(0, arrival, t)) + .04);
       });
       const flashPower = Math.exp(-Math.max(0, t - arrival) * 4.5) * Number(t >= arrival);
-      flash.material.opacity = flashPower * tail;
+      flash.material.opacity = flashPower;
       flash.scale.setScalar(.8 + (1 - flashPower) * 2.3);
       redFlash.material.opacity = flashPower * .62;
-      impact.visible = t > arrival && tail > .01;
+      impact.visible = t >= arrival;
       impactWave.visible = t >= arrival && t < arrival + 1.4;
       impactWave.scale.setScalar(.05 + Math.max(0, t - arrival) * 2.25);
       (impactWave.material as THREE.MeshBasicMaterial).opacity = flashPower * .55;
 
-      collisionTracks.forEach((path, index) => path.reveal(stage === 0 ? (t - arrival - index % 3 * .04) / 1.5 : -1, .8 * tail));
-      const hasDecay = stage >= 1;
-      const decayStart = .76;
-      const splitTime = stage === 1 ? 1.8 : 1.15;
-      const stemProgress = (t - decayStart) / (splitTime - decayStart);
-      stem.reveal(hasDecay ? stemProgress : -1, tail);
-      X.visible = hasDecay && t >= decayStart && t < splitTime;
-      X.position.copy(stem.curve.getPoint(clamp(stemProgress, 0, 1)));
-      xLabel.visible = hasDecay && t >= decayStart && t < splitTime + .75;
-      xLabel.position.copy(X.position).add(V(-.1, .43, 0));
-      const rootProgress = (t - splitTime) / (stage === 1 ? 2.1 : 1.2);
-      roots.forEach(path => path.reveal(hasDecay ? rootProgress : -1, (stage >= 2 ? .62 : 1) * tail));
-      if (stage === 1 && rootProgress >= 1.12) roots.forEach((path, index) => {
-        path.head.visible = tail > .05;
-        const flow = reducedMotion ? .93 : .1 + ((t - splitTime) * .25 + index * .08) % .9;
-        path.head.position.copy(path.curve.getPoint(flow));
-      });
-      [decayLabel, decayBarLabel].forEach((text, index) => {
-        text.visible = stage === 1 && rootProgress > .05 && tail > .05;
-        text.position.copy(roots[index].curve.getPoint(clamp(rootProgress, 0, 1))).add(V(0, index ? -.4 : .4, 0));
-      });
-      showerGroup.visible = stage >= 2;
-      branches.forEach(({ path, start, duration }) => path.reveal(stage >= 2 ? (t - start) / duration : -1, .78 * tail));
-      recoil.forEach((path, index) => path.reveal(stage >= 2 ? (t - 1.3 - index * .08) / 1.9 : -1, .12 * tail));
-      particles.visible = stage >= 2 && t > 2.25;
-      particles.material.opacity = smooth(2.25, 3.5, t) * tail * (stage === 3 ? 1 : .68);
-      const maxProgress = clamp((t - 1.9) / 2.4, 0, 1);
+      const stemProgress = smooth(arrival, 2.4, t);
+      stem.reveal(stemProgress, .9);
+      X.visible = t >= arrival && t < 2.4;
+      X.position.copy(stem.curve.getPoint(stemProgress));
+      X.material.opacity = 1 - smooth(2.25, 2.4, t);
+      const rootProgress = smooth(2.4, 4, t);
+      roots.forEach(path => path.reveal(rootProgress, .72));
+      showerGroup.visible = t > 4;
+      branches.forEach(({ path, start, end }) => path.reveal(smooth(start, end, t), .82));
+
+      particles.visible = t > 4.85;
+      particles.material.opacity = smooth(4.85, 6.8, t);
+      const maxProgress = smooth(4.85, 7.6, t);
       leaves.forEach((leaf, index) => {
         for (let dot = 0; dot < 8; dot++) {
-          const flow = reducedMotion ? (dot + 1) / 8 : (t * .24 + leaf.phase + dot / 8) % 1;
+          const phase = flowTime * .16 + leaf.phase + dot / 8;
+          const flow = reducedMotion ? (dot + 1) / 8 : phase - Math.floor(phase);
           const point = leaf.curve.getPoint(flow * maxProgress);
           point.y += Math.sin(dot * 3 + index) * .04;
           point.z += Math.cos(dot * 3 + index) * .04;
@@ -253,13 +257,11 @@ export function buildParticleEvent(scene: THREE.Scene, texture: THREE.Texture) {
         }
       });
       geometry.attributes.position.needsUpdate = true;
-      envelope.visible = stage === 3 && t > 3.2;
-      envelope.scale.setScalar(.86 + smooth(3.2, 4.4, t) * .14);
-      cone.material.opacity = smooth(3.2, 4.4, t) * .052 * tail;
-      rim.material.opacity = smooth(3.2, 4.4, t) * .5 * tail;
-      subLabels.forEach(text => { text.visible = stage === 3 && t > 3.7 && tail > .08; });
-      // The close-up grows from the exact station in the overview. No scene swap.
-      shell.scale.setScalar(.94 + reveal * .06);
+      const boundaryOpacity = smooth(8, 9.2, t);
+      envelope.visible = boundaryOpacity > 0;
+      cone.material.opacity = boundaryOpacity * .052;
+      rim.material.opacity = boundaryOpacity * .5;
+      edges.forEach(edge => { edge.material.opacity = boundaryOpacity * .2; });
     },
   };
 }

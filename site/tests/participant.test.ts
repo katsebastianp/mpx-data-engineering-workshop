@@ -85,6 +85,9 @@ test("every workflow template renders completely for different authenticated par
       for (const extra of step.extraPrompts ?? []) {
         assert.doesNotMatch(personaliseWorkshopText(extra.prompt, workspace, repository), /\{\{[^}]+\}\}/);
       }
+      for (const action of step.actions ?? []) {
+        assert.doesNotMatch(personaliseWorkshopText(action, workspace, repository), /\{\{[^}]+\}\}/);
+      }
       for (const field of ["instruction", "hint", "prompt", "checkpoint", "commands"] as const) {
         const template = step[field];
         if (!template) continue;
@@ -121,6 +124,8 @@ function ancestors(id: string, visited = new Set<string>()): Set<string> {
 }
 
 test("code orientation precedes baseline and both parallel paths begin after the same setup", () => {
+  assert.ok(ancestors("download-data").has("codex-project"));
+  assert.ok(ancestors("project").has("download-data"));
   assert.ok(ancestors("overview").has("project"));
   assert.ok(ancestors("smoke").has("overview"));
   assert.ok(ancestors("profile").has("worktrees"));
