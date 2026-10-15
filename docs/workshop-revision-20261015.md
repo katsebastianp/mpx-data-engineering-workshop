@@ -23,7 +23,9 @@ To return to the previous source, first preserve any new uncommitted work, then 
 Site rollback target: **version 14**, `appgprj_6acd0d5f35d8819180243ccbf84c5b86~appgver_ab7658253e508191b145e29f339a85ff`.
 Project: `appgprj_6acd0d5f35d8819180243ccbf84c5b86`. The prior archive is saved, so use the Sites deployment tool to redeploy that version. Preserve the current custom audience. No database schema, account, progress, leaderboard or access-policy changes are part of this revision.
 
-If adopted, promote the source through the normal Git review flow and change `WORKSHOP_SOURCE_BRANCH` in `site/components/workshop-content.ts` to the agreed source branch before republishing. Until then, the live revision and its explicit source branch stay aligned.
+Prepared Site revision: **version 15**, `appgprj_6acd0d5f35d8819180243ccbf84c5b86~appgver_0931b4ade1348191b2f6fba653e3b9ba`, source commit `be872a1fdf0b32afae00ed2a28b8151ea2719e7c`. Saved with a deployment archive; publication is awaiting explicit approval. Version 14 remains live at this handoff.
+
+If adopted, promote the source through the normal Git review flow and change `WORKSHOP_SOURCE_BRANCH` in `site/components/workshop-content.ts` to the agreed source branch before republishing. The Site revision and its explicit source branch must stay aligned.
 
 ## Verification
 
