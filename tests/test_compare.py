@@ -20,6 +20,23 @@ from postprocessing.leaderboard import validate_submission
 from test_competition import sample_submission
 
 
+def test_bundled_preview_cannot_reveal_final_test_results_before_model_selection():
+    directory = Path(__file__).resolve().parents[1] / "tools/results-preview"
+    comparison = json.loads((directory / "comparison.json").read_text())
+    board = json.loads((directory / "leaderboard.json").read_text())
+    assert len(comparison["experiments"]) == 2
+    for experiment in comparison["experiments"]:
+        assert experiment["evaluated_splits"] == ["validation"]
+        assert set(experiment["metrics"]) == {"validation"}
+        assert experiment["test_selection"] == "not_evaluated"
+    for field in ("jets", "population", "predictions"):
+        assert comparison[field] and {row["split"] for row in comparison[field]} == {"validation"}
+    assert comparison["submission_files"] == []
+    assert board["dataset_id"] == comparison["dataset_id"]
+    assert board["experiments"] == [] and board["submission_count"] == 0
+    assert board["leaderboard"] == comparison["leaderboard"] == {"quality": [], "efficiency": []}
+
+
 @pytest.fixture
 def comparison_files(tmp_path):
     prepared, results, submissions, analytics = (tmp_path / name for name in (

@@ -9,6 +9,7 @@ import urllib.error
 import pytest
 
 from scripts import setup_workshop as setup
+from scripts import prepare_data
 
 
 def digest(value):
@@ -165,3 +166,29 @@ def test_bad_model_metadata_has_actionable_error_and_no_download(tmp_path, monke
     with pytest.raises(ValueError, match="Conflicting Sophon metadata.*was not overwritten"):
         setup.setup_sophon(directory)
     assert metadata.read_bytes() == contents
+
+
+@pytest.mark.parametrize("skip_sophon", [False, True])
+def test_setup_explicit_skip_keeps_data_validation_and_reports_model_status(tmp_path, monkeypatch, skip_sophon):
+    manifest = {"dataset_id": "fixture", "splits": {"train": {"rows": 4000},
+                "validation": {"rows": 1000}, "test": {"rows": 1000}}}
+    calls = []
+    monkeypatch.setattr(setup, "verify_sample", lambda path: manifest)
+    monkeypatch.setattr(prepare_data, "validate_bundle", lambda *args: calls.append("data-validated"))
+    def model(path):
+        assert not skip_sophon, "Skip must not read or download model assets"
+        calls.append("sophon-validated")
+        return {"model": {"sha256": "pinned-model"}}
+    monkeypatch.setattr(setup, "setup_sophon", model)
+    result = setup.setup(tmp_path / "raw", tmp_path / "missing-model", skip_sophon=skip_sophon)
+    assert calls == (["data-validated"] if skip_sophon else ["data-validated", "sophon-validated"])
+    assert result["rows"] == 6000 and result["status"] == "ready"
+    assert result["sophon_status"] == ("skipped" if skip_sophon else "verified")
+    assert result["sophon_sha256"] == (None if skip_sophon else "pinned-model")
+
+
+def test_optional_sophon_fails_clearly_when_setup_was_skipped(tmp_path):
+    from predict.sophon import validate_bundle
+
+    with pytest.raises(ValueError, match="Optional Sophon assets are missing.*without --skip-sophon"):
+        validate_bundle(tmp_path / "missing-model")

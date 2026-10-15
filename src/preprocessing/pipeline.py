@@ -15,6 +15,8 @@ from preprocessing.features import FEATURE_NAMES, FEATURE_SETS, build_features
 from common import ROOT, RAW_DIR, PREPROCESSED_DIR, sha256, utc_now, write_json
 
 LOGGER = logging.getLogger(__name__)
+# Intentional teaching baseline: try 4 instead, then compare saved values and
+# scheduled tasks. Fewer small tasks may help; measure wall time on your laptop.
 SHUFFLE_PARTITIONS = 64
 
 

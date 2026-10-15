@@ -16,13 +16,15 @@ Seed 42 and hashed source identities define disjoint, balanced samples. Balance 
 
 `data/01_raw/manifest.json` records split hashes and dataset identity. The facilitator’s `scripts/prepare_data.py` also freezes `config/evaluation.json`; participant postprocessing only validates it. Null, nonfinite or misaligned measured arrays are rejected; raw arrays retain their complete lengths. Validation/test include all Sophon measurements; training carries the smaller numerical-feature inputs.
 
-`config/workshop-sample.lock.json` independently pins all four downloadable files. `scripts/setup_workshop.py` verifies their bytes and raw-data contract before downloading the revision-pinned Sophon ONNX model from public Hugging Face. Its supporting publisher references and MIT license come from pinned upstream GitHub files. Existing matching assets are reused; incomplete downloads never become model files. The sample and model payloads are excluded from the GitHub repository.
+`config/workshop-sample.lock.json` independently pins all four downloadable files. `scripts/setup_workshop.py --skip-sophon` verifies their bytes and raw-data contract for the core workshop. Without that flag, setup also downloads the optional revision-pinned Sophon ONNX model from public Hugging Face. Its supporting publisher references and MIT license come from pinned upstream GitHub files. Existing matching assets are reused; incomplete downloads never become model files. The sample and model payloads are excluded from the GitHub repository.
 
 ## Features and scores
 
 `src/preprocessing/features.py` defines eight measured features, including pairwise angular energy correlation. Labels, source identifiers and generator truth are excluded.
 
-Logistic regression and XGBoost fit training rows only. Frozen Sophon uses at most 128 particles; raw arrays remain complete. Its support flag means **200 < jet_pt < 2500 GeV** and **20 < jet_sdmass < 500 GeV**. Scores are uncalibrated discriminants; simulation truth stays separate.
+The default config compares logistic regression and XGBoost using the three basic measurements: jet momentum, jet mass and particle count. Both learn from training rows only. Use validation results to choose one model; score the test data once after that choice. Extra shape features are an experiment participants can design, rather than another default run.
+
+Optional `config/experiments-sophon.yaml` runs frozen Sophon, which uses at most 128 particles; raw arrays remain complete. Its support flag means **200 < jet_pt < 2500 GeV** and **20 < jet_sdmass < 500 GeV**. Model scores rank jets from more background-like to more signal-like; they are not calibrated probabilities. Simulation truth stays separate from model inputs.
 
 ## Query the actual database
 

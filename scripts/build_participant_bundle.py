@@ -23,7 +23,7 @@ PREFIX = "ringier-particle-workshop/"
 MANIFEST = "PARTICIPANT_BUNDLE.json"
 STATIC_REPOSITORY_FILES = (
     ".dockerignore", ".gitattributes", ".gitignore", ".worktreeinclude", "README.md", "Dockerfile",
-    "compose.yaml", "pyproject.toml", "requirements.txt", "config/experiments.yaml",
+    "compose.yaml", "pyproject.toml", "requirements.txt", "config/experiments.yaml", "config/experiments-sophon.yaml",
     "src/common.py", "src/preprocessing/__init__.py", "src/preprocessing/__main__.py",
     "src/preprocessing/pipeline.py", "src/preprocessing/features.py",
     "src/predict/__init__.py", "src/predict/__main__.py", "src/predict/experiment.py",
@@ -36,9 +36,9 @@ STATIC_REPOSITORY_FILES = (
     "docs/data.md", "docs/results.md", "docs/problem-guide.md",
     "docs/assets/jet-examples.json", "docs/assets/jet-examples.png", "docs/competition.md",
     "docs/validation/parallel.json", "docs/validation/participant-kit-v05.json", "docs/validation/amd64-v05.json",
-    "docs/validation/layout-v06.json",
+    "docs/validation/layout-v06.json", "docs/validation/core-redesign-20261015.json",
     "scripts/build_participant_bundle.py", "scripts/prepare_data.py", "scripts/setup_workshop.py",
-    "scripts/stage_site_sample.py",
+    "scripts/stage_site_sample.py", "scripts/compare_preprocessing.py",
     "config/evaluation.json",
     "tools/results-preview/index.html", "tools/results-preview/app.js", "tools/results-preview/style.css",
     "tools/results-preview/comparison.json", "tools/results-preview/leaderboard.json",

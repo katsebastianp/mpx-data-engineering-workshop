@@ -1,6 +1,23 @@
-# Recorded validation — 12 October 2026
+# Recorded validation
 
-## v0.6 layout verification
+## Shorter core — 15 October 2026
+
+The core now runs two trained models; downloading and running Sophon is optional. **142 Docker tests passed**. An isolated run with the unchanged 6,000-jet sample verified setup with `--skip-sophon`, preprocessing, both models, and DuckDB export. Both models scored validation only: 1,000 predictions each; AUC **0.75268** for logistic regression and **0.830294** for XGBoost.
+
+The one-setting pipeline exercise was checked in separate fresh Python/JVM processes:
+
+| Shuffle partitions | Scheduled tasks | Preprocessing time | Saved values |
+|---|---:|---:|---|
+| 64, supplied baseline | 68 | 7.93 s | Reference |
+| 4, participant change | 8 | 7.45 s | All 6,000 rows exactly equal in every column |
+
+This demonstrates fewer tasks, with only a small observed time difference. It is one run per setting, not a guaranteed speedup. The equivalence helper reads the saved outputs without rerunning Spark or training.
+
+Setup verification through export took **10.10 s inside a prebuilt ARM64 container**, with 2 CPU / 2 GiB limits and no OOM events. Model fitting, scoring and timing took 0.92 s; export took 0.71 s. These measurements exclude Docker startup, driver imports, image building, downloading, participant interaction and Codex response time. Physical Windows/WSL and 8-GB laptop rehearsal remains open. [Recorded evidence](validation/core-redesign-20261015.json).
+
+Run the current core with the commands in [README](../README.md). For the exercise, preserve `data/02_preprocessed_baseline`, change only the partition count, run preprocessing once, then run `scripts/compare_preprocessing.py` against the two output folders.
+
+## v0.6 layout verification — 12 October 2026
 
 - **107 Docker tests passed**; the default preprocessing → predict → postprocessing flow completed.
 - All **4,000 new predictions**, metrics and native model checksums matched their previous counterparts exactly. The migration preserved 26 original files and resolved all five original model references.

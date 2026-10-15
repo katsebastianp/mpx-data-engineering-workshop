@@ -166,9 +166,31 @@
         const score = state.scores.get(id)?.get(experiment.experiment_key); if (score === undefined) continue;
         if (row.truth_group === 'signal') { signal++; if (score >= threshold) retained++; } else { background++; if (score < threshold) rejected++; }
       }
-      counts.push({ experiment_key: experiment.experiment_key, split, rows: signal + background, signal, retained, background, rejected });
+      const confusion = { tp: retained, fn: signal - retained, fp: background - rejected, tn: rejected };
+      counts.push({ experiment_key: experiment.experiment_key, split, rows: signal + background, signal, retained, background, rejected, confusion });
       const percent = (n, d) => d ? `${format(n / d * 100, 1)}%` : 'unavailable';
-      $('operating-point')?.append(el('p', `${label(experiment)} — signal retained ${percent(retained, signal)} (${retained}/${signal}); background rejected ${percent(rejected, background)} (${rejected}/${background}). ${signal + background} ${supported ? 'in-range ' : ''}${split} jets.`));
+      const card = el('article', undefined, 'matrix-card'), matrix = el('table', undefined, 'confusion-matrix');
+      matrix.append(el('caption', `Every ${supported ? 'in-range ' : ''}${split} jet · ${signal + background} total`));
+      const head = el('thead'), heading = el('tr');
+      for (const title of ['Known truth', 'Predict signal', 'Predict background']) {
+        const cell = el('th', title); cell.scope = 'col'; heading.append(cell);
+      }
+      head.append(heading); matrix.append(head);
+      const body = el('tbody');
+      for (const [truth, cells] of [
+        ['Signal', [[confusion.tp, 'Signal kept', 'correct'], [confusion.fn, 'Signal missed', 'mistake']]],
+        ['Background', [[confusion.fp, 'False alarm', 'mistake'], [confusion.tn, 'Background rejected', 'correct']]],
+      ]) {
+        const row = el('tr'), truthCell = el('th', truth); truthCell.scope = 'row'; row.append(truthCell);
+        for (const [count, meaning, kind] of cells) {
+          const cell = el('td', undefined, kind); cell.append(el('strong', format(count, 0)), el('span', meaning)); row.append(cell);
+        }
+        body.append(row);
+      }
+      matrix.append(body);
+      card.append(el('h3', label(experiment)), matrix,
+        el('p', `Signal kept: ${percent(retained, signal)}. Background rejected: ${percent(rejected, background)}.`, 'small'));
+      $('operating-point')?.append(card);
     }
     if (!counts.length) $('operating-point')?.append(el('p', 'Complete prediction data are needed for threshold analysis. Load comparison.json; a leaderboard alone contains no particle scores.'));
     window.__workshopView = { datasetId: analysis()?.dataset_id || null, experiments: analysis()?.experiments.length || 0, population: state.population.size, displayJets: state.comparison?.jets.length || 0, predictions: state.comparison?.predictions.length || 0, threshold, split, supportOnly: Boolean(supported), operatingPoints: counts, browserLocalPreview: state.preview, sharedLeaderboard: Boolean(state.shared && rankingSource() === state.shared) };
@@ -194,7 +216,7 @@
     const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
     if (state.comparison && state.shared && state.comparison.dataset_id !== state.shared.dataset_id) { state.shared = null; errors.push('The shared leaderboard belongs to another dataset and was ignored.'); }
     indexComparison(); render();
-    set('status', errors.join(' ') || (analysis() ? 'Published results loaded. Scores and timings are team-reported; quality is recomputed from simulation truth.' : 'No results published yet. Run the postprocessing step and add comparison.json, or wait for the first final submission.'));
+    set('status', errors.join(' ') || (analysis() ? 'Saved example results loaded. Open your data/05_analytics/comparison.json to explore your own run. Quality is recomputed from simulation truth.' : 'No results loaded. Run the postprocessing step, then open data/05_analytics/comparison.json.'));
   }
   $('file')?.addEventListener('change', async event => {
     try {

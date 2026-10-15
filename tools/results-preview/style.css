@@ -358,6 +358,49 @@ input[type=checkbox] {
   font-size:12px;
   line-height:1.6;
 }
+.matrix-card {
+  margin:22px 0;
+}
+.matrix-card h3 {
+  font-size:12px;
+  overflow-wrap:anywhere;
+}
+.confusion-matrix {
+  table-layout:fixed;
+  text-align:center;
+}
+.confusion-matrix caption {
+  text-align:left;
+  color:var(--muted);
+  font-size:11px;
+  padding-bottom:8px;
+}
+.confusion-matrix th {
+  white-space:normal;
+  padding:8px;
+}
+.confusion-matrix td {
+  border:1px solid var(--line);
+  padding:12px 6px;
+}
+.confusion-matrix td.correct {
+  background:#e9ecef;
+}
+.confusion-matrix td.mistake {
+  background:#fff;
+}
+.confusion-matrix strong,.confusion-matrix span {
+  display:block;
+}
+.confusion-matrix strong {
+  font-size:24px;
+  line-height:1.2;
+}
+.confusion-matrix span {
+  font-size:10px;
+  color:var(--muted);
+  margin-top:5px;
+}
 .notes {
   display:grid;
   grid-template-columns:1fr 1fr;

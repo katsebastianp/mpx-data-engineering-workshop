@@ -1,6 +1,7 @@
-"""Verify the Site's raw sample and fetch the pinned public Sophon bundle.
+"""Verify the Site's raw sample; optionally fetch the pinned public Sophon bundle.
 
-Run: docker compose run --rm --no-deps setup
+Core workshop: docker compose run --rm --no-deps setup scripts/setup_workshop.py --skip-sophon
+Optional Sophon reference: docker compose run --rm --no-deps setup
 Participant instructions and the four sample downloads live on the workshop Site.
 """
 
@@ -161,26 +162,34 @@ def setup_sophon(directory: Path) -> dict:
     return validate_sophon_bundle(directory)
 
 
-def setup(raw_dir: Path, model_dir: Path) -> dict:
+def setup(raw_dir: Path, model_dir: Path, *, skip_sophon: bool = False) -> dict:
     from scripts.prepare_data import validate_bundle as validate_raw_bundle
 
     manifest = verify_sample(raw_dir)
     data_lock_path = ROOT / "config/workshop-data.lock.json"
     validate_raw_bundle(raw_dir, json.loads(data_lock_path.read_text()), sha256(data_lock_path))
     LOGGER.info("Verified all 6,000 raw jets: 4,000 train / 1,000 validation / 1,000 test")
-    model = setup_sophon(model_dir)
+    model = None
+    if skip_sophon:
+        LOGGER.info("Sophon explicitly skipped. The two core models are ready; optional Sophon assets were not checked. "
+                    "To enable that reference later, rerun setup without --skip-sophon.")
+    else:
+        model = setup_sophon(model_dir)
     return {"dataset_id": manifest["dataset_id"], "rows": sum(split["rows"] for split in manifest["splits"].values()),
-            "sophon_sha256": model["model"]["sha256"], "status": "ready"}
+            "sophon_sha256": model["model"]["sha256"] if model else None,
+            "sophon_status": "skipped" if skip_sophon else "verified", "status": "ready"}
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw-dir", type=Path, default=ROOT / "data/01_raw")
     parser.add_argument("--model-dir", type=Path, default=ROOT / "models/pretrained/sophon")
+    parser.add_argument("--skip-sophon", action="store_true",
+                        help="Verify the fixed data only. Skip downloading/checking the optional frozen model.")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     try:
-        print(json.dumps(setup(args.raw_dir, args.model_dir), indent=2))
+        print(json.dumps(setup(args.raw_dir, args.model_dir, skip_sophon=args.skip_sophon), indent=2))
         return 0
     except (OSError, ValueError, KeyError, RuntimeError) as error:
         LOGGER.error("Workshop setup failed: %s", error)

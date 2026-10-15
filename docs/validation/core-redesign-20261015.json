@@ -1,0 +1,100 @@
+{
+  "core_seconds": 10.102897,
+  "date": "2026-10-15",
+  "experiments": [
+    {
+      "evaluated_splits": [
+        "validation"
+      ],
+      "id": "linear-basic",
+      "model": "logistic",
+      "prediction_rows": 1000,
+      "validation_auc": 0.75268
+    },
+    {
+      "evaluated_splits": [
+        "validation"
+      ],
+      "id": "trees-basic",
+      "model": "xgboost",
+      "prediction_rows": 1000,
+      "validation_auc": 0.830294
+    }
+  ],
+  "hardware": {
+    "architecture": "aarch64",
+    "cpu_count": 7,
+    "cpu_description": "aarch64",
+    "cpu_quota": "200000 100000",
+    "dependencies": {
+      "numpy": "1.26.4",
+      "onnxruntime": "1.20.1",
+      "scikit-learn": "1.6.1",
+      "xgboost": "2.1.4"
+    },
+    "memory_events": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0
+    },
+    "memory_limit": "2147483648",
+    "memory_peak_bytes": 1066909696,
+    "platform": "Linux-6.8.0-117-generic-aarch64-with-glibc2.35",
+    "python": "3.10.12",
+    "threads_per_model": 1
+  },
+  "limitations": [
+    "One fresh Python/JVM process per pipeline version; timing is noisy, not a benchmark guarantee.",
+    "A reused ARM64 Docker image; no fresh image build or model download.",
+    "Physical Windows/WSL and 8-GB laptop rehearsal remains unverified.",
+    "Does not measure participant interaction or Codex model latency."
+  ],
+  "pipeline_comparison": {
+    "after": {
+      "scheduled_tasks": 8,
+      "seconds": 7.445125,
+      "shuffle_partitions": 4
+    },
+    "before": {
+      "scheduled_tasks": 68,
+      "seconds": 7.92934,
+      "shuffle_partitions": 64
+    },
+    "comparison": "Exact values in every column, matched by record_id",
+    "dataset_id": "4f94bfde07e778e7dd0edd9e15fde722b32efae4c3c79d528c5803f5ce9260e0",
+    "equivalent": true,
+    "observed_speedup": 1.065,
+    "rows": {
+      "test": 1000,
+      "train": 4000,
+      "validation": 1000
+    },
+    "timing_note": "One run per version, including Spark startup. Timing is noisy; fewer tasks need not be faster."
+  },
+  "postprocessing_seconds": 0.71427,
+  "prediction_stage_seconds": 0.919231,
+  "preprocessing_baseline_seconds": 7.92934,
+  "scope": "Local Docker execution; built image reused; Codex generation/network/image-build time excluded; measured after driver imports and before container exit, excluding Docker startup",
+  "setup": {
+    "dataset_id": "4f94bfde07e778e7dd0edd9e15fde722b32efae4c3c79d528c5803f5ce9260e0",
+    "rows": 6000,
+    "sophon_sha256": null,
+    "sophon_status": "skipped",
+    "status": "ready"
+  },
+  "source_hashes": {
+    "config/experiments.yaml": "f25d1092f67d54b5741350acd2ea1e91e7f1b1aa532e7375397320755c9d4219",
+    "config/workshop-sample.lock.json": "ff52f7d70870ef9d3033bd1e19c2c48bdadab024e2be64591b5fe5b36113b764",
+    "src/preprocessing/pipeline.py": "9f39b268c18a0c4d254e5365ed7bdd1e6c6b680ead6fb6b60bf59a27ee42138f",
+    "src/preprocessing/features.py": "2331604aeb974960fc0057a089e3f09f03fee565cdbdf341dac74a8bc5540491",
+    "scripts/compare_preprocessing.py": "33413a20bb653107d3a3ab42bfa53de037e434122148bc006705c04dba594715"
+  },
+  "python_verification": {
+    "command": "docker compose run --rm lab -m pytest -q",
+    "passed": 142,
+    "seconds": 7.21
+  }
+}

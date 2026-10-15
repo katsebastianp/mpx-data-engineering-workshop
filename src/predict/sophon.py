@@ -20,6 +20,11 @@ BUNDLE_FILES = ("model.onnx", "model.lock.json", "LICENSE",
 def validate_bundle(directory):
     """Check native weights, class mapping, adapter and publisher references."""
     directory = Path(directory)
+    missing = [name for name in BUNDLE_FILES if not (directory / name).is_file()]
+    if missing:
+        raise ValueError("Optional Sophon assets are missing: " + ", ".join(missing)
+                         + ". Run `docker compose run --rm --no-deps setup` without --skip-sophon, "
+                         "or use config/experiments.yaml for the two core models.")
     contract = json.loads((CONFIG_DIR / "sophon-contract.json").read_text())
     lock_path = CONFIG_DIR / "sophon-model.lock.json"
     if checksum(lock_path) != contract["model_lock_sha256"]:

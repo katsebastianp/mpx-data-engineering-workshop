@@ -28,7 +28,11 @@ npm run build
 
 ## Application contracts
 
-Participant setup and exercises live only in the rendered Site. `components/workshop-content.ts` owns the step content, dependencies and copyable bullet prompts. Stable step IDs preserve existing progress; the checklist is marked manually, not synchronized with Codex.
+Participant setup and exercises live in the rendered Site. `components/workshop-content.ts` owns 15 core steps, optional test/upload extensions, short starting prompts, participant decisions and explanations. Stable step IDs preserve existing progress; the core progress counter excludes optional steps. The checklist is marked manually, not synchronized with Codex.
+
+`LearningVisuals.tsx` adds a real-row explorer, the baseline-to-experiments flow, a partition illustration and a worktree explanation. `lib/jet-examples.json` is a copy of `../docs/assets/jet-examples.json`: historical validation examples, explicitly labelled with their source/run IDs. Do not present the two examples as population metrics or fresh participant results. The participant results page and offline viewer calculate threshold counts from all validation predictions.
+
+The reversible 2026-10-15 revision uses `WORKSHOP_SOURCE_BRANCH` in the content module for both cloning and the personal branch base. Keep those references aligned with the published code. [Revision and rollback](../docs/workshop-revision-20261015.md).
 
 The signed-in workspace supplies branch names, Compose prefix and a participant ID stored in the pipeline’s legacy `team` field. Repository URLs are private per-account settings. `GET /api/leaderboard` refreshes every 30 seconds while visible; authenticated same-origin POST accepts JSON up to 1 MB and stores compact verified metrics in D1. The server recomputes quality against fixed IDs without retaining uploaded predictions or email. Validation-only uploads are unranked; replacements belong to the same account. Test-once is a workshop rule, not enforced by the API.
 

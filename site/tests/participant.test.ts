@@ -6,7 +6,7 @@ const { participantWorkspaceFor, personaliseWorkshopText, workspaceForParticipan
   await import(new URL("../lib/participant.ts", import.meta.url).href) as typeof import("../lib/participant");
 const { participantBranchCandidates } =
   await import(new URL("../lib/progress.ts", import.meta.url).href) as typeof import("../lib/progress");
-const { workshopExercises } =
+const { coreWorkshopExercises, optionalWorkshopExercises, workshopExercises } =
   await import(new URL("../components/workshop-content.ts", import.meta.url).href) as typeof import("../components/workshop-content");
 
 const idA = "p-0123456789abcdef";
@@ -79,17 +79,28 @@ test("personalisation derives controlled names instead of trusting forged derive
   assert.match(personaliseWorkshopText("{{repositoryUrl}}", leon, null), /facilitator/);
 });
 
-test("every workflow template renders completely for different authenticated participants", () => {
+test("every displayed workflow field personalises for different authenticated participants", () => {
   for (const workspace of [leon, secondLeon]) {
     for (const step of workshopExercises) {
-      for (const extra of step.extraPrompts ?? []) {
-        assert.doesNotMatch(personaliseWorkshopText(extra.prompt, workspace, repository), /\{\{[^}]+\}\}/);
-      }
-      for (const action of step.actions ?? []) {
-        assert.doesNotMatch(personaliseWorkshopText(action, workspace, repository), /\{\{[^}]+\}\}/);
-      }
-      for (const field of ["instruction", "hint", "prompt", "checkpoint", "commands"] as const) {
-        const template = step[field];
+      const templates: Record<string, string | undefined> = {
+        title: step.title,
+        instruction: step.instruction,
+        hint: step.hint,
+        prompt: step.prompt,
+        checkpoint: step.checkpoint,
+        commands: step.commands,
+        commandTitle: step.commandTitle,
+        decision: step.decision,
+        time: step.time,
+        "concept.title": step.concept?.title,
+        "concept.body": step.concept?.body,
+      };
+      step.actions?.forEach((action, index) => { templates[`actions.${index}`] = action; });
+      step.extraPrompts?.forEach((extra, index) => {
+        templates[`extraPrompts.${index}.title`] = extra.title;
+        templates[`extraPrompts.${index}.prompt`] = extra.prompt;
+      });
+      for (const [field, template] of Object.entries(templates)) {
         if (!template) continue;
         const rendered = personaliseWorkshopText(template, workspace, repository);
         assert.doesNotMatch(rendered, /\{\{[^}]+\}\}/, `${step.id}.${field}`);
@@ -146,21 +157,43 @@ test("both completed paths must rejoin before validation, final test, and upload
   assert.ok(ancestors("upload").has("final-test"));
 });
 
-test("rejoin inspection targets both personal worktrees without checking out shared main", () => {
+test("core completion never requires an optional exercise", () => {
+  const optionalIds = new Set(optionalWorkshopExercises.map((step) => step.id));
+  assert.ok(optionalIds.has("final-test"));
+  assert.ok(optionalIds.has("upload"));
+  assert.ok(coreWorkshopExercises.some((step) => step.id === "results-site"));
+  for (const step of coreWorkshopExercises) {
+    assert.ok(!step.optional, `${step.id} is marked optional but included in core progress`);
+    assert.ok(!optionalIds.has(step.id), `${step.id} is included in both core and optional progress`);
+    for (const dependency of ancestors(step.id)) {
+      assert.ok(!optionalIds.has(dependency), `${step.id} requires optional ${dependency}`);
+    }
+  }
+  for (const step of optionalWorkshopExercises) assert.equal(step.optional, true);
+});
+
+test("participant merges through the UI and only fast-forwards their local personal branch", () => {
   const step = byId.get("integrate");
   assert.ok(step?.commands);
+  assert.equal(step.prompt, undefined, "Merging is a participant-operated UI action, not an agent prompt");
   const commands = personaliseWorkshopText(step.commands, leon, repository);
-  assert.ok(commands.includes(leon.pipelineBranch));
-  assert.ok(commands.includes(leon.modelsBranch));
+  assert.match(commands, /git pull --ff-only origin ['"]?leon['"]?(?:\n|$)/);
+  assert.doesNotMatch(commands, /\b(?:gh pr merge|git merge)\b/);
   assert.doesNotMatch(commands, /git (?:switch|checkout)\s+(?:-\S+\s+)*main(?:\s|$)/m);
   assert.doesNotMatch(commands, /git push\s+[^\n]*(?:\s|:)main(?:\s|$)/m);
 });
 
-test("copyable PR command explicitly targets the personal base and pipeline head", () => {
-  const step = byId.get("pr-review");
-  assert.ok(step?.commands);
-  const commands = personaliseWorkshopText(step.commands, leon, repository);
-  assert.match(commands, /--base\s+['"]?leon(?:['"]|\s|$)/);
-  assert.match(commands, /--head\s+['"]?leon-pipeline_optimization(?:['"]|\s|$)/);
-  assert.doesNotMatch(commands, /--base\s+['"]?main(?:['"]|\s|$)/);
+test("each lane asks Codex to push and create a PR into the participant's personal branch", () => {
+  for (const workspace of [leon, secondLeon]) {
+    for (const [id, head] of [["pr-review", workspace.pipelineBranch], ["select", workspace.modelsBranch]]) {
+      const step = byId.get(id);
+      assert.ok(step?.prompt);
+      const prompt = personaliseWorkshopText(step.prompt, workspace, repository);
+      assert.ok(prompt.includes(head), `${id} identifies its own head branch`);
+      assert.ok(prompt.includes(`into ${workspace.branch}`), `${id} targets its participant's base branch`);
+      assert.match(prompt, /\bpush\b/i);
+      assert.match(prompt, /\bcreate a PR\b/);
+      assert.doesNotMatch(prompt, /\binto main\b/);
+    }
+  }
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, GitBranch, GitMerge, Laptop } from "lucide-react";
-import { workshopParts } from "./workshop-content";
+import { workshopExercises, optionalWorkshopExercises } from "./workshop-content";
 
 type WorktreeJourneyProps = {
   completed: string[];
@@ -9,14 +9,14 @@ type WorktreeJourneyProps = {
   onSelect: (id: string) => void;
 };
 
-const exercises = workshopParts.flatMap((part) => part.exercises);
+const exercises = workshopExercises;
 const exerciseById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
 function JourneyNode({ id, completed, selectedId, onSelect }: WorktreeJourneyProps & { id: string }) {
   const exercise = exerciseById.get(id);
   if (!exercise) return null;
   const done = completed.includes(id);
   const selected = id === selectedId;
-  const number = String(exercises.findIndex((entry) => entry.id === id) + 1).padStart(2, "0");
+  const number = exercise.optional ? "+" : String(exercises.findIndex((entry) => entry.id === id) + 1).padStart(2, "0");
 
   return (
     <button
@@ -95,8 +95,13 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
 
       <div className="journey-map-spine journey-map-integration">
         <div className="journey-map-stage-label"><GitMerge size={13} aria-hidden="true" /><span>Bring it together</span></div>
-        <NodeSequence ids={["integrate", "preprocess", "results-site", "final-test", "upload"]} {...props} />
+        <NodeSequence ids={["integrate", "preprocess", "results-site"]} {...props} />
       </div>
+      <details className="optional-journey" open={optionalWorkshopExercises.some(exercise => exercise.id === props.selectedId) || undefined}>
+        <summary>Optional · share results or enter the challenge</summary>
+        <p>The core workshop ends with your results Site. For the optional leaderboard challenge, freeze your model, run the final test once, then upload its generated result.</p>
+        <NodeSequence ids={optionalWorkshopExercises.map(exercise => exercise.id)} {...props} />
+      </details>
     </section>
   );
 }

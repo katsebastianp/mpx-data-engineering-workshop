@@ -53,7 +53,9 @@ Each row contains jet-level values and particle lists: `part_energy`, `part_deta
 
 ## Read the predictions
 
-Logistic regression and XGBoost learn from these features. **Sophon** uses richer particle inputs and stays pretrained/frozen, CPU, batch size 1. [Sophon model](https://huggingface.co/jet-universe/sophon).
+The core workshop runs logistic regression and XGBoost on the three basic features. **Sophon** is an optional reference with richer particle inputs; it stays pretrained/frozen, CPU, batch size 1. [Sophon model](https://huggingface.co/jet-universe/sophon).
+
+These example scores were recorded on 12 October. The XGBoost example uses all eight shape features; they are not new results from your basic-feature run.
 
 | Model | Signal jet | QCD jet |
 |---|---:|---:|

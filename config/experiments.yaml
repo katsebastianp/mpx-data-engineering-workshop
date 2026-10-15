@@ -1,6 +1,7 @@
-# Ask Codex to change models, features or a few training parameters here.
+# Core workshop: compare two quick models on the same three measurements.
+# Design one change in Plan mode before editing this file.
 team: example-team
-explanation: "Replace this with what you changed and why."
+explanation: "Compare logistic regression and XGBoost on jet momentum, mass and particle count."
 evaluation: validation  # Set to test once, after selecting your final approach.
 seed: 42
 max_workers: 1  # Two training jobs are supported; timings are always measured serially.
@@ -11,9 +12,3 @@ experiments:
   - id: trees-basic
     model: xgboost
     features: basic
-  - id: trees-shape
-    model: xgboost
-    features: shape
-  - id: sophon-reference
-    model: sophon
-    features: particles
