@@ -52,7 +52,6 @@ export const workshopParts: WorkshopPart[] = [
           "Under Edit project, set the cloned folder as primary and start a chat there.",
         ],
         prompt: `Use the GitHub plugin to check access to ${WORKSHOP_REPOSITORY_URL} and clone its ${WORKSHOP_SOURCE_BRANCH} branch into this project. Show the terminal command as a fallback. Preserve existing files. Give me the clone’s absolute path, then confirm you can read README.md, compose.yaml and src/.`,
-        concept: { title: "What is the project?", body: "The Codex project points chats at a folder. Git tracks changes in that folder; GitHub hosts the shared repository. Signing into ChatGPT does not automatically give GitHub access." },
         commandTitle: "Terminal fallback · run in the empty project folder",
         commands: `gh auth status\ngh repo clone openai/machine-learning-lhc-workshop -- -b ${WORKSHOP_SOURCE_BRANCH}\n# If GitHub CLI is unavailable and Git access is already configured:\n# git clone -b ${WORKSHOP_SOURCE_BRANCH} ${WORKSHOP_REPOSITORY_URL}.git`,
         checkpoint: "Codex can read the cloned repository, and you know its folder on your computer.",
@@ -65,7 +64,6 @@ export const workshopParts: WorkshopPart[] = [
         time: "2 min",
         instruction: "Download all four files and tell Codex where you saved them.",
         prompt: "The four workshop downloads are in [MY DOWNLOAD FOLDER]. Copy train.parquet, validation.parquet, test.parquet and manifest.json unchanged into data/01_raw/. Verify them against config/workshop-sample.lock.json. Preserve existing files and report any conflict or failed check.",
-        concept: { title: "Three separate sets of examples", body: "The model learns from 4,000 training examples. We compare our choices on 1,000 validation examples it did not train on. The remaining 1,000 test examples stay unused during the core workshop." },
         checkpoint: "All four files pass their checksum checks.",
       },
       {

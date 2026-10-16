@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronDown, Copy, CircleHelp } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Copy } from "lucide-react";
 import PhysicsJourney from "./PhysicsJourney";
+import { PredictionFlow } from "./PredictionFlow";
 import { WorkshopSteps } from "./WorkshopSteps";
 import { Leaderboard } from "./Leaderboard";
 import { useParticipantProgress } from "./useParticipantProgress";
@@ -27,13 +28,11 @@ export default function WorkshopApp({initialPage="physics"}:{initialPage?:Page})
  const participant=useParticipantProgress();
  useEffect(()=>{const pop=()=>setPage(pages.find(p=>p.href===location.pathname)?.id||"physics");window.addEventListener("popstate",pop);return()=>window.removeEventListener("popstate",pop)},[]);
  function navigate(next:Page){setPage(next);history.pushState({},"",pages.find(p=>p.id===next)!.href);window.scrollTo({top:0,behavior:"instant"});document.title=`${pages.find(p=>p.id===next)!.title} · From particle collisions to better models`;}
- return <><a href="#content" className="skip-link">Skip to content</a><header className="site-header"><a href="/" className="wordmark" onClick={e=>{e.preventDefault();navigate("physics")}} aria-label="From particle collisions to better models home"><span className="brand-mark"><i/><i/><i/></span><span>COLLISIONS<span className="wordmark-light"> / MODELS</span></span></a><nav aria-label="Chapters">{pages.map((p,i)=><a href={p.href} aria-current={page===p.id?"page":undefined} onClick={e=>{e.preventDefault();navigate(p.id)}} key={p.id}><span>0{i+1}</span>{p.title}</a>)}</nav><ParticipantAccountMenu participant={participant}/></header><main id="content" key={page}>{page==="physics"?<Physics navigate={navigate}/>:page==="brief"?<Brief navigate={navigate}/>:page==="workshop"?<WorkshopSteps participant={participant}/>:<Leaderboard participant={participant}/>}</main><footer className="footer"><span>COLLISIONS / MODELS</span><span>Ringier × OpenAI · Codex workshop</span><span>JetClass-II simulated data · Codex workshop</span></footer></>;
+ return <><a href="#content" className="skip-link">Skip to content</a><header className="site-header"><a href="/" className="wordmark" onClick={e=>{e.preventDefault();navigate("physics")}} aria-label="From particle collisions to better models home"><span className="brand-mark"><i/><i/><i/></span><span>COLLISIONS<span className="wordmark-light"> / MODELS</span></span></a><nav aria-label="Chapters">{pages.map((p,i)=><a href={p.href} aria-current={page===p.id?"page":undefined} onClick={e=>{e.preventDefault();navigate(p.id)}} key={p.id}><span>0{i+1}</span>{p.title}</a>)}</nav><ParticipantAccountMenu participant={participant}/></header><main id="content" key={page}>{page==="physics"?<Physics/>:page==="brief"?<Brief navigate={navigate}/>:page==="workshop"?<WorkshopSteps participant={participant}/>:<Leaderboard participant={participant}/>}</main><footer className="footer"><span>COLLISIONS / MODELS</span><span>Ringier × OpenAI · Codex workshop</span><span>JetClass-II simulated data · Codex workshop</span></footer></>;
 }
 
-function Physics({navigate}:{navigate:(p:Page)=>void}){
- return <><PhysicsJourney/>
- <section className="intro-text section-wrap" id="workshop-data"><span className="section-kicker">THE WORKSHOP DATA</span><div><h2>Learning from simulated collisions</h2><ul className="plain-bullets"><li>We use a small, reproducible sample of simulated jets from JetClass-II</li><li>Each jet has a known origin, so we can measure how well a model recognises it</li><li>The goal is to improve the pipeline, compare models, and explain the results</li></ul><a className="text-link" href="https://home.cern/science/accelerators/large-hadron-collider" target="_blank" rel="noreferrer">More about the LHC at CERN <ArrowUpRight size={14}/></a></div></section>
- <section className="data-section section-wrap"><div className="section-heading"><div><span className="section-kicker">THE LEARNING PROBLEM</span><h2>What the model predicts</h2></div><p>Is this jet signal or QCD background?</p></div><div className="classification"><div><span className="mono accent">01</span><h3>Signal <span>(X → bb)</span></h3><p>A jet from the decay of a simulated particle X into a bottom-quark pair.</p></div><div className="classification-separator">or</div><div><span className="mono">02</span><h3>QCD background <span>(ordinary jets)</span></h3><p>An ordinary jet produced by quarks or gluons.</p></div></div><div className="feature-list"><div className="feature-list-head"><h3>The eight input features</h3><p>Simulation labels are used only for training and evaluation</p></div>{[["jet_pt","Momentum across the beam","GeV"],["jet_sdmass","Mass after removing soft, wide-angle radiation","GeV"],["particle_count","Number of reconstructed particles","count"],["energy_sum","Total constituent energy","GeV"],["leading_energy_fraction","Energy share of the leading particle","fraction"],["radial_energy_moment","Energy-weighted angular spread","angular"],["energy_dispersion","How concentrated the energy is","ratio"],["ecf2_beta1","Energy-weighted particle-pair separation","angular"]].map((r,i)=><div className="feature-row" key={r[0]}><span>0{i+1}</span><code>{r[0]}</code><p>{r[1]}</p><small>{r[2]}</small></div>)}</div><div className="honesty-note"><CircleHelp size={20}/><p><strong>About these scores</strong> These are simulated data. Higher scores mean more signal-like, not calibrated probabilities. Angular coordinates describe directions, not physical detector positions.</p></div><div className="sources"><span>READ FURTHER</span><a href="https://huggingface.co/datasets/jet-universe/jetclass2" target="_blank" rel="noreferrer">JetClass-II dataset <ArrowUpRight size={12}/></a><a href="https://huggingface.co/jet-universe/sophon" target="_blank" rel="noreferrer">Sophon reference <ArrowUpRight size={12}/></a><a href="https://arxiv.org/abs/1402.2657" target="_blank" rel="noreferrer">Soft Drop <ArrowUpRight size={12}/></a></div></section><NextChapter number="02" title="Workshop brief" text="Objectives, prerequisites, and agenda" onClick={()=>navigate("brief")}/></>;
+function Physics(){
+ return <PhysicsJourney/>;
 }
 function Brief({navigate}:{navigate:(p:Page)=>void}) {
  const requirements = [
@@ -45,7 +44,15 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
   ['Your account', 'Sign in to this Site for personal branch names and a saved checklist. Check Sites access if you want to publish your results page.'],
  ];
  return <div className="brief-page">
-  <ChapterIntro number="02" eyebrow="THE BRIEF" title="Workshop overview" description="Trace real data, test a pipeline change, and compare two models. About 90 minutes, plus setup and questions."/>
+  <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h1>Get setup out of the way</h1></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><p className="muted-note">The timings below are a facilitation target. First-time Docker builds and slower laptops can take longer. Keep max_workers at 1 and ask for help if setup stalls.</p></section>
+  <section className="section-wrap agenda"><span className="section-kicker">90 MINUTES + BUFFER</span><h2>Agenda</h2>{[
+   ["00–25", "Explore & run", "Get the code, trace a real jet, run two small models, open worktrees"],
+   ["25–55", "Predict & experiment", "One Spark setting + one model comparison designed in Plan mode; review both PRs"],
+   ["55–70", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
+   ["70–90", "Build & explain", "Your results page, a threshold slider, a confusion matrix, one decision"],
+   ["Extra", "Choose your extension", "More questions, a second controlled run, Sophon, or the optional final-test challenge"],
+  ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
+  <PredictionFlow/>
   <section className="brief-outcomes section-wrap"><span className="section-kicker">THREE THINGS TO LEARN</span><div className="outcome-grid">{[
    ["01", "Follow real data", "Click through one actual jet: particle measurements → features → model score. Find the function behind each step."],
    ["02", "Test your prediction", "Change one Spark setting. Use Plan mode to design a small model comparison. Decide whether the result supports your hypothesis."],
@@ -57,14 +64,6 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
    ["VALIDATION", "1,000", "We compare models and choose what to keep", "17%"],
    ["TEST", "1,000", "Unused in the core workshop; optional final challenge", "17%"],
   ].map(row => <div className="split-row" key={row[0]}><div><span>{row[0]}</span><strong>{row[1]} <small>jets</small></strong><p>{row[2]}</p></div><i style={{width:row[3]}}/></div>)}</div></section>
-  <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h2>Get setup out of the way</h2></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><p className="muted-note">The timings below are a facilitation target. First-time Docker builds and slower laptops can take longer. Keep max_workers at 1 and ask for help if setup stalls.</p></section>
-  <section className="section-wrap agenda"><span className="section-kicker">90 MINUTES + BUFFER</span><h2>Agenda</h2>{[
-   ["00–25", "Explore & run", "Get the code, trace a real jet, run two small models, open worktrees"],
-   ["25–55", "Predict & experiment", "One Spark setting + one model comparison designed in Plan mode; review both PRs"],
-   ["55–70", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
-   ["70–90", "Build & explain", "Your results page, a threshold slider, a confusion matrix, one decision"],
-   ["Extra", "Choose your extension", "More questions, a second controlled run, Sophon, or the optional final-test challenge"],
-  ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
   <NextChapter number="03" title="Workshop instructions" text="Start with a question. Use the short prompts when they help." onClick={()=>navigate("workshop")}/>
  </div>;
 }
