@@ -16,7 +16,7 @@ docker compose run --rm lab -m predict
 docker compose run --rm lab -m postprocessing
 ```
 
-The default `config/experiments.yaml` runs only logistic regression on `jet_pt`, `jet_sdmass` and `particle_count`. It scores 1,000 validation jets; the separate 1,000 test jets stay unused for model selection. Choose your next model, features and tuning parameters, compare with the saved baseline, then select one experiment before setting `evaluation: test`. Keep `max_workers: 1`.
+The default `config/experiments.yaml` runs only logistic regression on `jet_pt`, `jet_sdmass` and `particle_count`. It scores 1,000 validation jets; the separate 1,000 test jets stay unused for model selection. The model exercise follows **Plan experiments → Run experiments → Explore results → Choose model**. Agree on the variants first, keep the unchanged logistic/basic baseline alongside them, then run the whole batch before exploring. Select one completed configuration for the later final test evaluation. Keep `max_workers: 1`.
 
 The pipeline exercise changes only `SHUFFLE_PARTITIONS` in `src/preprocessing/pipeline.py` from 64 to 4. Save the existing `data/02_preprocessed/` folder as `data/02_preprocessed_baseline/` first; rerun preprocessing once after the edit. Verify every saved value and inspect recorded task counts/time without retraining:
 
@@ -71,17 +71,17 @@ A feature function receives only `ParticleMeasurements`. For example, `def mass_
 
 A classifier implements `train` (save its artifact and return metadata including `trained` and `parameters`), `__init__` (load the artifact), and `_predict` (one signal score in `[0, 1]` per row). The runner supplies train rows only; inference receives declared measurements without labels or IDs. Use the logistic module as a small example. Scikit-learn and XGBoost are already installed; adding an adapter needs no image rebuild. Other dependencies belong in `requirements.txt` and require a rebuild.
 
-Run `predict` and `postprocessing` as above after each chosen experiment. The same comparison/export path accepts added classifiers and features. The starter implements only logistic regression; you choose and build the next integration.
+Run `predict` once for the agreed batch, then `postprocessing` to collect its results. All classifiers must follow the [model output contract](docs/model-outputs.md), using the shared runner and exporter. Explore the completed batch, choose one model, and move on. The starter implements only logistic regression; you choose and build the next integration.
 
 ## Data and artifacts
 
 ```text
 data/01_raw/                 Site-hosted train/validation/test Parquet and manifest
 data/02_preprocessed/        measured features and source-hashed manifest
-data/03_predictions/<run>/   predictions, metrics and model references
+data/03_predictions/<run>-<experiment>/  result.json and predictions.parquet
 data/04_submissions/         generated final-result JSON
-data/05_analytics/           DuckDB database and comparison JSON
-models/<run>/               separately saved trained models
+data/05_analytics/           analytics.duckdb and comparison.json
+models/<run>-<experiment>/   manifest.json and the saved model
 data/evidence/              local experiment snapshots
 ```
 
@@ -89,4 +89,4 @@ Payloads and generated outputs are ignored by Git. The Site hosts the fixed 6,00
 
 `.worktreeinclude` copies ignored raw/prepared inputs into local Codex-managed worktrees. Generated outputs remain separate. The core participant workflow uses the Site and Git checkout; Sophon is distributed separately.
 
-[Data/schema reference](docs/data.md) · [Feature meanings](docs/problem-guide.md) · [Submission contract](docs/competition.md) · [Historical validation](docs/results.md) · [Site development](site/README.md)
+[Data/schema reference](docs/data.md) · [Feature meanings](docs/problem-guide.md) · [Model output contract](docs/model-outputs.md) · [Submission contract](docs/competition.md) · [Historical validation](docs/results.md) · [Site development](site/README.md)

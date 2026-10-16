@@ -28,7 +28,7 @@ npm run build
 
 ## Application contracts
 
-Participant setup and exercises live in the rendered Site. `components/workshop-content.ts` owns 15 core steps, optional test/upload extensions, short starting prompts, participant decisions and explanations. Stable step IDs preserve existing progress; the core progress counter excludes optional steps. The checklist is marked manually, not synchronized with Codex.
+Participant setup and exercises live in the rendered Site. `components/workshop-content.ts` owns 16 core steps, optional extensions, short starting prompts, participant decisions and explanations. The model lane follows a fixed sequence: plan a small set including the unchanged logistic baseline, run it serially, explore the saved comparison, then choose a model and review its PR. Stable step IDs preserve existing progress; the core progress counter excludes optional steps. The checklist is marked manually, not synchronized with Codex.
 
 `LearningVisuals.tsx` adds a real-row explorer, the baseline-to-experiments flow, a partition illustration and a worktree explanation. `lib/jet-examples.json` is a copy of `../docs/assets/jet-examples.json`: historical validation examples, explicitly labelled with their source/run IDs. Do not present the two examples as population metrics or fresh participant results. The participant results page and offline viewer calculate threshold counts from all validation predictions.
 

@@ -15,7 +15,8 @@ const request = (body: BodyInit | null, headers: Record<string, string> = {}) =>
 const isStatus = (status: number) => (error: unknown) => error instanceof ProgressError && error.status === status;
 
 test("every current workshop step can be saved independently", () => {
-  assert.equal(stepIds.size, 18);
+  assert.equal(stepIds.size, workshopExercises.length);
+  assert.ok(stepIds.has("explore-results"));
   for (const stepId of stepIds) {
     for (const completed of [true, false]) {
       const value = { action: "complete", stepId, completed };
@@ -52,6 +53,13 @@ test("import normalizes duplicate checks without inventing or deleting steps", (
   });
   assert.deepEqual(validateProgressMutation({ action: "import", completedSteps: [], repositoryUrl: "https://GITHUB.com/team/workshop/" }, stepIds), {
     action: "import", completedSteps: [], repositoryUrl: "https://github.com/team/workshop",
+  });
+});
+
+test("existing model progress does not automatically complete the new exploration step", () => {
+  const completedSteps = ["experiments", "train", "select"];
+  assert.deepEqual(validateProgressMutation({ action: "import", completedSteps }, stepIds), {
+    action: "import", completedSteps,
   });
 });
 

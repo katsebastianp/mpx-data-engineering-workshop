@@ -71,7 +71,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
   }
 
   return <div className="workshop-tree-page">
-    <ChapterIntro number="03" eyebrow="WORKSHOP" title="Workshop instructions" description="15 steps · about 90 minutes with Docker ready" />
+    <ChapterIntro number="03" eyebrow="WORKSHOP" title="Workshop instructions" description={`${total} steps · about 90 minutes with Docker ready`} />
     {(participant.status !== "authenticated" || participant.legacy) && <ParticipantAccountPanel participant={participant} />}
 
     <div className="worktree-progress-bar section-wrap">

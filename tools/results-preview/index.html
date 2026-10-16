@@ -3,56 +3,60 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Compare particle-classification experiments: predictive quality, inference efficiency and the ideas behind each result.">
-  <title>Particle Model Challenge</title>
+  <meta name="description" content="Inspect saved model experiments, compare validation results and explore prediction thresholds.">
+  <title>Model Results Explorer</title>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#"><span class="mark" aria-hidden="true">P</span> PARTICLE CHALLENGE</a>
-    <nav aria-label="Page sections"><a href="#leaderboard">Compare</a><a href="#explorer">Explore</a><a href="#participate">Your explanation</a></nav>
+    <a class="brand" href="#"><span class="mark" aria-hidden="true">P</span> MODEL RESULTS EXPLORER</a>
+    <nav aria-label="Page sections"><a href="#experiment-section">Experiment</a><a href="#threshold-section">Threshold</a><a href="#experiments-section">Compare</a></nav>
   </header>
   <main>
     <section class="intro">
-      <p class="eyebrow">CODEX WORKSHOP · MODEL EXPERIMENTS</p>
-      <h1>Build. Compare.<br><span>Explain your result.</span></h1>
-      <p class="lede">Train a model, improve the pipeline and find a useful trade-off between prediction quality and inference time.</p>
-      <div class="toolbar"><label class="button" for="file">Open your comparison.json<input id="file" type="file" accept=".json,application/json" multiple></label><button id="reload" type="button">Reload example results</button></div>
-      <p class="small" id="status" role="status" aria-live="polite">Loading results…</p>
+      <p class="eyebrow">CODEX WORKSHOP · SAVED EXPERIMENTS</p>
+      <h1>Model Results Explorer</h1>
+      <p class="lede">Compare saved experiments and explore their predictions.</p>
+      <div class="toolbar"><label class="button" for="file">Open your comparison.json<input id="file" type="file" accept=".json,application/json"></label><button id="reload" type="button">Load historical example</button></div>
+      <p class="small">Open <code>data/05_analytics/comparison.json</code>. Your file stays in this browser.</p>
+      <p class="small" id="status" role="status" aria-live="polite">No results loaded.</p>
     </section>
 
-    <section id="empty" class="empty" hidden><h2>Open your results</h2><p>After running postprocessing, open <code>data/05_analytics/comparison.json</code> above. Move the threshold and see which jets your model keeps or rejects.</p></section>
+    <section id="empty" class="empty" hidden><h2>Open your results to begin.</h2></section>
 
     <div id="content" hidden>
-      <section class="summary" aria-label="Competition summary">
-        <div><span class="eyebrow">PREDICTION QUALITY</span><div id="quality-winner" class="winner">Awaiting final submissions</div><p>Highest test ROC-AUC</p></div>
-        <div><span class="eyebrow">INFERENCE EFFICIENCY</span><div id="efficiency-winner" class="winner">Awaiting final submissions</div><p>Fastest relative inference among eligible models</p></div>
-        <div class="count"><span class="eyebrow">EXPERIMENTS</span><div id="experiment-count" class="number">0</div><p id="dataset"></p></div>
+      <section class="section" id="experiment-section">
+        <div class="section-heading"><div><p class="eyebrow">01 · UNDERSTAND THE RUN</p><h2>Inspect an experiment</h2></div><span class="badge" id="experiment-count"></span></div>
+        <div class="experiment-controls"><label>Experiment<select id="experiment" aria-label="Choose an experiment"></select></label><label>Compare against<select id="baseline" aria-label="Choose a baseline"></select></label></div>
+        <p class="small" id="dataset"></p>
+        <div class="model-details"><div><p class="eyebrow">CLASSIFIER</p><h3 id="experiment-model"></h3><p class="small" id="experiment-run"></p><p id="experiment-explanation"></p></div><div><h3>Input features</h3><div id="experiment-features" class="chips"></div><h3 class="parameter-heading">Parameters</h3><div id="experiment-parameters" class="chips"></div></div></div>
+        <div class="summary" aria-label="Selected experiment validation results">
+          <div><span class="eyebrow">VALIDATION ROC-AUC ↑</span><div id="selected-auc" class="winner">—</div><p id="auc-delta"></p></div>
+          <div><span class="eyebrow">TRAINING TIME</span><div id="selected-training" class="winner">—</div><p id="training-delta"></p></div>
+          <div><span class="eyebrow">INFERENCE TIME / JET</span><div id="selected-inference" class="winner">—</div><p id="inference-delta"></p></div>
+        </div>
+        <p class="small">ROC-AUC measures how well signal ranks above background across thresholds: higher is better. Timings are measured on the run's computer; comparisons across different machines are approximate.</p>
       </section>
 
-      <section id="leaderboard" class="section">
-        <div class="section-heading"><div><p class="eyebrow">THE COMPETITION</p><h2>Leaderboard</h2></div><span class="badge">Friendly competition · self-reported timing</span></div>
-        <p class="section-note">Quality is recomputed from submitted scores. Relative timing is an approximate hardware adjustment. It cannot make different laptops fully comparable.</p>
-        <div class="table-scroll"><table><caption class="sr-only">Final submissions ranked by prediction quality</caption><thead><tr><th>Rank</th><th>Team</th><th>Model</th><th>Test AUC</th><th>Relative cost ↓</th><th>Efficiency rank</th></tr></thead><tbody id="rankings"></tbody></table></div>
-        <details class="rules"><summary>How the two awards work</summary><ul><li><strong>Quality:</strong> highest test ROC-AUC among participant-trained models. Frozen references are excluded from both awards.</li><li><strong>Efficiency:</strong> lowest normalized inference time among trained models within 0.02 AUC of the best trained result.</li><li>The same 128 validation jets, one warmup and three measured repeats define the latency test. A common CPU calculation provides an approximate hardware correction.</li><li>Training time is reported separately. Frozen models such as Sophon may use richer inputs and different training data.</li><li>Use validation while improving your model. Submit one selected final test result and explain your choices.</li></ul></details>
+      <section class="section" id="threshold-section">
+        <div class="section-heading"><div><p class="eyebrow">02 · EXPLORE THE DECISION</p><h2>Which mistakes does it make?</h2></div><label id="split-control" class="split-picker" hidden>Evaluation <select id="split"><option value="validation">Validation</option></select></label></div>
+        <div class="decision-grid"><div class="threshold"><label for="threshold">Decision threshold <strong id="threshold-label">0.50</strong></label><input id="threshold" type="range" min="0" max="1" step="0.01" value="0.5" aria-describedby="threshold-help"><p id="threshold-help">A score at or above the threshold predicts signal. Lower it to keep more signal, at the cost of more false alarms.</p><p class="small">The matrix uses every jet in the selected evaluation split. Moving this slider does not retrain a model or change saved results. ROC-AUC stays the same.</p><p class="small">Signal scores describe how signal-like a jet looks; they are not calibrated probabilities.</p></div><div id="operating-point" aria-live="polite"></div></div>
       </section>
 
       <section class="section" id="experiments-section">
-        <div class="section-heading"><div><p class="eyebrow">UNDERSTAND THE TRADE-OFF</p><h2>All experiments</h2></div><div class="filters"><label>Evaluation <select id="split"><option value="validation">Validation</option><option value="test">Test</option></select></label><label class="check"><input type="checkbox" id="support"> Explorer: within Sophon training ranges</label></div></div>
-        <div class="analysis-grid"><div class="plot"><svg id="tradeoff" viewBox="0 0 640 270" role="img" aria-label="Prediction quality versus relative inference cost"></svg><p class="small">Higher quality, lower relative cost. The analysis filter does not change the competition rankings.</p></div><div class="context"><h3>Look beyond one score</h3><p>Compare the logistic baseline with your classifiers and features. Which model misses fewer signal jets? How many background jets does it keep by mistake? Frozen references remain visible for context.</p><p>A higher score means more signal-like. Scores are not calibrated probabilities.</p></div></div>
-        <div class="table-scroll"><table><caption class="sr-only">Model metrics and timing for the selected evaluation split</caption><thead><tr><th>Team</th><th>Model</th><th>Features</th><th>Split</th><th>AUC</th><th>Training (s)</th><th>Inference (ms / jet)</th></tr></thead><tbody id="experiments"></tbody></table></div>
+        <div class="section-heading"><div><p class="eyebrow">03 · COMPARE THE PLANNED EXPERIMENTS</p><h2>Validation comparison</h2></div><span class="badge">Same dataset · saved measurements</span></div>
+        <p class="section-note">Select a row to inspect that experiment. Compare quality, training time and prediction time before choosing your final model.</p>
+        <div class="table-scroll"><table><caption class="sr-only">All experiments compared on validation quality and recorded training and inference times</caption><thead><tr><th>Experiment</th><th>Classifier</th><th>Features</th><th>Validation AUC ↑</th><th>Training (s)</th><th>Inference (ms / jet)</th></tr></thead><tbody id="experiments"></tbody></table></div>
+        <div class="analysis-grid"><div class="plot"><svg id="tradeoff" viewBox="0 0 640 270" role="img" aria-label="Validation quality versus inference time"></svg><p class="small">Choose a point to inspect it. The selected experiment is blue; the comparison baseline has a ring.</p></div><div class="context"><h3>Read the trade-off</h3><p>Higher points separate signal from background better. Points farther left predict faster.</p><p>The table and plot always show validation results. The threshold slider changes the confusion matrix only.</p><p id="baseline-note"></p></div></div>
       </section>
 
-      <section class="section" id="explorer">
-        <div class="section-heading"><div><p class="eyebrow">INSPECT THE PREDICTIONS</p><h2>One jet, different models</h2></div><label class="jet-picker">Jet <select id="jet" aria-label="Select a jet"></select></label></div>
-        <div class="explorer-grid"><div class="plot"><svg id="energy" viewBox="0 0 420 330" role="img" aria-label="Particle angular energy flow around the jet axis"></svg><p class="small">Angular offsets from the jet axis. Circle area represents energy in GeV; these are not spatial detector tracks.</p></div><div><div id="jet-info" class="jet-info"></div><h3>Predicted signal scores</h3><div id="scores"></div><div class="threshold"><label for="threshold">Decision threshold <strong id="threshold-label">0.50</strong></label><input id="threshold" type="range" min="0" max="1" step="0.01" value="0.5" aria-describedby="threshold-help"><p class="small" id="threshold-help">A score at or above the threshold predicts signal. Lower it to keep more signal, at the cost of more false alarms. The matrix counts every evaluated jet, not just the displayed sample. This exploration does not retrain models or change saved results.</p><div id="operating-point" aria-live="polite"></div></div></div></div>
-      </section>
+      <details class="section jet-section" id="explorer"><summary>Inspect one real jet</summary><div class="section-heading"><p class="small">A small display sample, separate from the full population counted above.</p><label class="jet-picker">Jet <select id="jet" aria-label="Select a jet"></select></label></div><div class="explorer-grid"><div class="plot"><svg id="energy" viewBox="0 0 420 330" role="img" aria-label="Particle angular energy flow around the jet axis"></svg><p class="small">Angular offsets from the jet axis. Circle area represents energy in GeV; these are not spatial detector tracks.</p></div><div><div id="jet-info" class="jet-info"></div><h3>Saved signal scores</h3><div id="scores"></div></div></div></details>
 
-      <section class="section"><p class="eyebrow">THE IDEAS BEHIND THE NUMBERS</p><h2>How teams did it</h2><div id="notes" class="notes"></div></section>
+      <details id="leaderboard" class="section" hidden><summary>Saved final-test results</summary><p class="small">Final-test results are kept separate from the validation comparison. Frozen references do not enter participant awards.</p><div class="table-scroll"><table><caption class="sr-only">Saved final submissions ranked by prediction quality</caption><thead><tr><th>Rank</th><th>Participant tag</th><th>Classifier</th><th>Test AUC</th><th>Normalized time ↓</th><th>Efficiency rank</th></tr></thead><tbody id="rankings"></tbody></table></div></details>
     </div>
 
-    <section id="participate" class="participate"><div><p class="eyebrow">YOUR TURN</p><h2>Explain one decision.</h2></div><ol><li>Choose a model using validation results. Explain why you picked it.</li><li>Move the threshold: would you rather miss signal or keep more background?</li><li>If you build your own page, include this slider and a 2×2 matrix, then add one view you find useful: the data flow, model comparison, or a real example jet.</li><li>End with one finding and one limitation. Use your actual exported results.</li></ol><p class="small">Opening a results file is local to your browser. It does not submit or upload anything.</p></section>
+
   </main>
   <footer><span>JetClass-II · simulated particle data</span><span>Your classifiers · your features · measured results</span></footer>
 </body>

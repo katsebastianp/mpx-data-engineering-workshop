@@ -47,7 +47,7 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
   <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h1>Get setup out of the way</h1></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><p className="muted-note">The timings below are a facilitation target. First-time Docker builds and slower laptops can take longer. Keep max_workers at 1 and ask for help if setup stalls.</p></section>
   <section className="section-wrap agenda"><span className="section-kicker">90 MINUTES + BUFFER</span><h2>Agenda</h2>{[
    ["00–25", "Explore & run", "Get the code, trace a real jet, run the logistic baseline, open worktrees"],
-   ["25–55", "Predict & experiment", "One Spark setting + your chosen model experiment in Plan mode; review both PRs"],
+   ["25–55", "Run & explore", "One Spark setting + planned model variants; explore results, choose a model and review both PRs"],
    ["55–70", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
    ["70–90", "Build & explain", "Your results page, a threshold slider, a confusion matrix, one decision"],
    ["Extra", "Choose your extension", "Another experiment, the ready-made Sophon demo pack, or the optional final test"],

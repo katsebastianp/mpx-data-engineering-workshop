@@ -53,6 +53,7 @@ def test_allowlist_has_current_commands_and_no_hosting_or_submission_identity(tm
     (tmp_path / "tests/test_example.py").write_text("pass")
     names = bundle.repository_files(tmp_path) + bundle.ASSET_FILES + bundle.EMPTY_OUTPUT_FILES
     assert {"src/preprocessing/__main__.py", "src/predict/__main__.py", "src/postprocessing/__main__.py",
+            "AGENTS.md", "docs/model-outputs.md",
             "config/experiments.yaml", "config/evaluation.json", "scripts/prepare_data.py", ".worktreeinclude",
             "data/01_raw/train.parquet", "data/01_raw/validation.parquet",
             "data/01_raw/test.parquet", "src/predict/logistic.py", "src/predict/base.py",

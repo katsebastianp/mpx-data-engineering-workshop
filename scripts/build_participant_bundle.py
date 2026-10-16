@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PREFIX = "ringier-particle-workshop/"
 MANIFEST = "PARTICIPANT_BUNDLE.json"
 STATIC_REPOSITORY_FILES = (
-    ".dockerignore", ".gitattributes", ".gitignore", ".worktreeinclude", "README.md", "Dockerfile",
+    ".dockerignore", ".gitattributes", ".gitignore", ".worktreeinclude", "README.md", "AGENTS.md", "Dockerfile",
     "compose.yaml", "pyproject.toml", "requirements.txt", "config/experiments.yaml",
     "src/common.py", "src/preprocessing/__init__.py", "src/preprocessing/__main__.py",
     "src/preprocessing/pipeline.py", "src/preprocessing/features.py",
@@ -33,7 +33,7 @@ STATIC_REPOSITORY_FILES = (
     "src/postprocessing/__init__.py", "src/postprocessing/__main__.py",
     "src/postprocessing/compare.py", "src/postprocessing/database.py", "src/postprocessing/leaderboard.py",
     "config/workshop-data.lock.json", "config/workshop-sample.lock.json",
-    "docs/data.md", "docs/results.md", "docs/problem-guide.md",
+    "docs/data.md", "docs/results.md", "docs/problem-guide.md", "docs/model-outputs.md",
     "docs/assets/jet-examples.json", "docs/assets/jet-examples.png", "docs/competition.md",
     "docs/validation/parallel.json", "docs/validation/participant-kit-v05.json", "docs/validation/amd64-v05.json",
     "docs/validation/layout-v06.json", "docs/validation/core-redesign-20261015.json",

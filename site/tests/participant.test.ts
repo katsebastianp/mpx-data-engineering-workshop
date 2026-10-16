@@ -147,6 +147,14 @@ test("code orientation precedes baseline and both parallel paths begin after the
   assert.ok(!ancestors("pr-review").has("select"));
 });
 
+test("model results are explored after training and before selection", () => {
+  const modelSteps = coreWorkshopExercises.filter((step) => step.location === "models");
+  assert.deepEqual(modelSteps.map((step) => step.id), ["experiments", "train", "explore-results", "select"]);
+  assert.equal(byId.get("explore-results")?.title, "Explore results");
+  assert.deepEqual(byId.get("explore-results")?.dependsOn, ["train"]);
+  assert.deepEqual(byId.get("select")?.dependsOn, ["explore-results"]);
+});
+
 test("both completed paths must rejoin before validation, final test, and upload", () => {
   for (const id of ["integrate", "preprocess", "final-test", "upload"]) {
     const required = ancestors(id);

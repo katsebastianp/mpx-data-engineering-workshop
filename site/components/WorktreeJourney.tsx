@@ -88,7 +88,7 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
         </section>
         <section className="journey-map-lane is-models" aria-labelledby="journey-map-models-heading">
           <h3 id="journey-map-models-heading"><GitBranch size={13} aria-hidden="true" /><span>Worktree B <em>/ models</em></span></h3>
-          <NodeSequence ids={["experiments", "train", "select"]} {...props} />
+          <NodeSequence ids={["experiments", "train", "explore-results", "select"]} {...props} />
         </section>
       </div>
       <BranchConnector join />

@@ -29,7 +29,7 @@ export type WorkshopPart = {
 };
 
 export const WORKSHOP_REPOSITORY_URL = "https://github.com/openai/machine-learning-lhc-workshop";
-export const WORKSHOP_SOURCE_BRANCH = "workshop/e2e-redesign-20261015";
+export const WORKSHOP_SOURCE_BRANCH = "main";
 export const WORKSHOP_SOURCE_URL = `${WORKSHOP_REPOSITORY_URL}/tree/${WORKSHOP_SOURCE_BRANCH}`;
 
 export const workshopParts: WorkshopPart[] = [
@@ -179,46 +179,62 @@ export const workshopParts: WorkshopPart[] = [
   {
     id: "models",
     number: "02",
-    label: "Design an experiment",
-    title: "Design your model experiment",
+    label: "Plan and compare",
+    title: "Plan, run and explore experiments",
     time: "25–55 min · alongside the pipeline exercise",
-    description: "Worktree B · Choose a question, then test it.",
+    description: "Worktree B · Plan your variants, run them, then explore the results.",
     exercises: [
       {
         id: "experiments",
         dependsOn: ["worktrees"],
         location: "models",
-        title: "Plan your experiment",
+        title: "Plan experiments",
         time: "8 min",
-        instruction: "Discuss model ideas in a side chat, then plan one experiment in the model worktree.",
+        instruction: "Brainstorm in a side chat, then agree on a small experiment set in Plan mode.",
         actions: [
           "Ask: What could improve this baseline?",
-          "Ask: Which small experiment would test that?",
-          "Return to the model worktree, select Plan (or /plan), and agree on the experiment.",
+          "Ask: Which variants would test that within the workshop time?",
+          "Return to the model worktree, select Plan (or /plan), and agree on the experiment list.",
         ],
-        decision: "What will you change, and what result do you expect?",
+        decision: "Which variants will you run, and what do you expect?",
         concept: { title: "What is Plan mode?", body: "Plan mode is for working out the approach before implementation. Use it to discuss choices, constraints and checks. Here the task is classification: logistic regression predicts a class score; ordinary linear regression is not the intended baseline." },
-        prompt: "Help me plan [MY QUESTION AND HYPOTHESIS]. Consult official method or library documentation; discuss one small classifier, parameter or feature change, then let me choose. Compare with the saved logistic baseline on the same validation rows and seed 42. Estimate the work and run time. Use measured inputs, preserve original feature values and keep test scores unseen.",
-        hint: "Only logistic regression is implemented. XGBoost is installed, but you build and register its Predictor adapter in predict/models.py. You can also tune logistic regression, select more features, or add a calculation in preprocessing/features.py. Keep the first experiment small.",
-        checkpoint: "You can explain your chosen change, expected result and comparison with the baseline.",
+        prompt: "Plan a small, fixed experiment set for [MY QUESTION AND HYPOTHESIS]. Consult official documentation, estimate implementation and run time, then let me choose the variants. Include the unchanged logistic/basic baseline. Use the same validation rows and seed 42, measured inputs only, and preserve original feature values. Keep test scores unseen and the plan within our workshop time.",
+        hint: "Only logistic regression is implemented. XGBoost is installed, but you build and register its Predictor adapter in predict/models.py. You can also tune logistic regression, select more features, or add a calculation in preprocessing/features.py.",
+        checkpoint: "You have agreed on a finite experiment list, including the unchanged baseline, and each variant’s purpose.",
       },
       {
         id: "train",
         dependsOn: ["experiments"],
         location: "models",
-        title: "Run your experiment",
+        title: "Run experiments",
         time: "10 min",
-        instruction: "Leave Plan mode and run your comparison once the pipeline Docker job finishes.",
-        prompt: "Implement our chosen experiment on {{modelsBranch}} and test the changes. Rerun preprocessing if preprocessing/features.py changed. Run predict and postprocessing in {{composePrefix}}-models with max_workers 1 and validation only. Save config and results under data/evidence/models. Compare with the saved baseline: ROC-AUC, mistakes at 0.5, training and inference time. Show one actual mistake or changed prediction.",
-        decision: "Did your change improve the baseline enough to keep it?",
-        concept: { title: "How do we compare the models?", body: "ROC-AUC measures how well the scores put signal above background across possible cutoffs; higher is better. The confusion matrix counts correct and incorrect choices at one cutoff. Validation results help us choose, so they are not a final independent test." },
-        hint: "Keep the same data and run one heavy job at a time. Use all 1,000 validation examples for metrics. Timing is an observation on your machine, not a universal ranking.",
+        instruction: "Leave Plan mode and run the agreed experiments serially after the pipeline Docker job finishes.",
+        prompt: "Implement the agreed variants on {{modelsBranch}} using the shared Predictor/run/export contract in docs/model-outputs.md. Include the unchanged logistic/basic baseline. Test changes; rerun preprocessing if preprocessing/features.py changed. Run serially in {{composePrefix}}-models with max_workers 1 and validation only. Save data/03_predictions/<run>-<experiment>/{result.json,predictions.parquet}; run postprocessing to export data/05_analytics/comparison.json. Preserve the configuration and results.",
+        hint: "Each experiment must use the shared output format in docs/model-outputs.md. Keep its metadata and predictions together; postprocessing builds the explorer’s JSON from those saved files.",
         commands: "docker compose -p {{composePrefix}}-models run --rm --no-deps lab -m predict\ndocker compose -p {{composePrefix}}-models run --rm --no-deps lab -m postprocessing",
-        checkpoint: "You have a saved comparison and can explain one quality/speed trade-off using the actual results.",
+        checkpoint: "All planned experiments and the unchanged baseline have completed, with one comparison export ready to open.",
+      },
+      {
+        id: "explore-results",
+        dependsOn: ["train"],
+        location: "models",
+        title: "Explore results",
+        time: "5 min",
+        instruction: "Open the results explorer and inspect the completed experiments from this model worktree.",
+        actions: [
+          "Select an experiment; inspect its model, features and settings.",
+          "Compare validation ROC-AUC and time across the variants and baseline.",
+          "Move the threshold, inspect the confusion matrix, then choose a model in the next step.",
+        ],
+        decision: "Which experiment best balances quality and run time?",
+        prompt: "Open tools/results-preview/index.html and load data/05_analytics/comparison.json from this same model worktree. Verify it contains every planned experiment and the unchanged logistic/basic baseline. Use existing results only: no reruns, new experiments or hand-written JSON. Help me inspect settings, validation quality, time and the threshold confusion matrix before choosing a model.",
+        concept: { title: "How do we compare the models?", body: "ROC-AUC measures how well scores rank signal above background; higher is better. The confusion matrix counts correct and incorrect choices at one threshold. Validation helps us choose, so it is not a final independent test." },
+        hint: "The matrix uses all 1,000 validation examples. Moving the threshold changes the decision rule without retraining. Timings describe these runs on your machine.",
+        checkpoint: "Every planned experiment and the baseline are visible, and you can explain their quality/time trade-off.",
       },
       {
         id: "select",
-        dependsOn: ["train"],
+        dependsOn: ["explore-results"],
         location: "models",
         title: "Choose your model and review its PR",
         time: "5 min",
