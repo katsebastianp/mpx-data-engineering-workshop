@@ -10,7 +10,7 @@ const FIELDS = ["version", "dataset_id", "experiment_id", "run_id", "team", "mod
 type JsonObject = Record<string, unknown>;
 export type Split = "validation" | "test";
 export type Model = string;
-export type ParameterValue = number | boolean | null | string;
+export type ParameterValue = number | boolean | null | string | ParameterValue[];
 export type Metrics = {
   rows: number; signal_rows: number; background_rows: number;
   roc_auc: number | null; average_precision: number | null; accuracy: number; f1: number;
@@ -88,12 +88,17 @@ function trainedStatus(payload: JsonObject, model: string): boolean {
   if (!["logistic", "xgboost", "sophon"].includes(model)) fail("New model identifiers require an explicit trained boolean.");
   return isTrained({ model });
 }
+function parameterValue(value: unknown, depth = 0): value is ParameterValue {
+  if (Array.isArray(value)) return depth < 2 && value.length <= 32 && value.every((item) => parameterValue(item, depth + 1));
+  return value === null || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value)
+    || typeof value === "string" && /^[A-Za-z][A-Za-z0-9_.:@-]{0,63}$/.test(value);
+}
 function validateParameters(parameters: JsonObject): asserts parameters is Record<string, ParameterValue> {
   // Display metadata only. The local runtime validates the settings a predictor supports.
   for (const [key, value] of Object.entries(parameters)) {
     if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key) || /(?:^|_)(?:path|dir|directory|file|filename|code|script|command|url)(?:_|$)/i.test(key) || ["constructor", "prototype"].includes(key)) fail("Submission parameters require setting names, not paths or code.");
-    if (value === null || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value) || typeof value === "string" && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)) continue;
-    fail(`parameter ${key} must be finite numeric, boolean, null or a short enum value; no paths or code.`);
+    if (parameterValue(value)) continue;
+    fail(`parameter ${key} must be finite numeric, boolean, null, a short enum, or a list of these (32 items per list, two levels); no paths, objects or code.`);
   }
 }
 function validTimestamp(value: string): boolean {

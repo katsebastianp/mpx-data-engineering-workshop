@@ -99,7 +99,7 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
       </div>
       <details className="optional-journey" open={optionalWorkshopExercises.some(exercise => exercise.id === props.selectedId) || undefined}>
         <summary>Optional · Sophon, final test and sharing</summary>
-        <p>The core workshop ends with your results Site. For the optional leaderboard challenge, freeze your model, run the final test once, then upload its generated result.</p>
+        <p>The core workshop ends with your results page or Model Explorer. For the optional leaderboard challenge, freeze your model, run the final test once, then upload its generated result.</p>
         <NodeSequence ids={optionalWorkshopExercises.map(exercise => exercise.id)} {...props} />
       </details>
     </section>

@@ -22,6 +22,9 @@ from postprocessing.leaderboard import (
 
 LOGGER = logging.getLogger(__name__)
 SPLITS = ("train", "validation", "test")
+MAX_COMPARISON_BYTES = 10 * 1024 * 1024
+POPULATION_FIELDS = ("split", "record_id", "truth_label", "truth_group",
+                     "in_training_support", "particles_truncated")
 
 
 def _validate_jet(row: dict, feature_names: list[str]) -> None:
@@ -105,15 +108,94 @@ def _load_local_submission(path: Path, result: dict) -> dict:
     return make_submission(result, predictions)
 
 
+def _unique_fields(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"Duplicate comparison JSON field: {key}")
+        result[key] = value
+    return result
+
+
+def _finite_json_number(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("Comparison JSON numbers must be finite.")
+    return number
+
+
+def load_comparison(path: Path, dataset_id: str, datasets: dict[str, list[dict]],
+                    truth: dict[str, dict[str, int]]) -> list[dict]:
+    """Recover complete validation runs from an explicitly chosen, bounded export."""
+    if path.is_symlink():
+        raise ValueError(f"Comparison must be a regular JSON file: {path}")
+    with path.open("rb") as stream:
+        raw = stream.read(MAX_COMPARISON_BYTES + 1)
+    if len(raw) > MAX_COMPARISON_BYTES:
+        raise ValueError(f"Comparison exceeds {MAX_COMPARISON_BYTES:,} bytes: {path}")
+    try:
+        export = json.loads(raw, object_pairs_hook=_unique_fields,
+                            parse_float=_finite_json_number, parse_constant=_finite_json_number)
+    except RecursionError:
+        raise ValueError("Comparison JSON nesting is too deep.") from None
+    if (not isinstance(export, dict) or type(export.get("version")) is not int
+            or export["version"] != 1 or export.get("dataset_id") != dataset_id):
+        raise ValueError(f"Comparison must be a version-1 export of the current dataset: {path}")
+    experiments, predictions = export.get("experiments"), export.get("predictions")
+    if not isinstance(experiments, list) or not experiments or not isinstance(predictions, list):
+        raise ValueError("Comparison requires experiment metadata and complete predictions.")
+    if len(experiments) > 500 or len(predictions) > 100_000:
+        raise ValueError("Comparison exceeds the Model Explorer limit of 500 experiments or 100,000 predictions.")
+    payloads = {}
+    for metadata in experiments:
+        if not isinstance(metadata, dict) or not (FIELDS - {"predictions"}) <= metadata.keys():
+            raise ValueError("Comparison experiment metadata is incomplete.")
+        key = metadata.get("experiment_key")
+        if not isinstance(key, str) or not key or key in payloads:
+            raise ValueError("Comparison experiment keys must be unique, nonempty strings.")
+        if metadata["evaluated_splits"] != ["validation"] or metadata["test_selection"] != "not_evaluated":
+            raise ValueError("Only validation comparisons can be imported; keep final test evaluation separate.")
+        payloads[key] = {name: metadata[name] for name in FIELDS - {"predictions"}}
+        payloads[key]["predictions"] = []
+    for row in predictions:
+        if (not isinstance(row, dict)
+                or set(row) != {"experiment_key", "split", "record_id", "signal_score"}
+                or not isinstance(row["experiment_key"], str) or row["experiment_key"] not in payloads):
+            raise ValueError("Comparison predictions must reference a declared experiment.")
+        payloads[row["experiment_key"]]["predictions"].append(
+            {name: row[name] for name in ("split", "record_id", "signal_score")})
+    expected_population = {row["record_id"]: {name: row[name] for name in POPULATION_FIELDS}
+                           for row in datasets["validation"]}
+    population = export.get("population")
+    if not isinstance(population, list) or len(population) != len(expected_population):
+        raise ValueError("Comparison must contain the complete validation population.")
+    seen = set()
+    for row in population:
+        identifier = row.get("record_id") if isinstance(row, dict) else None
+        if (not isinstance(identifier, str) or identifier in seen
+                or row != expected_population.get(identifier)):
+            raise ValueError("Comparison population differs from the prepared validation data.")
+        seen.add(identifier)
+    for key, payload in payloads.items():
+        checked = validate_submission(payload, dataset_id, truth)
+        if checked["experiment_key"] != key or not checked["reported_metrics_match"]:
+            raise ValueError("Comparison experiment identity or metrics differ from its saved scores.")
+    LOGGER.info("Imported %d complete validation experiments from %s", len(payloads), path)
+    return list(payloads.values())
+
+
 def collect_experiments(results_dir: Path, submissions_dir: Path, dataset_id: str,
-                        truth: dict[str, dict[str, int]]) -> tuple[list[dict], list[dict]]:
+                        truth: dict[str, dict[str, int]],
+                        imported: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
     """Collect completed local runs and optional team JSON without executing their code."""
     experiments, local, identities = [], [], {}
 
     def add(payload: dict, source: str) -> dict:
         checked = validate_submission(payload, dataset_id, truth)
         key = checked["experiment_key"]
-        canonical = json.dumps({name: checked[name] for name in FIELDS}, sort_keys=True, allow_nan=False)
+        fields = {name: checked[name] for name in FIELDS}
+        fields["predictions"] = sorted(fields["predictions"], key=lambda row: (row["split"], row["record_id"]))
+        canonical = json.dumps(fields, sort_keys=True, allow_nan=False)
         if key in identities:
             if identities[key] != canonical:
                 raise ValueError(f"Conflicting results for {checked['team']} / {checked['run_id']}.")
@@ -136,6 +218,8 @@ def collect_experiments(results_dir: Path, submissions_dir: Path, dataset_id: st
     if submissions_dir.is_dir():
         for path in sorted(submissions_dir.glob("*.json")):
             add(read_json(path), "submission")
+    for payload in imported or []:
+        add(payload, "comparison")
     if not experiments:
         raise ValueError("No completed predictions or valid submissions found; run the prediction stage first.")
     return experiments, local
@@ -164,8 +248,7 @@ def discovery_export(manifest: dict, datasets: dict[str, list[dict]], experiment
     for split in evaluated:
         ordered = sorted(datasets[split], key=lambda row: row["record_id"])
         for row in ordered:
-            population.append({name: row[name] for name in ("split", "record_id", "truth_label", "truth_group",
-                                                            "in_training_support", "particles_truncated")})
+            population.append({name: row[name] for name in POPULATION_FIELDS})
         for group in ("signal", "background"):
             for row in [row for row in ordered if row["truth_group"] == group][:quota]:
                 jets.append(_display_jet(row, manifest["feature_names"]))
@@ -201,13 +284,15 @@ def _write_submissions(local: list[dict], submissions_dir: Path) -> list[str]:
 
 
 def compare(prepared_dir: Path, results_dir: Path, submissions_dir: Path, output_dir: Path,
-            reference_path: Path | None = None) -> dict:
+            reference_path: Path | None = None, import_comparisons: list[Path] | None = None) -> dict:
     manifest, datasets, truth = load_prepared(prepared_dir)
     if reference_path is not None:
         dataset_id, reference_truth = load_evaluation(reference_path)
         if dataset_id != manifest["dataset_id"] or reference_truth != {split: truth[split] for split in ("validation", "test")}:
             raise ValueError("Prepared evaluation IDs or labels differ from the canonical reference.")
-    experiments, local = collect_experiments(results_dir, submissions_dir, manifest["dataset_id"], truth)
+    imported = [payload for path in import_comparisons or []
+                for payload in load_comparison(path, manifest["dataset_id"], datasets, truth)]
+    experiments, local = collect_experiments(results_dir, submissions_dir, manifest["dataset_id"], truth, imported)
     export = discovery_export(manifest, datasets, experiments)
     explorer_template = load_template()
     database = output_dir / "analytics.duckdb"
@@ -232,11 +317,13 @@ def main(argv=None) -> int:
     parser.add_argument("--submissions-dir", type=Path, default=SUBMISSIONS_DIR)
     parser.add_argument("--output-dir", type=Path, default=ANALYTICS_DIR)
     parser.add_argument("--reference", type=Path, default=CONFIG_DIR / "evaluation.json")
+    parser.add_argument("--import-comparison", type=Path, action="append", default=[],
+                        help="Merge a complete saved validation comparison; repeat for multiple worktrees.")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     try:
         print(json.dumps(compare(args.prepared_dir, args.results_dir, args.submissions_dir,
-                                 args.output_dir, args.reference), indent=2))
+                                 args.output_dir, args.reference, args.import_comparison), indent=2))
         return 0
     except Exception:
         LOGGER.exception("Cannot compare results; fix the reported data or submission error and retry")

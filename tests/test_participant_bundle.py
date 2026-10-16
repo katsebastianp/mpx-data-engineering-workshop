@@ -70,17 +70,28 @@ def test_allowlist_has_current_commands_and_no_hosting_or_submission_identity(tm
     assert len(names) == len(set(names))
 
 
-def test_bundle_includes_every_core_runtime_module():
+def test_bundle_includes_required_release_runtime_modules():
     root = Path(__file__).resolve().parents[1]
+    # This legacy release archive has an explicit starter inventory. Participant
+    # modules added during the workshop are allowed outside that release list.
+    required = {"src/common.py", "src/preprocessing/__init__.py", "src/preprocessing/__main__.py",
+                "src/preprocessing/pipeline.py", "src/preprocessing/features.py",
+                "src/predict/__init__.py", "src/predict/__main__.py", "src/predict/experiment.py",
+                "src/predict/base.py", "src/predict/logistic.py", "src/predict/metrics.py",
+                "src/predict/config.py", "src/predict/data.py", "src/predict/benchmark.py", "src/predict/models.py",
+                "src/postprocessing/__init__.py", "src/postprocessing/__main__.py",
+                "src/postprocessing/compare.py", "src/postprocessing/explorer.py",
+                "src/postprocessing/database.py", "src/postprocessing/leaderboard.py"}
     optional = {"src/predict/sophon.py", "src/predict/sophon_adapter.py", "src/predict/xgboost.py"}
-    sources = {path.relative_to(root).as_posix() for path in (root / "src").rglob("*.py")} - optional
-    assert sources.issubset(bundle.repository_files(root))
+    assert required.issubset(bundle.repository_files(root))
+    assert set(bundle.snapshot_files(root, tuple(required))) == required
     assert not optional.intersection(bundle.repository_files(root))
 
 
-def test_optional_pack_sources_tests_and_weights_never_enter_core_snapshot(tmp_path, monkeypatch):
+def test_optional_pack_and_participant_extensions_never_expand_release_snapshot(tmp_path, monkeypatch):
     (tmp_path / "README.md").write_text("core starter")
     private = ["src/predict/sophon.py", "src/predict/sophon_adapter.py", "src/predict/xgboost.py",
+               "src/predict/participant_classifier.py", "src/preprocessing/participant_features.py",
                "config/experiments-sophon.yaml", "config/sophon-contract.json", "config/sophon-model.lock.json",
                "models/pretrained/sophon/model.onnx", "tests/test_sophon.py", "tests/test_xgboost.py",
                "tests/test_optional_pack.py", "optional-model-pack/tests/test_install.py"]

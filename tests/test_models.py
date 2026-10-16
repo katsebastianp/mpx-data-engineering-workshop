@@ -125,26 +125,71 @@ def test_inference_receives_measurements_only_even_for_new_classifier():
 
 
 @pytest.mark.parametrize("with_reference_pack", [False, True])
-def test_starter_imports_without_optional_modules_and_discovers_pack_when_present(tmp_path, with_reference_pack):
+@pytest.mark.parametrize("with_participant_classifier", [False, True])
+def test_registry_imports_extensions_and_discovers_optional_pack(
+        tmp_path, with_reference_pack, with_participant_classifier):
     root = Path(__file__).resolve().parents[1]
-    package = tmp_path / "starter/predict"
-    package.mkdir(parents=True)
-    for name in ("__init__.py", "base.py", "config.py", "models.py", "logistic.py"):
-        shutil.copyfile(root / "src/predict" / name, package / name)
+    source = tmp_path / "starter"
+    # Keep participant modules and their local imports; only the reference pack is optional.
+    shutil.copytree(root / "src", source,
+                    ignore=shutil.ignore_patterns("__pycache__", "sophon.py", "sophon_adapter.py"))
+    package = source / "predict"
     if with_reference_pack:
         (package / "sophon.py").write_text(
             "from predict.logistic import LogisticPredictor\n"
             "MEASUREMENT_NAMES = ('jet_pt', 'part_energy')\n"
             "class SophonPredictor(LogisticPredictor):\n"
             "    kind = 'sophon'\n")
-    process = subprocess.run([sys.executable, "-c",
-        "import json; from predict.models import PREDICTORS; from predict.config import _feature_names; "
-        "print(json.dumps({'models': sorted(PREDICTORS), 'basic': _feature_names('logistic', 'basic'), "
-        "'particles': _feature_names('sophon', 'particles') if 'sophon' in PREDICTORS else None}))"],
+    from predict.models import PREDICTORS
+    kind = "workshop-test-classifier"
+    while kind in PREDICTORS:
+        kind += "-extra"
+    if with_participant_classifier:
+        module = "workshop_test_classifier"
+        while (package / f"{module}.py").exists():
+            module += "_extra"
+        (package / f"{module}.py").write_text(
+            "from predict.logistic import LogisticPredictor\n"
+            "class FixturePredictor(LogisticPredictor):\n"
+            f"    kind = {kind!r}\n")
+        with (package / "models.py").open("a") as stream:
+            stream.write(f"\nfrom predict.{module} import FixturePredictor\n"
+                         "PREDICTORS[FixturePredictor.kind] = FixturePredictor\n")
+    script = """
+import json
+import sys
+from predict.models import PREDICTORS, train_model, load_model
+from predict.config import _feature_names
+result = {'models': sorted(PREDICTORS), 'basic': _feature_names('logistic', 'basic'),
+          'particles': _feature_names('sophon', 'particles') if 'sophon' in PREDICTORS else None}
+if sys.argv[1]:
+    rows = [{'split': 'train', 'record_id': f'train-{index}',
+             'truth_label': 0 if index % 2 else 187, 'jet_pt': 300. + index,
+             'jet_sdmass': 100. if index % 2 else 10., 'particle_count': 20. + index}
+            for index in range(40)]
+    metadata = train_model(sys.argv[1], rows, result['basic'], {}, sys.argv[2])
+    scores = load_model(metadata).predict(rows)
+    changed = [{**row, 'truth_label': 999, 'record_id': 'ignored'} for row in rows]
+    result['extension'] = {'kind': metadata['kind'], 'trained': metadata['trained'],
+                           'rows': metadata['training_rows'], 'scores': scores.tolist(),
+                           'reloaded_scores': load_model(sys.argv[2]).predict(changed).tolist()}
+print(json.dumps(result))
+"""
+    process = subprocess.run([sys.executable, "-B", "-c", script,
+        kind if with_participant_classifier else "", str(tmp_path / "trained-extension")],
         capture_output=True, text=True, timeout=20,
-        env={**os.environ, "PYTHONPATH": os.pathsep.join([str(package.parent), str(root / "src")])})
+        env={**os.environ, "PYTHONPATH": str(source), "PYTHONDONTWRITEBYTECODE": "1"})
     assert process.returncode == 0, process.stderr
     result = json.loads(process.stdout)
-    assert result["models"] == (["logistic", "sophon"] if with_reference_pack else ["logistic"])
+    assert "logistic" in result["models"]
+    assert ("sophon" in result["models"]) == with_reference_pack
+    assert set(PREDICTORS) - {"sophon"} <= set(result["models"])
     assert result["basic"] == ["jet_pt", "jet_sdmass", "particle_count"]
     assert result["particles"] == (["jet_pt", "part_energy"] if with_reference_pack else None)
+    if with_participant_classifier:
+        extension = result["extension"]
+        assert extension["kind"] == kind and kind in result["models"]
+        assert extension["trained"] is True and extension["rows"] == 40
+        assert extension["scores"] == extension["reloaded_scores"]
+        labels = [int(row["truth_label"] == 0) for row in train_rows()]
+        assert classification_metrics(labels, extension["scores"])["roc_auc"] > .95

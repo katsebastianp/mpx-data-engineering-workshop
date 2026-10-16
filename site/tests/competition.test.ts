@@ -132,9 +132,10 @@ test("unknown fields, code-like parameters and booleans masquerading as timings 
   assert.throws(() => validateSubmission({ ...fixture(), timings: { ...fixture().timings, training_seconds: true } }, truth), /finite/);
   assert.throws(() => validateSubmission({ ...fixture(), timings: { ...fixture().timings, repeat_count: true } }, truth), /three measured/);
 });
-test("custom classifiers, engineered features and scalar parameter metadata survive publication", () => {
+test("custom classifiers, engineered features and parameter metadata survive publication", () => {
   const payload = { ...fixture(), model: "random_forest", trained: true,
-    feature_names: ["energy_ratio", "jet_pt"], parameters: { bootstrap: true, criterion: "gini", max_features: null, offset: -1 } };
+    feature_names: ["energy_ratio", "jet_pt"], parameters: { bootstrap: true, criterion: "gini", max_features: null, offset: -1,
+      objective: "binary:logistic", eval_metric: "error@0.5", hidden_layer_sizes: [32, 16], interaction_constraints: [[0, 1], [2]] } };
   const entry = bindParticipantSubmission(validateSubmission(payload, truth), { id: "p-custom", displayName: "Custom" });
   assert.equal(entry.trained, true);
   assert.deepEqual(entry.parameters, payload.parameters);
@@ -145,7 +146,9 @@ test("extended metadata rejects paths, code, nested settings, invalid slugs and 
   for (const patch of [
     { trained: 1 }, { trained: "true" }, { trained: null },
     { model: "../classifier", trained: true }, { model: "x".repeat(65), trained: true },
-    { parameters: { criterion: "run()" } }, { parameters: { weights: [1, 2] } },
+    { parameters: { criterion: "run()" } }, { parameters: { weights: Array(33).fill(1) } },
+    { parameters: { weights: [[[1]]] } }, { parameters: { weights: [Infinity] } },
+    { parameters: { weights: ["../private"] } }, { parameters: { weights: [{ x: 1 }] } },
     { parameters: { settings: { depth: 3 } } }, { parameters: { criterion: "x".repeat(65) } },
     { parameters: { model_dir: "models" } }, { parameters: { code: "run" } },
   ]) assert.throws(() => validateSubmission({ ...fixture(), ...patch }, truth), SubmissionError);

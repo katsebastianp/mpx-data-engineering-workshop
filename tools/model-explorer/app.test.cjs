@@ -97,6 +97,19 @@ test('experiment and baseline options include run IDs only to disambiguate repea
   }
   assert.equal(app.nodes['operating-point'].children[0].children.filter(node => node.tagName === 'H3').length, 0);
 });
+test('participant classifier parameters load and render in the generated explorer', async () => {
+  const data = structuredClone(fixture), selected = data.experiments[1];
+  selected.model = 'participant_classifier'; selected.trained = true;
+  selected.parameters = { objective: 'binary:logistic', eval_metric: ['auc', 'error@0.5'],
+    interaction_constraints: [[0, 1], [2]] };
+  const app = viewer('file:', JSON.stringify(data));
+  assert.equal(app.nodes.content.hidden, false);
+  assert.equal(app.calls.length, 0);
+  app.nodes.experiment.value = selected.experiment_key; await app.nodes.experiment.emit('change');
+  assert.match(app.nodes['experiment-parameters'].textContent, /binary:logistic/);
+  assert.ok(app.nodes['experiment-parameters'].textContent.includes('[[0,1],[2]]'));
+  assert.ok(app.nodes['experiment-parameters'].textContent.includes('["auc","error@0.5"]'));
+});
 test('only the selected confusion matrix changes at thresholds 0, 0.5 and 1; validation AUC stays fixed', async () => {
   const app = viewer(); await app.open(fixture);
   for (const experiment of fixture.experiments) {
@@ -139,6 +152,10 @@ test('invalid data is rejected without replacing the prior valid result', async 
     data => data.predictions.push(data.predictions[0]),
     data => { data.experiments[0].feature_names = ['truth/invalid']; },
     data => { data.experiments[0].parameters = { code: 'execute' }; },
+    data => { data.experiments[0].parameters = { weights: Array(33).fill(1) }; },
+    data => { data.experiments[0].parameters = { weights: [[[1]]] }; },
+    data => { data.experiments[0].parameters = { weights: ['../private'] }; },
+    data => { data.experiments[0].parameters = { weights: [{ x: 1 }] }; },
     data => { data.experiments[0].model = 'custom'; delete data.experiments[0].trained; },
     data => { const id = data.population[0].record_id; data.population.shift(); data.predictions = data.predictions.filter(row => row.record_id !== id); data.jets = data.jets.filter(row => row.record_id !== id); },
   ];

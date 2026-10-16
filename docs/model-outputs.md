@@ -59,8 +59,23 @@ In `comparison.json`, join `experiments` to `predictions` using `experiment_key`
 
 Postprocessing uses the source template in `tools/model-explorer/` to generate the HTML alongside the JSON. Open the generated HTML directly; do not edit it or load JSON by hand.
 
+## Keep the batch after merging
+
+Before leaving the model worktree, copy its complete `data/05_analytics/comparison.json` into the original checkout at `data/evidence/models/comparison.json`. After merging and running the selected configuration once on the combined code, import the saved batch:
+
+```sh
+docker compose run --rm --no-deps lab -m postprocessing \
+  --import-comparison data/evidence/models/comparison.json
+```
+
+The regenerated JSON and Model Explorer contain the saved baseline, every completed variant and the new integration run. No variant is retrained. Repeat `--import-comparison` for additional saved batches; include it whenever rebuilding this comparison. Identical runs are deduplicated by team/run ID; conflicting runs, missing scores, changed labels and invalid metadata stop the export before existing outputs change.
+
+Imports accept complete validation exports from the same dataset, up to 10 MiB each. Scores, metadata and the full validation population are checked; metrics are recomputed. Display jets and rankings are rebuilt from current prepared data and checked experiments. Imported files stay unchanged. Final test evaluation remains separate.
+
 ## Adding a classifier
 
 Implement `Predictor` in `src/predict/` and register it in `PREDICTORS`. Use the logistic implementation as the example: declare `kind` and `model_file`; implement `train`, artifact loading in `__init__`, and `_predict`. `train` saves the native artifact and returns metadata including a boolean `trained` and the actual `parameters`. `_predict` returns one signal score per input row in the same order.
+
+Parameter names must be safe identifiers, without path/code keys. Values may be finite numbers, booleans, null, enum strings or lists. Strings start with a letter, contain only letters, numbers, `.`, `:`, `@`, `-` or `_`, and have at most 64 characters. Lists have at most 32 elements each and two list levels. Examples: `objective: binary:logistic`, `eval_metric: error@0.5`, `hidden_layer_sizes: [32, 16]`, `interaction_constraints: [[0, 1], [2]]`. Nested objects, code and paths are rejected.
 
 Run it through `python -m predict` and `python -m postprocessing`. The shared code validates training inputs, reloads the saved model, evaluates it, measures timing, writes artifacts and checks the export. Do not add an independent results writer, change the prediction schema, or handcraft JSON to make a model appear in the comparison.

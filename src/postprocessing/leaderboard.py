@@ -148,6 +148,15 @@ def _trained(row: dict, *, require_explicit: bool = False) -> bool:
     return False
 
 
+def _parameter_value(value: Any, depth: int = 0) -> bool:
+    """Bounded display values, including objectives and small layer/constraint lists."""
+    if isinstance(value, list):
+        return depth < 2 and len(value) <= 32 and all(_parameter_value(item, depth + 1) for item in value)
+    return (value is None or type(value) is bool
+            or type(value) in (int, float) and math.isfinite(value)
+            or isinstance(value, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_.:@-]{0,63}", value) is not None)
+
+
 def _validate_parameters(parameters: dict) -> None:
     """Only display metadata crosses this boundary; the local runtime validates supported settings."""
     for name, value in parameters.items():
@@ -155,11 +164,10 @@ def _validate_parameters(parameters: dict) -> None:
                 or re.search(r"(?:^|_)(?:path|dir|directory|file|filename|code|script|command|url)(?:_|$)", name, re.I)
                 or name in {"constructor", "prototype"}):
             raise ValueError("Submission parameters require setting names, not paths or code.")
-        if (value is None or type(value) is bool
-                or type(value) in (int, float) and math.isfinite(value)
-                or isinstance(value, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", value)):
+        if _parameter_value(value):
             continue
-        raise ValueError(f"parameter {name} must be finite numeric, boolean, null or a short enum value; no paths or code.")
+        raise ValueError(f"parameter {name} must be finite numeric, boolean, null, a short enum, or a list "
+                         "of these (32 items per list, two levels); no paths, objects or code.")
 
 
 def submission_name(payload: dict) -> str:

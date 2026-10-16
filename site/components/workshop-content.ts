@@ -38,7 +38,7 @@ export const workshopParts: WorkshopPart[] = [
     number: "00",
     label: "Setup & understand",
     title: "Prepare the project",
-    time: "00–25 min · allow extra for first-time setup",
+    time: "00–30 min · image built beforehand",
     description: "Get the code, follow one example, and run the baseline.",
     exercises: [
       {
@@ -115,6 +115,7 @@ export const workshopParts: WorkshopPart[] = [
           "Confirm your setup and HTML are committed and pushed.",
           "New chat → Worktree → choose {{branch}} as the starting branch.",
           "Do this twice, then use the Worktree A and B prompts below.",
+          "While the pipeline chat measures, plan your experiments in the model chat.",
         ],
         concept: { title: "What is a worktree?", body: "A worktree is another folder connected to the same Git repository. Each chat can change files independently; its starter below creates a named branch. Clicking Mark complete on this Site only records your progress. It does not create a worktree, commit code or merge a PR." },
         hint: "The supplied .worktreeinclude copies raw and prepared inputs into each worktree. Outputs stay separate. Scikit-learn and XGBoost are already installed; their classifier integrations need no image rebuild.",
@@ -131,7 +132,7 @@ export const workshopParts: WorkshopPart[] = [
     number: "01",
     label: "Change one setting",
     title: "Change one pipeline setting",
-    time: "25–55 min · alongside the model exercise",
+    time: "30–80 min · alongside the model exercise",
     description: "Worktree A · Predict, change, measure.",
     exercises: [
       {
@@ -170,7 +171,7 @@ export const workshopParts: WorkshopPart[] = [
         actions: [
           "Open the PR on GitHub and check that its base is {{branch}}.",
           "In Codex, choose Review PR (or Code Review → select the PR → Review with Codex).",
-          "Read the findings, fix relevant issues, and leave the PR open.",
+          "Read the findings. Ask Codex to fix relevant issues, commit and push to the same PR; verify the updated diff. Leave it open.",
         ],
         checkpoint: "A real PR URL is in your chat. You have read the diff and the review findings.",
       },
@@ -181,7 +182,7 @@ export const workshopParts: WorkshopPart[] = [
     number: "02",
     label: "Plan and compare",
     title: "Plan, run and explore experiments",
-    time: "25–55 min · alongside the pipeline exercise",
+    time: "30–80 min · alongside the pipeline exercise",
     description: "Worktree B · Plan your variants, run them, then explore the results.",
     exercises: [
       {
@@ -190,7 +191,7 @@ export const workshopParts: WorkshopPart[] = [
         location: "models",
         title: "Plan experiments",
         time: "8 min",
-        instruction: "Brainstorm in a side chat, then agree on a small experiment set in Plan mode.",
+        instruction: "Brainstorm in a side chat, then plan the baseline plus 2–3 variants. Start with a feature or parameter change; add a classifier if time allows.",
         actions: [
           "Type /side to open a side chat for model ideas.",
           "Ask: Which variants could improve this baseline within the workshop time?",
@@ -198,7 +199,7 @@ export const workshopParts: WorkshopPart[] = [
         ],
         decision: "Which variants will you run, and what do you expect?",
         concept: { title: "What is Plan mode?", body: "Plan mode is for working out the approach before implementation. Use it to discuss choices, constraints and checks. Here the task is classification: logistic regression predicts a class score; ordinary linear regression is not the intended baseline." },
-        prompt: "Plan a small, fixed experiment set for [MY QUESTION AND HYPOTHESIS]. Consult official documentation, estimate implementation and run time, then let me choose the variants. Include the unchanged logistic/basic baseline. Use the same validation rows and seed 42, measured inputs only, and preserve original feature values. Keep test scores unseen and the plan within our workshop time.",
+        prompt: "Plan a fixed experiment set for [MY QUESTION AND HYPOTHESIS]. Recommend the unchanged logistic/basic baseline plus 2–3 variants. Consult official documentation, estimate implementation and run time, then let me choose the scope. Use the same validation rows and seed 42, measured inputs only, and preserve original feature values. Keep test scores unseen and the plan within our workshop time.",
         hint: "Only logistic regression is implemented. XGBoost is installed, but you build and register its Predictor adapter in predict/models.py. You can also tune logistic regression, select more features, or add a calculation in preprocessing/features.py.",
         checkpoint: "You have agreed on a finite experiment list, including the unchanged baseline, and each variant’s purpose.",
       },
@@ -207,7 +208,7 @@ export const workshopParts: WorkshopPart[] = [
         dependsOn: ["experiments"],
         location: "models",
         title: "Run experiments",
-        time: "10 min",
+        time: "15 min",
         instruction: "Leave Plan mode and run the agreed experiments serially after the pipeline Docker job finishes.",
         prompt: "Implement the agreed variants on {{modelsBranch}} using the shared Predictor/run/export contract in docs/model-outputs.md. Include the unchanged logistic/basic baseline. Test changes; rerun preprocessing if preprocessing/features.py changed. Run serially in {{composePrefix}}-models with max_workers 1 and validation only. Save data/03_predictions/<run>-<experiment>/{result.json,predictions.parquet}. Run postprocessing to write data/05_analytics/comparison.json and data/05_analytics/model-explorer.html. Preserve the configuration and results.",
         hint: "Postprocessing embeds the comparison results in one self-contained Model Explorer HTML file. Open it directly; no JSON file picker is needed.",
@@ -243,7 +244,7 @@ export const workshopParts: WorkshopPart[] = [
         actions: [
           "Check the chosen model’s configuration on GitHub and confirm the base is {{branch}}.",
           "In Codex, choose Review PR (or Code Review → select the PR → Review with Codex).",
-          "Read the findings, fix relevant issues, and leave the PR open.",
+          "Read the findings. Ask Codex to fix relevant issues, commit and push to the same PR; verify the updated diff. Leave it open.",
         ],
         checkpoint: "Your model choice has a clear reason and a real PR. You have reviewed its configuration and findings.",
       },
@@ -254,7 +255,7 @@ export const workshopParts: WorkshopPart[] = [
     number: "03",
     label: "Merge & verify",
     title: "Merge and check",
-    time: "55–70 min",
+    time: "80–100 min",
     description: "Merge both PRs and run the combined code.",
     exercises: [
       {
@@ -279,11 +280,13 @@ export const workshopParts: WorkshopPart[] = [
         dependsOn: ["integrate"],
         location: "integration",
         title: "Check the combined result",
-        time: "10 min",
+        time: "15 min",
         instruction: "Run the merged code and check the original features and your experiment results.",
-        prompt: "On {{branch}}, preserve outputs and copy both worktrees’ evidence into separate data/evidence folders. Run tests and preprocessing in {{composePrefix}}-integration. Use scripts/compare_preprocessing.py with --allow-added-features to check original values against baseline, and test new features. Run the chosen model and postprocessing on validation; compare with its saved results. Explain differences without retuning or inspecting test scores.",
+        prompt: "On {{branch}}, preserve the pipeline evidence and copy the model worktree’s data/05_analytics/comparison.json to data/evidence/models/comparison.json. Run tests and preprocessing in {{composePrefix}}-integration. Run scripts/compare_preprocessing.py data/02_preprocessed_baseline data/02_preprocessed --allow-added-features; test new features. Run the chosen model on validation, then postprocessing --import-comparison data/evidence/models/comparison.json. Confirm Model Explorer contains the full planned batch and baseline alongside the integration run. Explain differences without retuning or inspecting test scores.",
+        commandTitle: "Export the complete comparison after the integration run",
+        commands: "docker compose -p {{composePrefix}}-integration run --rm --no-deps lab -m postprocessing --import-comparison data/evidence/models/comparison.json",
         hint: "The pipeline PR checks exact equality before model features are added. After merging, check the original eight values plus tests for any new features. Keep both worktrees until this passes; Git does not copy their ignored outputs.",
-        checkpoint: "The original eight features are unchanged, any added features pass checks, and the chosen model’s validation result is consistent.",
+        checkpoint: "Original features are unchanged, new features pass checks, and Model Explorer retains every planned experiment plus the integration run.",
       },
     ],
   },
@@ -292,7 +295,7 @@ export const workshopParts: WorkshopPart[] = [
     number: "04",
     label: "Make it your own",
     title: "Build your results page",
-    time: "70–90 min",
+    time: "100–120 min",
     description: "Choose the design; include a threshold slider and confusion matrix.",
     exercises: [
       {
@@ -301,16 +304,17 @@ export const workshopParts: WorkshopPart[] = [
         location: "integration",
         title: "Build your results Site",
         time: "15 min + 5 min to explain",
-        instruction: "Use the Sites plugin to build one page from your saved results.",
+        instruction: "Build one page with the Sites plugin, or use Model Explorer to present your results.",
         decision: "What should someone learn from your results page?",
         actions: [
           "Add a threshold slider linked to the confusion matrix.",
           "Choose one extra: pipeline timings, model comparison, or a misclassified example.",
+          "If Sites is unavailable or generation takes more than 10 minutes, open data/05_analytics/model-explorer.html.",
           "Try the slider, then explain your result in one minute.",
         ],
-        prompt: "Use the Sites plugin to make one simple results page for [MY AUDIENCE], focused on [MY STORY]. Use my actual saved validation results. Include a threshold slider and confusion matrix recomputed from all validation predictions, plus [MY CHOSEN EXTRA]. Keep it small and interactive. Explain the two error types and label these as validation results. Check the slider and source counts.",
+        prompt: "Use the Sites plugin to make one simple results page for [MY AUDIENCE], focused on [MY STORY]. Use the merged data/05_analytics/comparison.json, including all planned experiments and the baseline. Include a threshold slider and confusion matrix recomputed from all validation predictions, plus [MY CHOSEN EXTRA]. Keep it small and interactive. Explain the two error types and label these as validation results. Check the slider and source counts.",
         concept: { title: "What does the threshold change?", body: "A model gives each example a score. The threshold decides which scores count as signal. Moving it changes the number of signals you keep and backgrounds you accept; it does not retrain the model. The matrix should always contain the same 1,000 validation examples." },
-        hint: "If site generation is taking too long, open data/05_analytics/model-explorer.html. Model Explorer already includes your results and a threshold slider. Publishing is optional; verify the audience before sharing a link.",
+        hint: "Either page completes this step. Publishing is optional; verify the audience before sharing a link.",
         checkpoint: "Your slider works on all validation examples, and you can explain one decision from the experiment.",
       },
     ],

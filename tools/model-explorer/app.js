@@ -18,6 +18,12 @@
   const distributionPlot = { left: 52, right: 620, top: 40, bottom: 246, bins: 32 };
   let requestGeneration = 0;
 
+  function parameterValue(value, depth = 0) {
+    if (Array.isArray(value)) return depth < 2 && value.length <= 32 && value.every(item => parameterValue(item, depth + 1));
+    return value === null || typeof value === 'boolean' || number(value)
+      || typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_.:@-]{0,63}$/.test(value);
+  }
+
   function validate(data) {
     assert(object(data) && data.version === 1 && /^[a-f0-9]{64}$/.test(data.dataset_id || ''), 'Choose a version-1 comparison.json or leaderboard.json export.');
     if (!object(data.leaderboard) || !Array.isArray(data.experiments)) throw new Error('This looks like a submission. Run the postprocessing step to preview it, or upload the JSON to the workshop leaderboard while signed in.');
@@ -27,7 +33,7 @@
       assert(object(row) && text(row.experiment_key) && text(row.team) && text(row.model) && text(row.run_id) && text(row.feature_set) && object(row.metrics) && object(row.timings), 'An experiment is missing its result fields.');
       assert(/^[a-z][a-z0-9_-]{0,63}$/.test(row.model) && (typeof row.trained === 'boolean' || row.trained === undefined && ['logistic', 'xgboost', 'sophon'].includes(row.model)), 'New model identifiers require a trained boolean. Regenerate the results export.');
       assert(text(row.experiment_id) && Array.isArray(row.feature_names) && row.feature_names.length > 0 && row.feature_names.length <= 100 && row.feature_names.every(name => typeof name === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)) && new Set(row.feature_names).size === row.feature_names.length && object(row.parameters) && Object.keys(row.parameters).length <= 100 && Number.isInteger(row.seed), 'An experiment has invalid feature, parameter or seed metadata.');
-      for (const [name, value] of Object.entries(row.parameters)) assert(/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name) && !/(?:^|_)(?:path|dir|directory|file|filename|code|script|command|url)(?:_|$)/i.test(name) && !['constructor', 'prototype'].includes(name) && (value === null || typeof value === 'boolean' || number(value) || typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)), 'Parameters must be bounded scalar settings, not paths or code.');
+      for (const [name, value] of Object.entries(row.parameters)) assert(/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name) && !/(?:^|_)(?:path|dir|directory|file|filename|code|script|command|url)(?:_|$)/i.test(name) && !['constructor', 'prototype'].includes(name) && parameterValue(value), 'Parameters must be bounded scalar settings or small lists, not paths, objects or code.');
       assert(!experiments.has(row.experiment_key), 'Duplicate experiment identifiers; regenerate the export.');
       assert(Array.isArray(row.evaluated_splits) && ['["validation"]', '["validation","test"]'].includes(JSON.stringify(row.evaluated_splits)) && row.test_selection === (row.evaluated_splits.includes('test') ? 'final' : 'not_evaluated'), 'An experiment has an unsupported evaluation split.');
       for (const split of row.evaluated_splits) assert(object(row.metrics[split]) && number(row.metrics[split].roc_auc) && row.metrics[split].roc_auc >= 0 && row.metrics[split].roc_auc <= 1, 'A saved ROC-AUC is invalid.');

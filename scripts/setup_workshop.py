@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LOGGER = logging.getLogger(__name__)
 SAMPLE_FILES = {"manifest.json", "train.parquet", "validation.parquet", "test.parquet"}
-SITE = "https://ringier-collision-lab.openai.chatgpt.site/workshop?step=project"
+SITE = "https://ringier-collision-lab.openai.chatgpt.site/workshop?step=download-data"
 
 
 def sha256(path: Path) -> str:

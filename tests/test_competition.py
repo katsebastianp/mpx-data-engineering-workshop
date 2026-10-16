@@ -44,10 +44,12 @@ def test_metrics_are_recomputed_and_bad_reported_claim_is_flagged():
     assert result["timings"]["relative_speed"] == pytest.approx(5)
 
 
-def test_custom_classifier_features_and_scalar_metadata_can_be_published():
+def test_custom_classifier_features_and_parameter_metadata_can_be_published():
     payload, truth = sample_submission()
     payload.update(model="random_forest", trained=True, feature_names=["energy_ratio", "jet_pt"],
-                   parameters={"bootstrap": True, "criterion": "gini", "max_features": None, "offset": -1})
+                   parameters={"bootstrap": True, "criterion": "gini", "max_features": None, "offset": -1,
+                               "objective": "binary:logistic", "eval_metric": "error@0.5",
+                               "hidden_layer_sizes": [32, 16], "interaction_constraints": [[0, 1], [2]]})
     checked = validate_submission(payload, payload["dataset_id"], truth)
     assert checked["trained"] is True
     assert checked["parameters"] == payload["parameters"]
@@ -73,7 +75,9 @@ def test_legacy_results_are_normalized_without_mutating_the_input():
 @pytest.mark.parametrize("change", [
     {"model": "random_forest"}, {"trained": 1}, {"trained": "true"},
     {"model": "../classifier", "trained": True}, {"model": "x" * 65, "trained": True},
-    {"parameters": {"criterion": "run()"}}, {"parameters": {"weights": [1, 2]}},
+    {"parameters": {"criterion": "run()"}}, {"parameters": {"weights": [1] * 33}},
+    {"parameters": {"weights": [[[1]]]}}, {"parameters": {"weights": [float("inf")]}},
+    {"parameters": {"weights": ["../private"]}}, {"parameters": {"weights": [{"x": 1}]}},
     {"parameters": {"settings": {"depth": 3}}}, {"parameters": {"criterion": "x" * 65}},
     {"parameters": {"model_dir": "models"}}, {"parameters": {"code": "run"}},
 ])

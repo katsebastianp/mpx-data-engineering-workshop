@@ -30,9 +30,6 @@ export function SampleDownloads() {
         Keep the filenames unchanged and move all four into <code>data/01_raw/</code> in your cloned repository.
         Follow the prompts below. Python setup runs in the baseline step.
       </p>
-      <p className={styles.modelNote}>
-        Python downloads Sophon separately from Hugging Face. No Hugging Face account is needed.
-      </p>
     </section>
   );
 }

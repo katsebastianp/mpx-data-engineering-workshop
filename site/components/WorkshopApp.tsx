@@ -36,20 +36,20 @@ function Physics(){
 }
 function Brief({navigate}:{navigate:(p:Page)=>void}) {
  const requirements = [
-  ['Codex', 'Use the model available in your workspace. Try a repository read before the session; the core exercises do not require Ultra.'],
-  ['GitHub plugin + access', 'Connect GitHub and check that you can push a branch to the workshop repository. Terminal commands are available if the plugin cannot clone locally.'],
-  ['Docker ready', 'Start Docker Desktop or Colima and build the workshop image before the session if possible. The lab uses 2 CPUs and 2 GiB; run one heavy job at a time.'],
+  ['Codex', 'Use your participant account and available model to read the repository before the session. Ultra is not required.'],
+  ['GitHub plugin + access', 'With your participant account, confirm you can push a branch, open a PR and merge it in the workshop repository. Resolve access with the facilitator before the session.'],
+  ['Docker ready', 'Start Docker Desktop or Colima, build the workshop image and run setup before the session. The lab uses 2 CPUs and 2 GiB.'],
   ['Four sample files', 'Download the four files from instruction step 02. Setup verifies them without downloading a model. No host Python, Java, GPU or API key is needed for the core workshop.'],
-  ['Plan, Worktree and Code Review', 'Find Plan in the composer, try a Worktree chat, and locate Review PR or Code Review. The Site explains each control when you need it.'],
-  ['Your account', 'Sign in to this Site for personal branch names and a saved checklist. Check Sites access if you want to publish your results page.'],
+  ['Plan, Worktree and Code Review', 'Try /side, Plan and a Worktree chat. Confirm Review PR or Code Review works for the workshop repository.'],
+  ['Your account', 'Sign in here with your participant account and check your personal prompts. Check Sites plugin access to build your own page; Model Explorer is the fallback.'],
  ];
  return <div className="brief-page">
-  <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h1>Get setup out of the way</h1></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><p className="muted-note">The timings below are a facilitation target. First-time Docker builds and slower laptops can take longer. Keep max_workers at 1 and ask for help if setup stalls.</p></section>
-  <section className="section-wrap agenda"><span className="section-kicker">90 MINUTES + BUFFER</span><h2>Agenda</h2>{[
-   ["00–25", "Explore & run", "Get the code, trace a real jet, run the logistic baseline, open worktrees"],
-   ["25–55", "Run & explore", "One Spark setting + planned model variants; explore results, choose a model and review both PRs"],
-   ["55–70", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
-   ["70–90", "Build & explain", "Your results page, a threshold slider, a confusion matrix, one decision"],
+  <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h1>Get setup out of the way</h1></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><p className="muted-note">A two-hour facilitation target, with setup completed beforehand. Timings vary by laptop and Codex model.</p></section>
+  <section className="section-wrap agenda"><span className="section-kicker">2-HOUR SESSION</span><h2>Agenda</h2>{[
+   ["00–30", "Explore & run", "Get the code, trace a real jet, run the logistic baseline, open worktrees"],
+   ["30–80", "Run & explore", "One Spark setting + planned model variants; explore results, choose a model and review both PRs"],
+   ["80–100", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
+   ["100–120", "Build & explain", "Your results page or Model Explorer, a threshold slider, one decision"],
    ["Extra", "Choose your extension", "Another experiment, the ready-made Sophon demo pack, or the optional final test"],
   ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
   <PredictionFlow/>
