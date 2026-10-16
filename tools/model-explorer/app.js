@@ -15,6 +15,7 @@
   const modelLabel = experiment => isTrained(experiment) ? experiment.model : `${experiment.model === 'sophon' ? 'Sophon' : experiment.model} (frozen reference)`;
   const label = experiment => `${experiment.experiment_id || experiment.feature_set} · ${modelLabel(experiment)} · ${experiment.run_id} · ${experiment.team}`;
   const splitNames = ['validation', 'test'];
+  const distributionPlot = { left: 52, right: 620, top: 40, bottom: 246, bins: 32 };
   let requestGeneration = 0;
 
   function validate(data) {
@@ -81,8 +82,14 @@
     if (state.baseline && !experiments.some(row => row.experiment_key === state.baseline)) state.baseline = '';
     select.replaceChildren(); baseline.replaceChildren();
     const empty = el('option', 'Choose a baseline'); empty.value = ''; baseline.append(empty);
+    const identifierCounts = new Map();
+    for (const row of experiments) identifierCounts.set(row.experiment_id, (identifierCounts.get(row.experiment_id) || 0) + 1);
     for (const row of experiments) {
-      for (const picker of [select, baseline]) { const option = el('option', label(row)); option.value = row.experiment_key; picker.append(option); }
+      const concise = `${row.experiment_id} · ${row.feature_names.length} features${identifierCounts.get(row.experiment_id) > 1 ? ` · ${row.run_id}` : ''}`;
+      for (const picker of [select, baseline]) {
+        const option = el('option', concise); option.value = row.experiment_key;
+        option.setAttribute('title', label(row)); option.setAttribute('aria-label', label(row)); picker.append(option);
+      }
     }
     select.value = state.selected || ''; baseline.value = state.baseline; select.disabled = baseline.disabled = !experiments.length;
     const split = $('split'), previous = split.value; split.replaceChildren();
@@ -104,16 +111,16 @@
     set('selected-training', row ? `${format(row.timings.training_seconds, 4)} s` : '—');
     set('selected-inference', row ? `${format(row.timings.per_jet_ms, 6)} ms` : '—');
     const delta = (value, reference, unit, digits) => {
-      if (!baseline) return 'Choose a comparison baseline.';
-      if (row === baseline) return 'Selected baseline.';
-      if (!number(value) || !number(reference)) return 'No matching baseline measurement.';
+      if (!baseline) return 'Choose a baseline';
+      if (row === baseline) return 'Baseline';
+      if (!number(value) || !number(reference)) return '—';
       const difference = value - reference;
-      return `${difference > 0 ? '+' : difference < 0 ? '−' : ''}${format(Math.abs(difference), digits)}${unit} vs ${baseline.experiment_id}`;
+      return `${difference > 0 ? '+' : difference < 0 ? '−' : ''}${format(Math.abs(difference), digits)}${unit} vs baseline`;
     };
     set('auc-delta', delta(row?.metrics.validation?.roc_auc, baseline?.metrics.validation?.roc_auc, '', 4));
-    set('training-delta', delta(row?.timings.training_seconds, baseline?.timings.training_seconds, ' s', 4));
-    set('inference-delta', delta(row?.timings.per_jet_ms, baseline?.timings.per_jet_ms, ' ms', 6));
-    set('baseline-note', baseline ? `Comparison baseline: ${baseline.experiment_id}. Its saved feature list and parameters are available in the experiment selector.` : 'Choose a comparison baseline to see the differences.');
+    set('training-delta', !baseline || row === baseline ? '' : delta(row?.timings.training_seconds, baseline.timings.training_seconds, ' s', 4));
+    set('inference-delta', !baseline || row === baseline ? '' : delta(row?.timings.per_jet_ms, baseline.timings.per_jet_ms, ' ms', 6));
+    set('baseline-note', baseline ? `Baseline: ${baseline.experiment_id}` : 'Choose a baseline to compare.');
   }
   const rankingSource = () => state.shared && (!state.comparison || state.shared.dataset_id === state.comparison.dataset_id) ? state.shared : state.comparison;
   const tableRow = values => { const row = el('tr'); for (const value of values) row.append(el('td', value)); return row; };
@@ -156,14 +163,14 @@
     const logs = points.map(row => Math.log10(row.timings.per_jet_ms));
     const lo = Math.min(...logs) - .3, hi = Math.max(...logs) + .3, x = value => 65 + (Math.log10(value) - lo) / (hi - lo) * 540, y = value => 220 - value * 190;
     for (let i = 0; i <= 4; i++) {
-      const score = i / 4; svg.append(svgNode('line', { x1: 65, x2: 605, y1: y(score), y2: y(score), stroke: '#d4d4d4' })); svgText(svg, 53, y(score) + 4, score.toFixed(2), { 'text-anchor': 'end' });
+      const score = i / 4; svg.append(svgNode('line', { x1: 65, x2: 605, y1: y(score), y2: y(score), stroke: 'var(--line, #4b525b)' })); svgText(svg, 53, y(score) + 4, score.toFixed(2), { 'text-anchor': 'end' });
       const cost = 10 ** (lo + (hi - lo) * i / 4); svgText(svg, x(cost), 238, cost.toExponential(1), { 'text-anchor': 'middle' });
     }
     svgText(svg, 65, 16, `${split === 'test' ? 'Final test' : 'Validation'} ROC-AUC`); svgText(svg, 335, 263, 'Inference ms / jet · logarithmic · lower is faster', { 'text-anchor': 'middle' });
     for (const row of points) {
       const title = `${label(row)}; ROC-AUC ${format(row.metrics[split].roc_auc, 4)}; inference ${format(row.timings.per_jet_ms, 6)} ms / jet`;
-      const dot = svgNode('circle', { cx: x(row.timings.per_jet_ms), cy: y(row.metrics[split].roc_auc), r: row.experiment_key === state.selected ? 8 : 6, fill: row.experiment_key === state.selected ? '#245e8a' : isTrained(row) ? '#161616' : '#777', stroke: '#fff', 'stroke-width': 1, tabindex: 0, role: 'button', 'aria-label': `Inspect ${title}`, 'aria-pressed': String(row.experiment_key === state.selected) });
-      if (row.experiment_key === state.baseline) svg.append(svgNode('circle', { cx: x(row.timings.per_jet_ms), cy: y(row.metrics[split].roc_auc), r: 12, fill: 'none', stroke: '#245e8a', 'stroke-width': 1.5 }));
+      const dot = svgNode('circle', { cx: x(row.timings.per_jet_ms), cy: y(row.metrics[split].roc_auc), r: row.experiment_key === state.selected ? 8 : 6, fill: row.experiment_key === state.selected ? 'var(--signal-color, #ff727d)' : 'var(--muted, #b8bec5)', stroke: 'var(--ink, #f6f3ed)', 'stroke-width': 1, tabindex: 0, role: 'button', 'aria-label': `Inspect ${title}`, 'aria-pressed': String(row.experiment_key === state.selected) });
+      if (row.experiment_key === state.baseline) svg.append(svgNode('circle', { cx: x(row.timings.per_jet_ms), cy: y(row.metrics[split].roc_auc), r: 12, fill: 'none', stroke: 'var(--background-color, #bad6e5)', 'stroke-width': 1.5 }));
       dot.addEventListener('click', () => selectExperiment(row.experiment_key));
       dot.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectExperiment(row.experiment_key); } });
       dot.append(svgNode('title', {}, title)); svg.append(dot);
@@ -185,12 +192,12 @@
     const particles = jet.energy_flow, extent = Math.max(.8, ...particles.flatMap(row => [Math.abs(row.deta), Math.abs(row.dphi)])) * 1.08;
     const x = value => 215 + value / extent * 125, y = value => 150 - value / extent * 125, maxEnergy = Math.max(...particles.map(row => row.energy_gev));
     for (const fraction of [-1, 0, 1]) {
-      const value = fraction * extent; svg.append(svgNode('line', { x1: x(value), x2: x(value), y1: 25, y2: 275, stroke: '#ddd' }), svgNode('line', { x1: 90, x2: 340, y1: y(value), y2: y(value), stroke: '#ddd' }));
+      const value = fraction * extent; svg.append(svgNode('line', { x1: x(value), x2: x(value), y1: 25, y2: 275, stroke: 'var(--line, #4b525b)' }), svgNode('line', { x1: 90, x2: 340, y1: y(value), y2: y(value), stroke: 'var(--line, #4b525b)' }));
       svgText(svg, x(value), 293, format(value, 2), { 'text-anchor': 'middle' }); svgText(svg, 59, y(value) + 4, format(value, 2), { 'text-anchor': 'end' });
     }
     svgText(svg, 215, 319, 'Δη · relative pseudorapidity', { 'text-anchor': 'middle' }); svgText(svg, 70, 15, 'Δφ · relative azimuth (radians)');
     for (const part of particles) {
-      const dot = svgNode('circle', { cx: x(part.deta), cy: y(part.dphi), r: 16 * Math.sqrt(part.energy_gev / maxEnergy), fill: '#303030', 'fill-opacity': .5 });
+      const dot = svgNode('circle', { cx: x(part.deta), cy: y(part.dphi), r: 16 * Math.sqrt(part.energy_gev / maxEnergy), fill: 'var(--background-color, #bad6e5)', 'fill-opacity': .65 });
       dot.append(svgNode('title', {}, `${format(part.energy_gev, 2)} GeV; Δη ${format(part.deta)}; Δφ ${format(part.dphi)}`)); svg.append(dot);
     }
     set('jet-info', `Simulation truth: ${jet.truth.group === 'signal' ? 'X→bb signal' : 'QCD background'} (label ${jet.truth.label}). ${particles.length} particles shown; circle areas scale within this jet.${state.comparison.experiments.some(row => row.model === 'sophon') ? ` ${jet.in_training_support ? 'Within' : 'Outside'} Sophon training range.${jet.particles_truncated ? ' Full arrays are shown; Sophon uses the first 128 particles.' : ''}` : ''}`);
@@ -202,24 +209,69 @@
     }
     if (!$('scores')?.children.length) $('scores')?.append(el('p', 'No model scores for this display jet.'));
   }
+  function summarizeScores(experiment, split, supported, threshold) {
+    const histogram = { bins: distributionPlot.bins, signal: { count: 0, counts: Array(distributionPlot.bins).fill(0) }, background: { count: 0, counts: Array(distributionPlot.bins).fill(0) } };
+    const confusion = { tp: 0, fn: 0, fp: 0, tn: 0 };
+    for (const [id, row] of state.population) {
+      if (row.split !== split || (supported && !row.in_training_support)) continue;
+      const score = state.scores.get(id)?.get(experiment.experiment_key); if (score === undefined) continue;
+      const group = histogram[row.truth_group]; group.count++;
+      // Equal-width bins include their left edge; score 1 belongs to the last bin.
+      group.counts[Math.min(histogram.bins - 1, Math.floor(score * histogram.bins))]++;
+      confusion[row.truth_group === 'signal' ? score >= threshold ? 'tp' : 'fn' : score >= threshold ? 'fp' : 'tn']++;
+    }
+    for (const group of [histogram.signal, histogram.background]) group.percent = group.counts.map(count => group.count ? 100 * count / group.count : 0);
+    return { histogram, confusion };
+  }
+  function renderDistribution(histogram, threshold, split, supported) {
+    const svg = $('score-distribution'); if (!svg) return; svg.replaceChildren();
+    set('signal-count', histogram ? format(histogram.signal.count, 0) : '—');
+    set('background-count', histogram ? format(histogram.background.count, 0) : '—');
+    const { left, right, top, bottom, bins } = distributionPlot;
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', `Full ${supported ? 'in-range ' : ''}${split} score distribution. Percentage within each truth class per bin. Threshold ${threshold.toFixed(2)} predicts signal at or above the line.`);
+    if (!histogram) { svgText(svg, 336, 145, 'Load predictions to explore scores', { 'text-anchor': 'middle' }); return; }
+    const x = value => left + value * (right - left);
+    const maximum = Math.max(5, Math.ceil(Math.max(...histogram.signal.percent, ...histogram.background.percent) / 5) * 5);
+    const y = value => bottom - value / maximum * (bottom - top);
+    svg.append(svgNode('rect', { x: left, y: top, width: x(threshold) - left, height: bottom - top, class: 'background-region', fill: 'var(--background-color, #bad6e5)', 'fill-opacity': .045 }),
+      svgNode('rect', { x: x(threshold), y: top, width: right - x(threshold), height: bottom - top, class: 'threshold-region', fill: 'var(--signal-color, #ff727d)', 'fill-opacity': .08 }));
+    for (let tick = 0; tick <= 4; tick++) {
+      const value = maximum * tick / 4;
+      svg.append(svgNode('line', { x1: left, x2: right, y1: y(value), y2: y(value), stroke: 'var(--line, #4b525b)', 'stroke-opacity': .5 }));
+      svgText(svg, left - 10, y(value) + 4, `${format(value, 1)}%`, { 'text-anchor': 'end', fill: 'var(--muted, #b8bec5)' });
+      svgText(svg, x(tick / 4), bottom + 21, format(tick / 4, 2), { 'text-anchor': 'middle', fill: 'var(--muted, #b8bec5)' });
+    }
+    svgText(svg, left, 22, '% within each class / bin', { fill: 'var(--muted, #b8bec5)' });
+    svgText(svg, (left + right) / 2, 291, 'Signal score', { 'text-anchor': 'middle', fill: 'var(--muted, #b8bec5)' });
+    for (const name of ['background', 'signal']) {
+      const group = histogram[name], color = name === 'signal' ? 'var(--signal-color, #ff727d)' : 'var(--background-color, #bad6e5)';
+      let path = `M ${left} ${bottom}`;
+      for (let bin = 0; bin < bins; bin++) path += ` L ${x(bin / bins)} ${y(group.percent[bin])} L ${x((bin + 1) / bins)} ${y(group.percent[bin])}`;
+      path += ` L ${right} ${bottom} Z`;
+      const series = svgNode('path', { d: path, class: `distribution-${name}`, fill: color, 'fill-opacity': .22, stroke: color, 'stroke-width': 1.7, 'stroke-linejoin': 'miter' });
+      series.append(svgNode('title', {}, `${name === 'signal' ? 'Signal' : 'Background'}: ${group.count} jets; ${bins} equal-width bins, each class totals 100% when present.`));
+      svg.append(series);
+    }
+    svg.append(svgNode('line', { x1: x(threshold), x2: x(threshold), y1: top, y2: bottom, class: 'threshold-line', stroke: 'var(--ink, #f6f3ed)', 'stroke-width': 2 }),
+      svgNode('circle', { cx: x(threshold), cy: top, r: 4, fill: 'var(--ink, #f6f3ed)', class: 'threshold-handle' }));
+    svgText(svg, right, 22, `≥ ${threshold.toFixed(2)} → signal`, { 'text-anchor': 'end', fill: 'var(--ink, #f6f3ed)' });
+  }
   function renderThreshold() {
     const threshold = Number($('threshold')?.value ?? .5), split = $('split')?.value || 'validation', supported = $('support')?.checked;
     set('threshold-label', threshold.toFixed(2)); $('operating-point')?.replaceChildren(); const counts = [];
+    let scoreDistribution = null;
     for (const experiment of (state.comparison?.experiments || []).filter(row => row.experiment_key === state.selected)) {
       if (!experiment.evaluated_splits.includes(split)) continue;
-      let signal = 0, retained = 0, background = 0, rejected = 0;
-      for (const [id, row] of state.population) {
-        if (row.split !== split || (supported && !row.in_training_support)) continue;
-        const score = state.scores.get(id)?.get(experiment.experiment_key); if (score === undefined) continue;
-        if (row.truth_group === 'signal') { signal++; if (score >= threshold) retained++; } else { background++; if (score < threshold) rejected++; }
-      }
-      const confusion = { tp: retained, fn: signal - retained, fp: background - rejected, tn: rejected };
+      const { histogram, confusion } = summarizeScores(experiment, split, supported, threshold);
+      scoreDistribution = histogram;
+      const signal = histogram.signal.count, background = histogram.background.count, retained = confusion.tp, rejected = confusion.tn;
       counts.push({ experiment_key: experiment.experiment_key, split, rows: signal + background, signal, retained, background, rejected, confusion });
       const percent = (n, d) => d ? `${format(n / d * 100, 1)}%` : 'unavailable';
       const card = el('article', undefined, 'matrix-card'), matrix = el('table', undefined, 'confusion-matrix');
-      matrix.append(el('caption', `Every ${supported ? 'in-range ' : ''}${split} jet · ${signal + background} total`));
+      matrix.append(el('caption', `${format(signal + background, 0)} ${supported ? 'in-range ' : ''}${split} jets`));
       const head = el('thead'), heading = el('tr');
-      for (const title of ['Known truth', 'Predict signal', 'Predict background']) {
+      for (const title of ['Truth', 'Predict signal', 'Predict background']) {
         const cell = el('th', title); cell.scope = 'col'; heading.append(cell);
       }
       head.append(heading); matrix.append(head);
@@ -235,12 +287,13 @@
         body.append(row);
       }
       matrix.append(body);
-      card.append(el('h3', label(experiment)), matrix,
-        el('p', `Signal kept: ${percent(retained, signal)}. Background rejected: ${percent(rejected, background)}.`, 'small'));
+      card.append(matrix,
+        el('p', `${percent(retained, signal)} signal kept · ${percent(rejected, background)} background rejected`, 'small'));
       $('operating-point')?.append(card);
     }
-    if (!counts.length) $('operating-point')?.append(el('p', 'Complete prediction data are needed for threshold analysis. Load comparison.json; a leaderboard alone contains no particle scores.'));
-    window.__workshopView = { datasetId: analysis()?.dataset_id || null, experiments: analysis()?.experiments.length || 0, selectedExperiment: state.selected, baselineExperiment: state.baseline, population: state.population.size, displayJets: state.comparison?.jets.length || 0, predictions: state.comparison?.predictions.length || 0, threshold, split, supportOnly: Boolean(supported), operatingPoints: counts, browserLocalPreview: state.preview, sharedLeaderboard: Boolean(state.shared && rankingSource() === state.shared) };
+    if (!counts.length) $('operating-point')?.append(el('p', 'Load comparison.json for prediction scores.'));
+    renderDistribution(scoreDistribution, threshold, split, supported);
+    window.__workshopView = { datasetId: analysis()?.dataset_id || null, experiments: analysis()?.experiments.length || 0, selectedExperiment: state.selected, baselineExperiment: state.baseline, population: state.population.size, displayJets: state.comparison?.jets.length || 0, predictions: state.comparison?.predictions.length || 0, threshold, split, supportOnly: Boolean(supported), operatingPoints: counts, scoreDistribution, browserLocalPreview: state.preview, sharedLeaderboard: Boolean(state.shared && rankingSource() === state.shared) };
   }
   function render() {
     const data = analysis(), available = Boolean(data); if ($('content')) $('content').hidden = !available; if ($('empty')) $('empty').hidden = available;
@@ -285,6 +338,28 @@
   $('baseline').addEventListener('change', event => { state.baseline = event.target.value; render(); });
   $('split')?.addEventListener('change', renderJetChoices);
   $('support')?.addEventListener('change', renderJetChoices); $('jet')?.addEventListener('change', renderJet); $('threshold')?.addEventListener('input', renderThreshold);
+  const thresholdInput = $('threshold'); let thresholdPointer = null;
+  const updatePointerThreshold = event => {
+    const svg = $('score-distribution'), transform = svg?.getScreenCTM(); if (!transform) return;
+    const point = svg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY;
+    const position = point.matrixTransform(transform.inverse());
+    const score = Math.max(0, Math.min(1, (position.x - distributionPlot.left) / (distributionPlot.right - distributionPlot.left)));
+    thresholdInput.value = (Math.round(score * 100) / 100).toFixed(2); renderThreshold();
+  };
+  thresholdInput?.addEventListener('pointerdown', event => {
+    if (event.isPrimary === false || event.button !== 0) return;
+    event.preventDefault(); thresholdInput.focus(); thresholdPointer = event.pointerId;
+    thresholdInput.setPointerCapture(event.pointerId); updatePointerThreshold(event);
+  });
+  thresholdInput?.addEventListener('pointermove', event => { if (thresholdPointer === event.pointerId) { event.preventDefault(); updatePointerThreshold(event); } });
+  const releaseThresholdPointer = event => {
+    if (thresholdPointer !== event.pointerId) return;
+    if (event.type === 'pointerup') updatePointerThreshold(event);
+    thresholdPointer = null;
+    if (thresholdInput.hasPointerCapture(event.pointerId)) thresholdInput.releasePointerCapture(event.pointerId);
+  };
+  thresholdInput?.addEventListener('pointerup', releaseThresholdPointer);
+  thresholdInput?.addEventListener('pointercancel', releaseThresholdPointer);
   $('reload').hidden = location.protocol === 'file:';
   render();
   set('status', 'No results loaded.');
@@ -298,7 +373,7 @@
       state.example = typeof loaded.data.title === 'string' && loaded.data.title.startsWith('Recorded validation examples:');
       state.selected = null; state.baseline = undefined; indexComparison(); render();
       $('import-controls').hidden = true; $('import-help').hidden = true;
-      set('status', state.example ? 'Historical example results.' : 'All saved experiments are shown below.');
+      set('status', state.example ? 'Historical example results.' : '');
     } catch (error) {
       state.comparison = null; indexComparison(); render();
       set('status', `Embedded results rejected: ${error.message}`);

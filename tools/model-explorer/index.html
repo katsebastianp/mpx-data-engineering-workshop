@@ -3,64 +3,65 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Inspect saved model experiments, compare validation results and explore prediction thresholds.">
+  <meta name="description" content="Compare saved experiments and explore model predictions.">
   <title>Model Explorer</title>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#experiments-section">Skip to results</a>
   <header class="topbar">
-    <a class="brand" href="#"><span class="mark" aria-hidden="true">P</span> MODEL EXPLORER</a>
-    <nav aria-label="Page sections"><a href="#experiments-section">Compare</a><a href="#experiment-section">Experiment</a><a href="#threshold-section">Threshold</a></nav>
+    <a class="brand" href="#"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> CODEX WORKSHOP</a>
+    <nav aria-label="Page sections"><a href="#experiments-section">Compare</a><a href="#threshold-section">Explore</a><a href="#model-details">Details</a></nav>
   </header>
   <main>
     <section class="intro">
-      <p class="eyebrow">CODEX WORKSHOP · SAVED EXPERIMENTS</p>
-      <h1>Model Explorer</h1>
-      <p class="lede">Compare saved experiments and explore their predictions.</p>
-      <div class="toolbar" id="import-controls"><label class="button" for="file">Open your comparison.json<input id="file" type="file" accept=".json,application/json"></label><button id="reload" type="button">Load historical example</button></div>
+      <div class="title-row"><h1>Model Explorer<span aria-hidden="true">.</span></h1><p id="status" role="status" aria-live="polite">No results loaded.</p></div>
+      <div class="toolbar" id="import-controls"><label class="button" for="file">Open comparison.json<input id="file" type="file" accept=".json,application/json"></label><button id="reload" type="button">Load historical example</button></div>
       <p class="small" id="import-help">Open <code>data/05_analytics/comparison.json</code>. Your file stays in this browser.</p>
-      <p class="small" id="status" role="status" aria-live="polite">No results loaded.</p>
     </section>
 
     <section id="empty" class="empty" hidden><h2>Open your results to begin.</h2></section>
 
     <div id="content" hidden>
-      <section class="section" id="experiments-section">
-        <div class="section-heading"><div><p class="eyebrow">01 · COMPARE ALL EXPERIMENTS</p><h2>Validation comparison</h2></div><span class="badge" id="experiment-count"></span></div>
-        <p class="section-note">Select a row to inspect that experiment. Compare quality, training time and prediction time before choosing your final model.</p>
-        <div class="table-scroll"><table><caption class="sr-only">All experiments compared on validation quality and recorded training and inference times</caption><thead><tr><th>Experiment</th><th>Classifier</th><th>Features</th><th>Validation AUC ↑</th><th>Training (s)</th><th>Inference (ms / jet)</th></tr></thead><tbody id="experiments"></tbody></table></div>
-        <div class="analysis-grid"><div class="plot"><svg id="tradeoff" viewBox="0 0 640 270" role="img" aria-label="Validation quality versus inference time"></svg><p class="small">Choose a point to inspect it. The selected experiment is blue; the comparison baseline has a ring.</p></div><div class="context"><h3>Read the trade-off</h3><p>Higher points separate signal from background better. Points farther left predict faster.</p><p>The table and plot always show validation results. The threshold slider changes the confusion matrix only.</p><p id="baseline-note"></p></div></div>
+      <section class="section comparison" id="experiments-section">
+        <div class="section-heading"><h2><span class="section-index">01</span> All experiments</h2><span class="badge" id="experiment-count"></span></div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Experiment comparison"><table><caption class="sr-only">All saved experiments: validation quality, training time and prediction time. Select an experiment to inspect it.</caption><thead><tr><th>Experiment</th><th>Classifier</th><th>Features</th><th title="Higher AUC means better separation across thresholds">Validation AUC ↑</th><th>Training · s</th><th>Inference · ms / jet</th></tr></thead><tbody id="experiments"></tbody></table></div>
       </section>
 
-      <section class="section" id="experiment-section">
-        <div class="section-heading"><div><p class="eyebrow">02 · UNDERSTAND ONE RUN</p><h2>Inspect an experiment</h2></div></div>
-        <div class="experiment-controls"><label>Experiment<select id="experiment" aria-label="Choose an experiment"></select></label><label>Compare against<select id="baseline" aria-label="Choose a baseline"></select></label></div>
-        <p class="small" id="dataset"></p>
-        <div class="model-details"><div><p class="eyebrow">CLASSIFIER</p><h3 id="experiment-model"></h3><p class="small" id="experiment-run"></p><p id="experiment-explanation"></p></div><div><h3>Input features</h3><div id="experiment-features" class="chips"></div><h3 class="parameter-heading">Parameters</h3><div id="experiment-parameters" class="chips"></div></div></div>
+      <section class="section workbench" id="experiment-section">
+        <div class="section-heading"><h2><span class="section-index">02</span> Explore a model</h2><span class="eyebrow">SAVED PREDICTIONS</span></div>
+        <div class="experiment-controls"><label>Selected experiment<select id="experiment" aria-label="Choose an experiment"></select></label><label>Comparison baseline<select id="baseline" aria-label="Choose a baseline"></select></label></div>
         <div class="summary" aria-label="Selected experiment validation results">
-          <div><span class="eyebrow">VALIDATION ROC-AUC ↑</span><div id="selected-auc" class="winner">—</div><p id="auc-delta"></p></div>
+          <div><span class="eyebrow">VALIDATION AUC ↑</span><div id="selected-auc" class="winner">—</div><p id="auc-delta"></p></div>
           <div><span class="eyebrow">TRAINING TIME</span><div id="selected-training" class="winner">—</div><p id="training-delta"></p></div>
-          <div><span class="eyebrow">INFERENCE TIME / JET</span><div id="selected-inference" class="winner">—</div><p id="inference-delta"></p></div>
+          <div><span class="eyebrow">INFERENCE / JET</span><div id="selected-inference" class="winner">—</div><p id="inference-delta"></p></div>
         </div>
-        <p class="small">ROC-AUC measures how well signal ranks above background across thresholds: higher is better. Timings are measured on the run's computer; comparisons across different machines are approximate.</p>
+
+        <div id="threshold-section" class="decision-workbench">
+          <div class="decision-grid">
+            <div class="distribution-panel">
+              <div class="chart-heading"><h3>Score distributions</h3><div class="legend" aria-label="Known simulation labels"><span class="signal-key">Signal <span id="signal-count"></span></span><span class="background-key">Background <span id="background-count"></span></span></div></div>
+              <div class="threshold-setting"><label for="threshold">Decision threshold <strong id="threshold-label">0.50</strong></label><label id="split-control" class="split-picker" hidden>Evaluation <select id="split"><option value="validation">Validation</option></select></label></div>
+              <div class="distribution-chart"><svg id="score-distribution" viewBox="0 0 640 300" role="img" aria-label="Signal and background score distributions with the decision threshold"></svg><input id="threshold" type="range" min="0" max="1" step="0.01" value="0.5" aria-label="Decision threshold" aria-describedby="threshold-help"></div>
+              <p class="small" id="threshold-help">Drag the line: scores at or above it predict signal.</p>
+            </div>
+            <div class="matrix-panel"><div class="chart-heading"><h3>Confusion matrix</h3><span class="eyebrow">JET COUNTS</span></div><div id="operating-point" aria-live="polite"></div></div>
+          </div>
+        </div>
+
+        <details class="fold" id="model-details"><summary><span>Model details</span><span class="fold-hint">Features · parameters · run</span></summary><div class="model-details"><div><p class="eyebrow">CLASSIFIER</p><h3 id="experiment-model"></h3><p class="small" id="experiment-run"></p><p id="experiment-explanation"></p></div><div><h3>Input features</h3><div id="experiment-features" class="chips"></div><h3 class="parameter-heading">Parameters</h3><div id="experiment-parameters" class="chips"></div></div></div></details>
       </section>
 
-      <section class="section" id="threshold-section">
-        <div class="section-heading"><div><p class="eyebrow">03 · EXPLORE THE DECISION</p><h2>Which mistakes does it make?</h2></div><label id="split-control" class="split-picker" hidden>Evaluation <select id="split"><option value="validation">Validation</option></select></label></div>
-        <div class="decision-grid"><div class="threshold"><label for="threshold">Decision threshold <strong id="threshold-label">0.50</strong></label><input id="threshold" type="range" min="0" max="1" step="0.01" value="0.5" aria-describedby="threshold-help"><p id="threshold-help">A score at or above the threshold predicts signal. Lower it to keep more signal, at the cost of more false alarms.</p><p class="small">The matrix uses every jet in the selected evaluation split. Moving this slider does not retrain a model or change saved results. ROC-AUC stays the same.</p><p class="small">Signal scores describe how signal-like a jet looks; they are not calibrated probabilities.</p></div><div id="operating-point" aria-live="polite"></div></div>
-      </section>
-
-
-
-      <details class="section jet-section" id="explorer"><summary>Inspect one real jet</summary><div class="section-heading"><p class="small">A small display sample, separate from the full population counted above.</p><label class="jet-picker">Jet <select id="jet" aria-label="Select a jet"></select></label></div><div class="explorer-grid"><div class="plot"><svg id="energy" viewBox="0 0 420 330" role="img" aria-label="Particle angular energy flow around the jet axis"></svg><p class="small">Angular offsets from the jet axis. Circle area represents energy in GeV; these are not spatial detector tracks.</p></div><div><div id="jet-info" class="jet-info"></div><h3>Saved signal scores</h3><div id="scores"></div></div></div></details>
-
-      <details id="leaderboard" class="section" hidden><summary>Saved final-test results</summary><p class="small">Final-test results are kept separate from the validation comparison. Frozen references do not enter participant awards.</p><div class="table-scroll"><table><caption class="sr-only">Saved final submissions ranked by prediction quality</caption><thead><tr><th>Rank</th><th>Participant tag</th><th>Classifier</th><th>Test AUC</th><th>Normalized time ↓</th><th>Efficiency rank</th></tr></thead><tbody id="rankings"></tbody></table></div></details>
+      <div class="secondary-details">
+        <details class="fold"><summary><span>Speed &amp; quality</span><span class="fold-hint">All experiments</span></summary><div class="analysis-grid"><div class="plot"><svg id="tradeoff" viewBox="0 0 640 270" role="img" aria-label="Validation quality versus inference time"></svg></div><div class="context"><p>Higher is better separation. Left is faster inference.</p><p>Coral marks the selected model. A ring marks the baseline.</p><p class="small" id="baseline-note"></p></div></div></details>
+        <details class="fold jet-section" id="explorer"><summary><span>Inspect a real jet</span><span class="fold-hint">Particle measurements</span></summary><div class="section-heading"><p class="small">Display sample · not the full evaluation population</p><label class="jet-picker">Jet <select id="jet" aria-label="Select a jet"></select></label></div><div class="explorer-grid"><div class="plot"><svg id="energy" viewBox="0 0 420 330" role="img" aria-label="Particle angular energy flow around the jet axis"></svg><p class="small">Angular offsets from the jet axis. Circle area represents energy.</p></div><div><div id="jet-info" class="jet-info"></div><h3>Saved signal scores</h3><div id="scores"></div></div></div></details>
+        <details class="fold"><summary><span>Dataset &amp; measurements</span><span class="fold-hint">Provenance</span></summary><div class="provenance"><p id="dataset"></p><p>AUC measures separation across thresholds; moving the line does not change it. Signal scores are not calibrated probabilities.</p><p>Timings come from the run's computer. Compare runs on the same hardware.</p></div></details>
+        <details id="leaderboard" class="fold" hidden><summary><span>Final-test results</span><span class="fold-hint">Saved selections</span></summary><p class="small">Separate from validation. Frozen references are unranked.</p><div class="table-scroll"><table><caption class="sr-only">Saved final submissions ranked by prediction quality</caption><thead><tr><th>Rank</th><th>Participant tag</th><th>Classifier</th><th>Test AUC</th><th>Normalized time ↓</th><th>Efficiency rank</th></tr></thead><tbody id="rankings"></tbody></table></div></details>
+      </div>
     </div>
-
-
   </main>
-  <footer><span>JetClass-II · simulated particle data</span><span>Your classifiers · your features · measured results</span></footer>
+  <footer><span>JETCLASS-II · SIMULATED COLLIDER DATA</span><span>MODEL EXPLORER</span></footer>
   <script type="application/json" id="model-explorer-data"></script>
 </body>
 </html>
