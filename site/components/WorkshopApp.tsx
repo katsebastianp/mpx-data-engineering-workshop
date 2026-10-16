@@ -39,7 +39,7 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
   ['Codex', 'Use the model available in your workspace. Try a repository read before the session; the core exercises do not require Ultra.'],
   ['GitHub plugin + access', 'Connect GitHub and check that you can push a branch to the workshop repository. Terminal commands are available if the plugin cannot clone locally.'],
   ['Docker ready', 'Start Docker Desktop or Colima and build the workshop image before the session if possible. The lab uses 2 CPUs and 2 GiB; run one heavy job at a time.'],
-  ['Four sample files', 'Download the four files from instruction step 02. No host Python, Java, GPU or API key is needed. The core setup skips the optional Sophon model download.'],
+  ['Four sample files', 'Download the four files from instruction step 02. Setup verifies them without downloading a model. No host Python, Java, GPU or API key is needed for the core workshop.'],
   ['Plan, Worktree and Code Review', 'Find Plan in the composer, try a Worktree chat, and locate Review PR or Code Review. The Site explains each control when you need it.'],
   ['Your account', 'Sign in to this Site for personal branch names and a saved checklist. Check Sites access if you want to publish your results page.'],
  ];
@@ -50,7 +50,7 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
    ["25–55", "Predict & experiment", "One Spark setting + your chosen model experiment in Plan mode; review both PRs"],
    ["55–70", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
    ["70–90", "Build & explain", "Your results page, a threshold slider, a confusion matrix, one decision"],
-   ["Extra", "Choose your extension", "More questions, a second controlled run, Sophon, or the optional final-test challenge"],
+   ["Extra", "Choose your extension", "Another experiment, the ready-made Sophon demo pack, or the optional final test"],
   ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
   <PredictionFlow/>
   <section className="split-section section-wrap"><div><span className="section-kicker">SAME DATA, FAIR COMPARISONS</span><h2>Learn, compare, then test</h2></div><div className="split-bars">{[

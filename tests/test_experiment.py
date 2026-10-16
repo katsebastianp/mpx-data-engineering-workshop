@@ -135,6 +135,19 @@ def test_unregistered_model_fails_with_extension_location(tmp_path):
         read_config(path)
 
 
+@pytest.mark.parametrize("model,message", [
+    ("xgboost", "XGBoost is installed in Docker; implement and register"),
+    ("sophon", "Install the optional Sophon reference pack"),
+])
+def test_unavailable_model_explains_the_next_action(tmp_path, monkeypatch, model, message):
+    from predict.models import PREDICTORS
+
+    monkeypatch.delitem(PREDICTORS, model, raising=False)
+    path = config(tmp_path, experiments=[{"id": "choice", "model": model, "features": "basic"}])
+    with pytest.raises(ValueError, match=message):
+        read_config(path)
+
+
 def test_overlong_combined_run_id_is_rejected_before_loading_data_or_creating_results(tmp_path, monkeypatch):
     path = config(tmp_path, experiments=[{"id": "e" * 40, "model": "logistic", "features": "basic"}])
     monkeypatch.setattr(experiment, "load_prepared", lambda _: pytest.fail("Invalid identity must fail before loading data"))

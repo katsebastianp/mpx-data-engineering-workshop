@@ -10,6 +10,7 @@ export type WorkshopExercise = {
   time?: string;
   optional?: boolean;
   checkpoint?: string;
+  download?: { label: string; href: string };
   extraPrompts?: { title: string; prompt: string }[];
   commands?: string;
   commandTitle?: string;
@@ -96,11 +97,11 @@ export const workshopParts: WorkshopPart[] = [
         title: "Run the baseline",
         time: "8 min + first image build",
         instruction: "Start Docker and run logistic regression with the three supplied features.",
-        prompt: "On {{branch}}, build the lab image if needed; run setup with --skip-sophon, tests, preprocessing, predict and postprocessing. Keep only the default logistic/basic experiment on validation. Copy prepared inputs to data/02_preprocessed_baseline; save config and comparison export under data/evidence/baseline without overwriting evidence. Show one validation example, its score and true label. Stop and explain failed checks.",
+        prompt: "On {{branch}}, build the lab image if needed; run setup, tests, preprocessing, predict and postprocessing. Keep only the default logistic/basic experiment on validation. Copy prepared inputs to data/02_preprocessed_baseline; save config and comparison export under data/evidence/baseline without overwriting evidence. Show one validation example, its score and true label. Stop and explain failed checks.",
         decision: "Does the baseline classify your example correctly at a cutoff of 0.5?",
         concept: { title: "What just ran?", body: "Logistic regression learns from three supplied measurements: jet momentum, mass and particle count. It scores the validation rows; postprocessing compares those scores with the known answers. This saved result is the baseline for your own experiment." },
-        hint: "The core path skips the large Sophon reference download. Use your available Codex model; Ultra is not required. Build time and run time depend on your laptop and network, so the agenda is a target, not a guarantee.",
-        commands: "docker compose -p {{composePrefix}}-setup build lab\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps setup scripts/setup_workshop.py --skip-sophon\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m pytest -q\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m preprocessing\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m predict\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m postprocessing",
+        hint: "Setup verifies the four data files; it downloads no models. Use your available Codex model. Build and run times depend on your laptop and network.",
+        commands: "docker compose -p {{composePrefix}}-setup build lab\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps setup\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m pytest -q\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m preprocessing\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m predict\ndocker compose -p {{composePrefix}}-setup run --rm --no-deps lab -m postprocessing",
         checkpoint: "Checks pass, the baseline scores 1,000 validation examples, and its inputs and results are saved.",
       },
       {
@@ -116,7 +117,7 @@ export const workshopParts: WorkshopPart[] = [
           "Run one Docker job at a time.",
         ],
         concept: { title: "What is a worktree?", body: "A worktree is another folder connected to the same Git repository. Each chat can change files independently; its starter below creates a named branch. Clicking Mark complete on this Site only records your progress. It does not create a worktree, commit code or merge a PR." },
-        hint: "The supplied .worktreeinclude copies raw and prepared inputs into each worktree. Outputs stay separate. Both chats reuse the existing Docker image; rebuild only if your chosen experiment adds dependencies.",
+        hint: "The supplied .worktreeinclude copies raw and prepared inputs into each worktree. Outputs stay separate. Scikit-learn and XGBoost are already installed; their classifier integrations need no image rebuild.",
         extraPrompts: [
           { title: "Worktree A · pipeline", prompt: "Create or verify branch {{pipelineBranch}} from the current {{branch}} commit. Verify this worktree has matching raw and prepared inputs; copy missing inputs from the original checkout without sharing writable folders. Show both paths and the starting commit. We will change only SHUFFLE_PARTITIONS in src/preprocessing/pipeline.py. Use Compose project {{composePrefix}}-pipeline. Do not run Docker yet." },
           { title: "Worktree B · models", prompt: "Create or verify branch {{modelsBranch}} from the same {{branch}} commit. Verify matching inputs; copy missing inputs and saved baseline evidence without sharing writable folders. Show both paths and starting commit. Own model configuration/code and preprocessing/features.py; leave preprocessing/pipeline.py to the pipeline chat. Use Compose project {{composePrefix}}-models. Do not train yet." },
@@ -197,8 +198,8 @@ export const workshopParts: WorkshopPart[] = [
         ],
         decision: "What will you change, and what result do you expect?",
         concept: { title: "What is Plan mode?", body: "Plan mode is for working out the approach before implementation. Use it to discuss choices, constraints and checks. Here the task is classification: logistic regression predicts a class score; ordinary linear regression is not the intended baseline." },
-        prompt: "Help me plan [MY QUESTION AND HYPOTHESIS]. Discuss a small change to the classifier, parameters or features, then let me choose. Compare with the saved logistic baseline on the same validation rows and seed 42. Estimate the work and run time. Use measured inputs, preserve the original eight feature values and keep test scores unseen.",
-        hint: "Options include tuning logistic regression, using more features, adding a calculated feature in preprocessing/features.py, or trying XGBoost. basic uses three supplied measurements; shape adds five calculated features. Register a new classifier in predict/models.py. Sophon here is a frozen ONNX reference; fine-tuning needs a separate training implementation.",
+        prompt: "Help me plan [MY QUESTION AND HYPOTHESIS]. Consult official method or library documentation; discuss one small classifier, parameter or feature change, then let me choose. Compare with the saved logistic baseline on the same validation rows and seed 42. Estimate the work and run time. Use measured inputs, preserve original feature values and keep test scores unseen.",
+        hint: "Only logistic regression is implemented. XGBoost is installed, but you build and register its Predictor adapter in predict/models.py. You can also tune logistic regression, select more features, or add a calculation in preprocessing/features.py. Keep the first experiment small.",
         checkpoint: "You can explain your chosen change, expected result and comparison with the baseline.",
       },
       {
@@ -302,6 +303,20 @@ export const workshopParts: WorkshopPart[] = [
 
 // These extensions are deliberately outside the core sequence and its progress count.
 export const optionalWorkshopExercises: WorkshopExercise[] = [
+  {
+    id: "sophon-reference",
+    dependsOn: ["train"],
+    location: "models",
+    optional: true,
+    title: "Optional: run Sophon",
+    time: "Early finishers or closing demo",
+    instruction: "Download the ready-made pack and compare its pretrained model with your baseline.",
+    download: { label: "Download the Sophon pack", href: "/downloads/sophon-optional-v1.zip" },
+    prompt: "Extract the downloaded Sophon pack into optional/ in this model worktree. Follow this repository’s README to install it with Docker. Run predict with config/experiments-sophon.yaml and postprocessing in {{composePrefix}}-models. Compare with the saved logistic baseline on validation. No host Python, Spark run or package installs; use the supplied integration as-is.",
+    hint: "The pack includes verified weights and the input adapter. This is a frozen reference, not a coding or fine-tuning exercise.",
+    commands: "docker run --rm --network none -v \"$PWD:/workspace\" particle-workshop:0.6.0 optional/sophon-optional/install.py /workspace\ndocker compose -p {{composePrefix}}-models run --rm lab -m predict --config config/experiments-sophon.yaml\ndocker compose -p {{composePrefix}}-models run --rm lab -m postprocessing",
+    checkpoint: "Sophon’s validation result is compared with your baseline and labelled as a frozen reference.",
+  },
   {
     id: "final-test",
     dependsOn: ["results-site"],

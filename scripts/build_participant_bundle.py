@@ -2,8 +2,8 @@
 
 Run: docker compose run --rm lab scripts/build_participant_bundle.py
 The current participant flow uses Site downloads and Python setup, not this ZIP.
-The archive contains teaching subsets and
-the pinned CPU model and offline results viewer. The hosted Site source, Docker
+The archive contains the logistic starter, teaching subsets and the offline results viewer.
+Optional classifier implementations and model weights, the hosted Site source, Docker
 images, historical runs and hosting identity do not ship.
 """
 from __future__ import annotations
@@ -23,16 +23,16 @@ PREFIX = "ringier-particle-workshop/"
 MANIFEST = "PARTICIPANT_BUNDLE.json"
 STATIC_REPOSITORY_FILES = (
     ".dockerignore", ".gitattributes", ".gitignore", ".worktreeinclude", "README.md", "Dockerfile",
-    "compose.yaml", "pyproject.toml", "requirements.txt", "config/experiments.yaml", "config/experiments-sophon.yaml",
+    "compose.yaml", "pyproject.toml", "requirements.txt", "config/experiments.yaml",
     "src/common.py", "src/preprocessing/__init__.py", "src/preprocessing/__main__.py",
     "src/preprocessing/pipeline.py", "src/preprocessing/features.py",
     "src/predict/__init__.py", "src/predict/__main__.py", "src/predict/experiment.py",
-    "src/predict/base.py", "src/predict/logistic.py", "src/predict/xgboost.py", "src/predict/metrics.py",
+    "src/predict/base.py", "src/predict/logistic.py", "src/predict/metrics.py",
     "src/predict/config.py", "src/predict/data.py", "src/predict/benchmark.py",
-    "src/predict/models.py", "src/predict/sophon.py", "src/predict/sophon_adapter.py",
+    "src/predict/models.py",
     "src/postprocessing/__init__.py", "src/postprocessing/__main__.py",
     "src/postprocessing/compare.py", "src/postprocessing/database.py", "src/postprocessing/leaderboard.py",
-    "config/workshop-data.lock.json", "config/workshop-sample.lock.json", "config/sophon-contract.json", "config/sophon-model.lock.json",
+    "config/workshop-data.lock.json", "config/workshop-sample.lock.json",
     "docs/data.md", "docs/results.md", "docs/problem-guide.md",
     "docs/assets/jet-examples.json", "docs/assets/jet-examples.png", "docs/competition.md",
     "docs/validation/parallel.json", "docs/validation/participant-kit-v05.json", "docs/validation/amd64-v05.json",
@@ -48,12 +48,7 @@ EMPTY_OUTPUT_FILES = (
     "data/02_preprocessed/.gitkeep", "data/03_predictions/.gitkeep",
     "data/04_submissions/.gitkeep", "data/05_analytics/.gitkeep",
 )
-ASSET_FILES = tuple(f"data/01_raw/{name}" for name in ("manifest.json", "train.parquet", "validation.parquet", "test.parquet")) + tuple(
-    f"models/pretrained/sophon/{name}" for name in (
-        "model.onnx", "model.lock.json", "Interacting_with_JetClassII_and_Sophon.ipynb",
-        "JetClassII_full.yaml", "LICENSE",
-    )
-)
+ASSET_FILES = tuple(f"data/01_raw/{name}" for name in ("manifest.json", "train.parquet", "validation.parquet", "test.parquet"))
 
 
 def digest(data: bytes) -> str:
@@ -67,13 +62,14 @@ def safe_name(name: str) -> bool:
 
 
 def repository_files(root: Path) -> tuple[str, ...]:
-    """Include current tests, without inheriting archive/cache/hosting contents."""
+    """Include core tests, without inheriting optional model packs or hosting contents."""
     return STATIC_REPOSITORY_FILES + tuple(path.relative_to(root).as_posix()
-        for path in sorted((root / "tests").glob("test_*.py")))
+        for path in sorted((root / "tests").glob("test_*.py"))
+        if not path.name.startswith(("test_sophon", "test_xgboost", "test_optional_")))
 
 
 def validate_assets(files: dict[str, bytes]) -> str:
-    """Catch mixed data/model releases before producing a distributable archive."""
+    """Catch mixed data releases before producing a distributable starter archive."""
     raw = json.loads(files["data/01_raw/manifest.json"])
     if set(raw["splits"]) != {"train", "validation", "test"}:
         raise ValueError("Participant data requires the three disjoint official splits")
@@ -86,18 +82,6 @@ def validate_assets(files: dict[str, bytes]) -> str:
                                  sort_keys=True, separators=(",", ":")).encode())
     if identity != raw["dataset_id"]:
         raise ValueError("Participant dataset identity differs from its split hashes")
-    contract = json.loads(files["config/sophon-contract.json"])
-    lock = json.loads(files["config/sophon-model.lock.json"])
-    if (digest(files["config/sophon-model.lock.json"]) != contract["model_lock_sha256"]
-            or digest(files["src/predict/sophon_adapter.py"]) != contract["adapter_sha256"]
-            or json.loads(files["models/pretrained/sophon/model.lock.json"]) != lock):
-        raise ValueError("Sophon source/model contract differs from the frozen release")
-    model = files["models/pretrained/sophon/model.onnx"]
-    if digest(model) != lock["model"]["sha256"] or len(model) != lock["model"]["size_bytes"]:
-        raise ValueError("Sophon weights checksum changed")
-    for name, expected in lock["upstream"]["files"].items():
-        if digest(files[f"models/pretrained/sophon/{PurePosixPath(name).name}"]) != expected:
-            raise ValueError(f"Sophon publisher reference changed: {name}")
     for name in ("config/evaluation.json", "tools/results-preview/comparison.json", "tools/results-preview/leaderboard.json"):
         value = json.loads(files[name])
         if value["dataset_id"] != raw["dataset_id"]:
@@ -157,9 +141,9 @@ def write_archive(output: Path, files: dict[str, bytes], dataset_id: str) -> dic
     """Publish only after ZIP integrity and manifest verification succeed."""
     manifest = {
         "bundle_version": 2, "workshop_version": "0.6.0", "dataset_id": dataset_id,
-        "contents": "Current preprocessing/predict/postprocessing modules, scripts/tests/docs, 4,000 train + 1,000 validation + 1,000 test jets, pinned Sophon CPU model, canonical competition reference and offline results viewer in tools/results-preview/.",
+        "contents": "Logistic starter and extensible preprocessing/predict/postprocessing modules, core scripts/tests/docs, 4,000 train + 1,000 validation + 1,000 test jets, canonical competition reference and offline results viewer in tools/results-preview/.",
         "demo_data": "The offline results viewer contains example-team results only. Participant result folders and actual submission files are excluded.",
-        "excluded": ["hosted Site source", "Site dependencies and database state", "Docker images", "Git history", "source shard caches", "historical archives", "participant results", "submission files", "secrets", "hosting identity"],
+        "excluded": ["optional classifier implementations and model weights", "optional reference model packs", "hosted Site source", "Site dependencies and database state", "Docker images", "Git history", "source shard caches", "historical archives", "participant results", "submission files", "secrets", "hosting identity"],
         "files": {name: {"size_bytes": len(data), "sha256": digest(data)} for name, data in sorted(files.items())},
     }
     output.parent.mkdir(parents=True, exist_ok=True)

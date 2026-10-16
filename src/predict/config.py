@@ -6,16 +6,16 @@ import re
 import yaml
 
 from preprocessing.features import FEATURE_SETS, validate_feature_names
-from predict.models import PREDICTORS
-from predict.sophon import MEASUREMENT_NAMES
+from predict.models import require_predictor
 
 
 def _feature_names(kind, selected):
-    if not isinstance(kind, str) or kind not in PREDICTORS:
-        raise ValueError(f"Choose a registered model: {', '.join(PREDICTORS)}. Add new classifiers in predict/models.py.")
+    require_predictor(kind)
     if kind == "sophon":
         if selected != "particles":
             raise ValueError("Sophon requires features: particles.")
+        from predict.sophon import MEASUREMENT_NAMES
+
         return list(MEASUREMENT_NAMES)
     if isinstance(selected, str):
         if selected not in FEATURE_SETS:

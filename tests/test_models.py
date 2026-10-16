@@ -1,6 +1,11 @@
 """Small synthetic fixtures exercise training contracts, never workshop quality."""
 
 import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -9,7 +14,6 @@ from predict.base import Predictor, feature_matrix
 from predict.logistic import LogisticPredictor
 from predict.metrics import classification_metrics
 from predict.models import load_model, train_model
-from predict.xgboost import XGBoostPredictor
 
 
 def train_rows():
@@ -18,15 +22,15 @@ def train_rows():
             for index in range(40)]
 
 
-@pytest.mark.parametrize("kind", ["logistic", "xgboost"])
-def test_real_fit_reload_json_and_label_free_prediction(tmp_path, kind):
+def test_real_fit_reload_json_and_label_free_prediction(tmp_path):
+    kind = "logistic"
     rows = train_rows()
-    params = {"n_estimators": 5, "max_depth": 2} if kind == "xgboost" else {"C": 1.0}
+    params = {"C": 1.0}
     names = ["jet_pt", "jet_sdmass", "particle_count"]
     metadata = train_model(kind, rows, names, params, tmp_path / kind)
     model = load_model(metadata)
     assert isinstance(model, Predictor)
-    assert isinstance(model, LogisticPredictor if kind == "logistic" else XGBoostPredictor)
+    assert isinstance(model, LogisticPredictor)
     scores = model.predict(rows)
     assert scores.shape == (40,)
     assert classification_metrics([int(row["truth_label"] == 0) for row in rows], scores)["roc_auc"] > .95
@@ -57,11 +61,10 @@ def test_training_rejects_holdout_rows_and_leaking_features(tmp_path):
         train_model("logistic", rows, ["jet_pt"], {}, tmp_path / "test-leak")
 
 
-@pytest.mark.parametrize("kind,params", [("logistic", {"n_jobs": 8}), ("logistic", {"C": 0}),
-    ("xgboost", {"max_depth": 100}), ("xgboost", {"device": "cuda"}), ("xgboost", {"n_estimators": 1.5})])
-def test_model_parameters_are_bounded_cpu_options(tmp_path, kind, params):
+@pytest.mark.parametrize("params", [{"n_jobs": 8}, {"C": 0}, {"max_iter": 10000}, {"max_iter": 50.5}])
+def test_model_parameters_are_bounded_cpu_options(tmp_path, params):
     with pytest.raises(ValueError):
-        train_model(kind, train_rows(), ["jet_pt"], params, tmp_path / "model")
+        train_model("logistic", train_rows(), ["jet_pt"], params, tmp_path / "model")
 
 
 def test_corrupt_native_model_fails_checksum_before_load(tmp_path):
@@ -119,3 +122,29 @@ def test_inference_receives_measurements_only_even_for_new_classifier():
     np.testing.assert_array_equal(model.predict(train_rows()[:2]), [.2, .8])
     with pytest.raises(ValueError, match="feature|metadata|forbidden"):
         InspectingPredictor({"feature_names": ["truth_label"]})
+
+
+@pytest.mark.parametrize("with_reference_pack", [False, True])
+def test_starter_imports_without_optional_modules_and_discovers_pack_when_present(tmp_path, with_reference_pack):
+    root = Path(__file__).resolve().parents[1]
+    package = tmp_path / "starter/predict"
+    package.mkdir(parents=True)
+    for name in ("__init__.py", "base.py", "config.py", "models.py", "logistic.py"):
+        shutil.copyfile(root / "src/predict" / name, package / name)
+    if with_reference_pack:
+        (package / "sophon.py").write_text(
+            "from predict.logistic import LogisticPredictor\n"
+            "MEASUREMENT_NAMES = ('jet_pt', 'part_energy')\n"
+            "class SophonPredictor(LogisticPredictor):\n"
+            "    kind = 'sophon'\n")
+    process = subprocess.run([sys.executable, "-c",
+        "import json; from predict.models import PREDICTORS; from predict.config import _feature_names; "
+        "print(json.dumps({'models': sorted(PREDICTORS), 'basic': _feature_names('logistic', 'basic'), "
+        "'particles': _feature_names('sophon', 'particles') if 'sophon' in PREDICTORS else None}))"],
+        capture_output=True, text=True, timeout=20,
+        env={**os.environ, "PYTHONPATH": os.pathsep.join([str(package.parent), str(root / "src")])})
+    assert process.returncode == 0, process.stderr
+    result = json.loads(process.stdout)
+    assert result["models"] == (["logistic", "sophon"] if with_reference_pack else ["logistic"])
+    assert result["basic"] == ["jet_pt", "jet_sdmass", "particle_count"]
+    assert result["particles"] == (["jet_pt", "part_energy"] if with_reference_pack else None)

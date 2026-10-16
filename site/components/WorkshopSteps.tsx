@@ -98,6 +98,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
         {selected.decision && <p className="step-decision">{personalise(selected.decision)}</p>}
         {selected.actions && <ol className="step-actions">{selected.actions.map(action => <li key={action}>{personalise(action)}</li>)}</ol>}
         {selected.id === "download-data" && <SampleDownloads />}
+        {selected.download && <a className="secondary-button" href={selected.download.href} download>{selected.download.label} <ArrowUpRight size={13}/></a>}
 
         <div key={`${selected.id}-${workspace?.id ?? "signed-out"}-prompt`}>
           {workspace || selected.id === "codex-project" || selected.id === "download-data" ? <>

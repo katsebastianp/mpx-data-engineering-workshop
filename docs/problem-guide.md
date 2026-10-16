@@ -53,7 +53,9 @@ Each row contains jet-level values and particle lists: `part_energy`, `part_deta
 
 ## Read the predictions
 
-The baseline runs only logistic regression on the three basic features. Participants choose what to try next: more features, tuning, XGBoost or another classifier. **Sophon** is an optional reference with richer particle inputs; the supplied ONNX integration stays pretrained/frozen, CPU, batch size 1. [Sophon model](https://huggingface.co/jet-universe/sophon).
+The starter runs only logistic regression on the three basic features. Choose what to try next: more features, tuning, or a classifier integration you research and build with Codex. XGBoost is preinstalled but has no starter adapter.
+
+Early finishers or the closing demo can use the separate [Sophon pack](https://ringier-collision-lab.openai.chatgpt.site/downloads/sophon-optional-v1.zip). Its supplied ONNX integration stays pretrained/frozen, CPU, batch size 1; no implementation or fine-tuning is needed. [Sophon model](https://huggingface.co/jet-universe/sophon).
 
 These example scores were recorded on 12 October. The XGBoost example uses all eight shape features; they are not new results from your basic-feature run.
 

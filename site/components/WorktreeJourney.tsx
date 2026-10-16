@@ -98,7 +98,7 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
         <NodeSequence ids={["integrate", "preprocess", "results-site"]} {...props} />
       </div>
       <details className="optional-journey" open={optionalWorkshopExercises.some(exercise => exercise.id === props.selectedId) || undefined}>
-        <summary>Optional · share results or enter the challenge</summary>
+        <summary>Optional · Sophon, final test and sharing</summary>
         <p>The core workshop ends with your results Site. For the optional leaderboard challenge, freeze your model, run the final test once, then upload its generated result.</p>
         <NodeSequence ids={optionalWorkshopExercises.map(exercise => exercise.id)} {...props} />
       </details>

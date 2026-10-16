@@ -16,15 +16,17 @@ Seed 42 and hashed source identities define disjoint, balanced samples. Balance 
 
 `data/01_raw/manifest.json` records split hashes and dataset identity. The facilitator’s `scripts/prepare_data.py` also freezes `config/evaluation.json`; participant postprocessing only validates it. Null, nonfinite or misaligned measured arrays are rejected; raw arrays retain their complete lengths. Validation/test include all Sophon measurements; training carries the smaller numerical-feature inputs.
 
-`config/workshop-sample.lock.json` independently pins all four downloadable files. `scripts/setup_workshop.py --skip-sophon` verifies their bytes and raw-data contract for the core workshop. Without that flag, setup also downloads the optional revision-pinned Sophon ONNX model from public Hugging Face. Its supporting publisher references and MIT license come from pinned upstream GitHub files. Existing matching assets are reused; incomplete downloads never become model files. The sample and model payloads are excluded from the GitHub repository.
+`config/workshop-sample.lock.json` independently pins all four downloadable files. `docker compose run --rm --no-deps setup` verifies their bytes and raw-data contract. It downloads no models. The sample payloads are excluded from Git.
 
 ## Features and scores
 
 `src/preprocessing/features.py` defines eight measured features, including pairwise angular energy correlation. Labels, source identifiers and generator truth are excluded.
 
-The default config runs only logistic regression using jet momentum, jet mass and particle count. Participants choose additional classifiers, measured features and tuning parameters. All training uses the train split; validation selects the approach, and test is scored once after that choice. The feature registry in `src/preprocessing/features.py` accepts additional calculations from measured inputs; rerun preprocessing after changing it.
+The default config runs only logistic regression using jet momentum, jet mass and particle count. Participants research and implement their chosen classifier integration, features or parameter changes. Scikit-learn and XGBoost are preinstalled; only logistic regression has a starter implementation. All training uses the train split; validation selects the approach, and test is scored once after that choice. The feature registry in `src/preprocessing/features.py` accepts additional calculations from measured inputs; rerun preprocessing after changing that file.
 
-Optional `config/experiments-sophon.yaml` runs frozen Sophon, which uses at most 128 particles; raw arrays remain complete. Its support flag means **200 < jet_pt < 2500 GeV** and **20 < jet_sdmass < 500 GeV**. Model scores rank jets from more background-like to more signal-like; they are not calibrated probabilities. Simulation truth stays separate from model inputs.
+The separate [Sophon pack](https://ringier-collision-lab.openai.chatgpt.site/downloads/sophon-optional-v1.zip) is for early finishers or the closing demo. Its supplied frozen ONNX integration uses at most 128 particles; raw arrays remain complete. Its support flag means **200 < jet_pt < 2500 GeV** and **20 < jet_sdmass < 500 GeV**. It is a pretrained comparison, not an implementation or fine-tuning exercise.
+
+Model scores rank jets from more background-like to more signal-like; they are not calibrated probabilities. Simulation truth stays separate from model inputs.
 
 ## Query the actual database
 

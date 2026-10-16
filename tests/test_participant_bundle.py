@@ -55,7 +55,7 @@ def test_allowlist_has_current_commands_and_no_hosting_or_submission_identity(tm
     assert {"src/preprocessing/__main__.py", "src/predict/__main__.py", "src/postprocessing/__main__.py",
             "config/experiments.yaml", "config/evaluation.json", "scripts/prepare_data.py", ".worktreeinclude",
             "data/01_raw/train.parquet", "data/01_raw/validation.parquet",
-            "data/01_raw/test.parquet", "models/pretrained/sophon/model.onnx",
+            "data/01_raw/test.parquet", "src/predict/logistic.py", "src/predict/base.py",
             "tools/results-preview/index.html", "tools/results-preview/app.js",
             "tools/results-preview/style.css", "tools/results-preview/comparison.json",
             "tools/results-preview/leaderboard.json"}.issubset(names)
@@ -64,15 +64,34 @@ def test_allowlist_has_current_commands_and_no_hosting_or_submission_identity(tm
     output_prefixes = ("data/02_preprocessed/", "data/03_predictions/", "data/04_submissions/", "data/05_analytics/")
     assert set(bundle.EMPTY_OUTPUT_FILES).issubset(names)
     assert all(name.endswith("/.gitkeep") for name in names if name.startswith(output_prefixes))
-    assert all(name.startswith("models/pretrained/") for name in names if name.startswith("models/"))
+    assert not any(name.startswith("models/") or "sophon" in name or "xgboost" in name for name in names)
     assert "docs/workshop.md" not in names
     assert len(names) == len(set(names))
 
 
-def test_bundle_includes_every_runtime_module():
+def test_bundle_includes_every_core_runtime_module():
     root = Path(__file__).resolve().parents[1]
-    sources = {path.relative_to(root).as_posix() for path in (root / "src").rglob("*.py")}
+    optional = {"src/predict/sophon.py", "src/predict/sophon_adapter.py", "src/predict/xgboost.py"}
+    sources = {path.relative_to(root).as_posix() for path in (root / "src").rglob("*.py")} - optional
     assert sources.issubset(bundle.repository_files(root))
+    assert not optional.intersection(bundle.repository_files(root))
+
+
+def test_optional_pack_sources_tests_and_weights_never_enter_core_snapshot(tmp_path, monkeypatch):
+    (tmp_path / "README.md").write_text("core starter")
+    private = ["src/predict/sophon.py", "src/predict/sophon_adapter.py", "src/predict/xgboost.py",
+               "config/experiments-sophon.yaml", "config/sophon-contract.json", "config/sophon-model.lock.json",
+               "models/pretrained/sophon/model.onnx", "tests/test_sophon.py", "tests/test_xgboost.py",
+               "tests/test_optional_pack.py", "optional-model-pack/tests/test_install.py"]
+    for name in private:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("optional content must not ship")
+    (tmp_path / "tests/test_core.py").write_text("pass")
+    monkeypatch.setattr(bundle, "STATIC_REPOSITORY_FILES", ("README.md",))
+    monkeypatch.setattr(bundle, "ASSET_FILES", ())
+    files = bundle.participant_files(tmp_path)
+    assert set(files) == {"README.md", "tests/test_core.py", *bundle.EMPTY_OUTPUT_FILES}
 
 
 def test_empty_output_directories_survive_archive_extraction(tmp_path):
