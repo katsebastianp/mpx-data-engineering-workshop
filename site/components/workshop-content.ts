@@ -47,14 +47,14 @@ export const workshopParts: WorkshopPart[] = [
         location: "local",
         title: "Create your Codex project",
         time: "3 min",
-        instruction: "Choose a run name above, then start a Codex chat in an empty folder.",
+        instruction: "Choose a run name above, then start a Codex chat.",
         actions: [
           "Clone with the GitHub plugin, or use the terminal command Codex shows you.",
           "Open the cloned folder as your Codex project, then start a chat there.",
         ],
-        prompt: `Use the GitHub plugin to check access to ${WORKSHOP_REPOSITORY_URL} and clone its ${WORKSHOP_SOURCE_BRANCH} branch into a fresh folder named {{runName}}. If that folder already exists, check it belongs to this run before resuming. Show the terminal command as a fallback. Preserve existing files. Give me the clone’s absolute path, then confirm you can read README.md, compose.yaml and src/.`,
+        prompt: `Use the GitHub plugin to check access to ${WORKSHOP_REPOSITORY_URL} and clone its ${WORKSHOP_SOURCE_BRANCH} branch into the default folder machine-learning-lhc-workshop. If already cloned, verify and reuse that repository. Show the terminal command as a fallback. Preserve existing files. Give me the clone’s absolute path, then confirm you can read README.md, compose.yaml and src/.`,
         commandTitle: "Terminal fallback · run in the empty project folder",
-        commands: `gh auth status\ngh repo clone openai/machine-learning-lhc-workshop {{runName}} -- -b ${WORKSHOP_SOURCE_BRANCH}\n# If GitHub CLI is unavailable and Git access is already configured:\n# git clone -b ${WORKSHOP_SOURCE_BRANCH} ${WORKSHOP_REPOSITORY_URL}.git {{runName}}`,
+        commands: `gh auth status\ngh repo clone openai/machine-learning-lhc-workshop -- -b ${WORKSHOP_SOURCE_BRANCH}\n# If GitHub CLI is unavailable and Git access is already configured:\n# git clone -b ${WORKSHOP_SOURCE_BRANCH} ${WORKSHOP_REPOSITORY_URL}.git`,
         checkpoint: "Codex can read the cloned repository, and you know its folder on your computer.",
       },
       {
