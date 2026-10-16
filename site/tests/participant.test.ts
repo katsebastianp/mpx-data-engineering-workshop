@@ -155,20 +155,20 @@ test("model results are explored after training and before selection", () => {
   assert.deepEqual(byId.get("select")?.dependsOn, ["explore-results"]);
 });
 
-test("both completed paths must rejoin before validation, final test, and upload", () => {
-  for (const id of ["integrate", "preprocess", "final-test", "upload"]) {
+test("both completed paths must rejoin before tests and publication", () => {
+  for (const id of ["integrate", "final-test", "upload"]) {
     const required = ancestors(id);
     assert.ok(required.has("pr-review"), `${id} requires the pipeline review`);
     assert.ok(required.has("select"), `${id} requires the frozen model selection`);
   }
-  assert.ok(ancestors("final-test").has("preprocess"));
+  assert.ok(ancestors("final-test").has("integrate"));
   assert.ok(ancestors("upload").has("final-test"));
 });
 
 test("core completion never requires an optional exercise", () => {
   const optionalIds = new Set(optionalWorkshopExercises.map((step) => step.id));
   assert.deepEqual([...optionalIds], ["sophon-reference"]);
-  assert.deepEqual(coreWorkshopExercises.slice(-2).map(step => step.id), ["final-test", "upload"]);
+  assert.deepEqual(coreWorkshopExercises.slice(-3).map(step => step.id), ["integrate", "final-test", "upload"]);
   assert.ok(!byId.has("results-site"));
   for (const step of coreWorkshopExercises) {
     assert.ok(!step.optional, `${step.id} is marked optional but included in core progress`);

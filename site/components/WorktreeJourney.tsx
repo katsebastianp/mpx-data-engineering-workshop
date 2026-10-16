@@ -95,7 +95,7 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
 
       <div className="journey-map-spine journey-map-integration">
         <div className="journey-map-stage-label"><GitMerge size={13} aria-hidden="true" /><span>Bring it together</span></div>
-        <NodeSequence ids={["integrate", "preprocess", "final-test", "upload"]} {...props} />
+        <NodeSequence ids={["integrate", "final-test", "upload"]} {...props} />
       </div>
       <details className="optional-journey" open={optionalWorkshopExercises.some(exercise => exercise.id === props.selectedId) || undefined}>
         <summary>Optional · Try Sophon</summary>

@@ -42,7 +42,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
   useEffect(() => {
     const readStep = () => {
       const requested = new URLSearchParams(window.location.search).get("step");
-      const id = requested === "results-site" ? "final-test" : requested;
+      const id = requested === "results-site" ? "upload" : requested === "preprocess" ? "final-test" : requested;
       setSelectedId(id && exerciseIds.has(id) ? id : firstStep);
     };
     readStep();

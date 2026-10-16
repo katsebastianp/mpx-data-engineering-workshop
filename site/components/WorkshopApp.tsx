@@ -48,8 +48,8 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
   <section className="section-wrap agenda"><span className="section-kicker">2-HOUR SESSION</span><h2>Agenda</h2>{[
    ["00–30", "Explore & run", "Get the code, trace a real jet, run the logistic baseline, open worktrees"],
    ["30–80", "Run & explore", "One Spark setting + planned model variants; explore results, choose a model and review both PRs"],
-   ["80–100", "Merge & check", "Use the app to merge, verify GitHub, pull and check the combined result"],
-   ["100–115", "Test & submit", "Evaluate your chosen model on test data, upload the generated JSON and confirm acceptance"],
+   ["80–100", "Merge & test", "Merge both PRs, check the code and evaluate the chosen model on the test dataset"],
+   ["100–105", "Publish your results", "Upload the generated JSON to the Leaderboard and confirm acceptance"],
    ["Extra", "Choose your extension", "Try the ready-made Sophon demo pack"],
   ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
   <PredictionFlow/>
