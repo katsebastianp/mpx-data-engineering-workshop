@@ -59,7 +59,15 @@
 .journey-map-wire.is-pipeline { stroke: var(--journey-pipeline); }
 .journey-map-wire.is-models { stroke: var(--journey-models); }
 .journey-map-lanes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.journey-map-lane { min-width: 0; padding-inline: 8px; --journey-wire: var(--journey-pipeline); }
+.journey-map-lane { display: flex; flex-direction: column; min-width: 0; padding-inline: 8px; --journey-wire: var(--journey-pipeline); }
+.journey-map-lane > .journey-map-sequence {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(var(--journey-wire), var(--journey-wire)) calc(50% + .5px) 0 / 1px 100% no-repeat;
+}
+.journey-map-lane .journey-map-sequence > li + li::before { content: none; }
 .journey-map-lane.is-models { --journey-wire: var(--journey-models); }
 .journey-map-lane h3 { display: flex; align-items: center; justify-content: center; gap: 6px; position: relative; min-height: 36px; padding-bottom: 14px; color: var(--journey-pipeline); font: 10px/1.5 var(--mono); letter-spacing: -.015em; }
 .journey-map-lane h3::after { content: ""; width: 1px; height: 10px; position: absolute; bottom: 0; left: 50%; background: var(--journey-wire); }
