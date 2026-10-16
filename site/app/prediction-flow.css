@@ -17,7 +17,7 @@
 .origin-button{display:grid;grid-template-columns:40px 1fr 14px;gap:10px;align-items:center;padding:14px 12px;text-align:left;border:1px solid var(--line);border-left:2px solid currentColor;background:transparent;border-radius:3px;transition:background .2s,border-color .2s}
 .supplied{--origin-color:#c7d9e5}.calculated{--origin-color:var(--accent)}
 .origin-button{color:var(--origin-color)}
-.origin-button:hover,.origin-button[aria-pressed=true]{background:#ffffff06;border-color:var(--origin-color)}
+.origin-button:hover{background:#ffffff06;border-color:var(--origin-color)}
 .origin-count{font:26px var(--display);letter-spacing:-.06em}
 .origin-button>span:nth-child(2){font-size:12px;color:var(--ink)}
 .feature-ticks{display:flex;gap:4px;margin-top:9px}
@@ -38,7 +38,8 @@
 .prediction-feature-heading>span{font:10px var(--mono);color:var(--muted)}
 .prediction-feature-groups{display:grid;grid-template-columns:1fr 1fr;gap:50px}
 .prediction-feature-group{border-top:2px solid var(--origin-color);transition:background .2s,box-shadow .2s}
-.prediction-feature-group.is-focused{background:#ffffff03;box-shadow:0 0 0 12px #ffffff03}
+.prediction-feature-group:target{background:#ffffff06;box-shadow:0 0 0 12px #ffffff06}
+.prediction-feature-group:focus-visible{outline:1px solid var(--origin-color);outline-offset:12px}
 .prediction-feature-group h4{display:flex;align-items:center;gap:14px;font-size:15px;font-weight:500;margin:20px 0 10px}
 .prediction-feature-group h4>span{font:11px var(--mono);color:var(--origin-color)}
 .prediction-feature-group dl{margin:0}

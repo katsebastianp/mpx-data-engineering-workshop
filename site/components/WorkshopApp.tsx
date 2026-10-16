@@ -53,12 +53,6 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
    ["Extra", "Choose your extension", "More questions, a second controlled run, Sophon, or the optional final-test challenge"],
   ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
   <PredictionFlow/>
-  <section className="brief-outcomes section-wrap"><span className="section-kicker">THREE THINGS TO LEARN</span><div className="outcome-grid">{[
-   ["01", "Follow real data", "Click through one actual jet: particle measurements → features → model score. Find the function behind each step."],
-   ["02", "Test your prediction", "Change one Spark setting. Use Plan mode to design a small model comparison. Decide whether the result supports your hypothesis."],
-   ["03", "Make the trade-off visible", "Review and merge your PRs, then build your own small results page. Move a threshold and explain what the model gets wrong."],
-  ].map(row => <article key={row[0]}><span className="outcome-number">{row[0]}</span><h3>{row[1]}</h3><p>{row[2]}</p></article>)}</div>
-  <p className="muted-note">No need to write Python yourself. Focus on the questions and results; inspect the code if you want to go deeper.</p></section>
   <section className="split-section section-wrap"><div><span className="section-kicker">SAME DATA, FAIR COMPARISONS</span><h2>Learn, compare, then test</h2></div><div className="split-bars">{[
    ["TRAIN", "4,000", "The model learns from these examples", "67%"],
    ["VALIDATION", "1,000", "We compare models and choose what to keep", "17%"],

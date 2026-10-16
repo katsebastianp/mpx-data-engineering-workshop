@@ -32,7 +32,6 @@ function JetGlyph({decay = false}:{decay?: boolean}) {
 
 export function PredictionFlow() {
   const [exampleIndex, setExampleIndex] = useState(0);
-  const [focus, setFocus] = useState<"supplied" | "calculated" | null>(null);
   const jet = examples.examples[exampleIndex];
   const groups = [
     { id: "supplied" as const, title: "Supplied with the data", count: "03", rows: features.slice(0, 3) },
@@ -40,7 +39,7 @@ export function PredictionFlow() {
   ];
 
   return <section className="prediction-section section-wrap" aria-labelledby="prediction-title">
-    <div className="section-heading prediction-heading"><div><span className="section-kicker">THE LEARNING PROBLEM</span><h2 id="prediction-title">From a jet to a prediction</h2></div><p>Eight available features.<br/>Three supplied. Five calculated.</p></div>
+    <div className="section-heading prediction-heading"><div><span className="section-kicker">THE LEARNING PROBLEM</span><h2 id="prediction-title">From a jet to a prediction</h2></div></div>
     <div className="prediction-flow">
       <div className="prediction-stage jet-stage">
         <span className="prediction-step">01 / INPUT DATA</span>
@@ -52,18 +51,16 @@ export function PredictionFlow() {
           <circle cx="90" cy="80" r="2" fill="var(--ink)"/>
         </svg>
         <div className="jet-example-picker" aria-label="Choose a jet example">{examples.examples.map((example, i) => <button key={example.record_id} type="button" aria-pressed={i === exampleIndex} onClick={() => setExampleIndex(i)}>Jet {i === 0 ? "A" : "B"}</button>)}</div>
-        <p className="jet-example-caption">{jet.particle_count} particles · simulated data<br/>Position = direction · size = energy</p>
       </div>
       <ArrowRight className="prediction-arrow" size={22} strokeWidth={1}/>
       <div className="prediction-stage feature-stage">
         <span className="prediction-step">02 / PREPROCESSING</span><h3>8 features</h3>
-        <div className="feature-origin-buttons">{groups.map(group => <button key={group.id} type="button" className={`origin-button ${group.id}`} aria-pressed={focus === group.id} aria-controls={`features-${group.id}`} onClick={() => setFocus(focus === group.id ? null : group.id)}>
+        <div className="feature-origin-buttons">{groups.map(group => <a key={group.id} className={`origin-button ${group.id}`} href={`#features-${group.id}`}>
           <span className="origin-count">{group.count}</span><span>{group.id === "supplied" ? "From the data" : "Calculated"}<span className="feature-ticks" aria-hidden="true">{group.rows.map(row => <i key={row.name}/>)}</span></span><ArrowDown size={14}/>
-        </button>)}</div>
-        <p className="prediction-caption">Particle energies + directions<br/>become five extra features.</p>
+        </a>)}</div>
       </div>
       <ArrowRight className="prediction-arrow" size={22} strokeWidth={1}/>
-      <div className="prediction-stage model-stage"><span className="prediction-step">03 / MODEL</span><h3>Predict</h3><ModelDrawing/><p className="prediction-caption">Basic: 3 features<br/>Shape: all 8</p></div>
+      <div className="prediction-stage model-stage"><span className="prediction-step">03 / MODEL</span><h3>Predict</h3><ModelDrawing/></div>
       <ArrowRight className="prediction-arrow" size={22} strokeWidth={1}/>
       <div className="prediction-stage outcome-stage"><span className="prediction-step">04 / TWO CLASSES</span><h3>Which origin?</h3><div className="prediction-outcomes">
         <div className="ordinary-outcome"><JetGlyph/><strong>Ordinary jet</strong><span>QCD background</span></div>
@@ -72,7 +69,7 @@ export function PredictionFlow() {
       </div></div>
     </div>
     <div className="prediction-feature-heading"><h3>The eight features</h3><span>Values for Jet {exampleIndex === 0 ? "A" : "B"}</span></div>
-    <div className="prediction-feature-groups">{groups.map(group => <div key={group.id} id={`features-${group.id}`} className={`prediction-feature-group ${group.id} ${focus === group.id ? "is-focused" : ""}`}>
+    <div className="prediction-feature-groups">{groups.map(group => <div key={group.id} id={`features-${group.id}`} tabIndex={-1} className={`prediction-feature-group ${group.id}`}>
       <h4><span>{group.count}</span>{group.title}</h4>
       <dl>{group.rows.map(feature => <div className="prediction-feature-row" key={feature.name}><dt><code>{feature.name}</code><span>{feature.description}</span></dt><dd>{jet[feature.name].toFixed(feature.name === "particle_count" ? 0 : feature.unit ? 1 : 3)}{feature.unit && <small>{feature.unit}</small>}</dd></div>)}</dl>
     </div>)}</div>
