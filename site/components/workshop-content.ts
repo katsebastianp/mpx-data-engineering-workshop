@@ -84,10 +84,9 @@ export const workshopParts: WorkshopPart[] = [
         title: "Explore the code",
         time: "5 min",
         instruction: "Start a new project chat, then open and explore the HTML diagram Codex creates.",
-        decision: "What enters and leaves the processing step you clicked?",
-        prompt: "Explore this repository. Create a clear, attractive single-file docs/workshop-overview.html: clickable flow from one real validation example → measured features → model → signal/background score. Start with docs/assets/jet-examples.json; show its actual values and exact source files/functions at each node; explain code structure in plain English. Keep it small, no framework. Label unavailable predictions rather than inventing them. Commit and push on {{branch}}, then link the HTML file.",
-        hint: "A score says how signal-like an example looks to the model. It is not automatically a calibrated probability. The true signal/background label is the answer used for training and checking; it must never be an input feature.",
-        checkpoint: "The HTML opens, its example comes from the dataset, and you can explain raw data → features → score.",
+        decision: "Which file would you change to add a model or a feature?",
+        prompt: "Read this repository and create docs/workshop-overview.html titled Code overview. Make the page a Mermaid-style code flowchart: raw Parquet → PySpark preprocessing → prepared features → model training/prediction → results → Model Explorer. Show separately where training and validation data enter, and connect config/experiments.yaml to the steps it controls. Verify the flow against the code. Each node: a plain label and 1–2 main file paths. Click a node to show one sentence explaining its job, its inputs/outputs and its main function. Keep the diagram dominant; show only one detail panel at a time. Match the workshop Site: charcoal #282b2f, panels #30343a, off-white #f6f3ed, coral #ff737a and pale-blue arrows; thin borders, compact sans-serif labels, monospace paths. No hero, slogans, introductory paragraphs, formulas, sample scores or historical results. At most 80 words visible at once, excluding file paths. Use one self-contained HTML with inline SVG/CSS/JS; no framework, CDN or training run. Check it opens and the nodes work. Commit and push on {{branch}}, then link the HTML file.",
+        checkpoint: "You can follow the pipeline and locate the files that control models and features.",
       },
       {
         id: "smoke",

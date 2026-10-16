@@ -8,7 +8,7 @@ import type { useParticipantProgress } from "./useParticipantProgress";
 import { ParticipantAccountPanel } from "./ParticipantAccount";
 import { WorktreeJourney } from "./WorktreeJourney";
 import { SampleDownloads } from "./SampleDownloads";
-import { DataFlowExplorer, NextStepsFlow, PipelineVisual, WorktreeVisual } from "./LearningVisuals";
+import { NextStepsFlow, PipelineVisual, WorktreeVisual } from "./LearningVisuals";
 import { personaliseWorkshopText } from "../lib/participant";
 
 const exerciseIds = new Set(workshopExercises.map(exercise => exercise.id));
@@ -92,7 +92,6 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
         <div className="step-detail-title"><h2 id="selected-step-title">{selected.title}</h2></div>
         <p className="step-instruction">{personalise(selected.instruction)}</p>
         {selected.id === "codex-project" && <a className="text-link" href={WORKSHOP_SOURCE_URL} target="_blank" rel="noreferrer">Open the workshop repository <ArrowUpRight size={13}/></a>}
-        {selected.id === "overview" && <DataFlowExplorer />}
         {selected.id === "smoke" && <NextStepsFlow />}
         {selected.id === "worktrees" && <WorktreeVisual />}
         {selected.id === "profile" && <PipelineVisual />}
