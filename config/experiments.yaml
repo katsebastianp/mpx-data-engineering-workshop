@@ -1,6 +1,6 @@
 # Start with one simple model on three supplied measurements.
 # Use Plan mode to choose your next model, feature or parameter experiment.
-team: example-team
+name: example-run
 explanation: "Baseline logistic regression using jet momentum, mass and particle count."
 evaluation: validation  # Set to test once, after selecting your final approach.
 seed: 42

@@ -77,7 +77,7 @@ def test_config_rejects_unbounded_or_leaking_experiments(tmp_path, overrides):
     {"experiments": [{"id": "linear", "model": "logistic", "features": "basic", "explanation": "  "}]},
     {"experiments": [{"id": "linear", "model": "logistic", "features": "basic", "explanation": "x" * 2001}]}])
 def test_submission_metadata_is_validated_before_training(tmp_path, overrides):
-    with pytest.raises(ValueError, match="team|explanation"):
+    with pytest.raises(ValueError, match="run name|explanation"):
         read_config(config(tmp_path, **overrides))
 
 
@@ -306,3 +306,19 @@ def test_hardware_memory_measurements_are_integer_cgroup_values(monkeypatch):
     assert hardware["memory_peak_bytes"] == 359874560
     assert hardware["memory_events"] == {"high": 0, "max": 0, "oom": 0, "oom_kill": 0}
     assert all(type(value) is int for value in hardware["memory_events"].values())
+
+
+def test_run_name_config_and_legacy_results_are_compatible(tmp_path):
+    path = config(tmp_path)
+    legacy = read_config(path)
+    value = yaml.safe_load(path.read_text())
+    value["name"] = "leon-test1"
+    del value["team"]
+    path.write_text(yaml.safe_dump(value))
+    named = read_config(path)
+    assert named["team"] == "leon-test1"  # Existing result/export schema.
+    assert named["experiments"] == legacy["experiments"]
+    value["team"] = "different-run"
+    path.write_text(yaml.safe_dump(value))
+    with pytest.raises(ValueError, match="must not disagree"):
+        read_config(path)

@@ -1,6 +1,7 @@
 /** Stable workshop names; profile names and email addresses never enter commands. */
 export type ParticipantWorkspace = {
   id: string;
+  runName: string | null;
   branch: string;
   pipelineBranch: string;
   modelsBranch: string;
@@ -8,13 +9,14 @@ export type ParticipantWorkspace = {
   composePrefix: string;
 };
 
-export function workspaceForParticipant(id: string, branch = `participant-${id.slice(2, 10)}`): ParticipantWorkspace {
+export function workspaceForParticipant(id: string, branch = `participant-${id.slice(2, 10)}`, runName: string | null = null): ParticipantWorkspace {
   if (!/^p-[a-f0-9]{16}$/.test(id)) throw new Error("Invalid participant workspace");
   if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(branch) || branch.length > 48 || ["main", "master", "head"].includes(branch)) throw new Error("Invalid personal branch name");
+  if (runName !== null && runName !== branch) throw new Error("Run name must match its branch");
   return {
-    id, branch, pipelineBranch: `${branch}-pipeline_optimization`,
+    id, runName, branch, pipelineBranch: `${branch}-pipeline_optimization`,
     modelsBranch: `${branch}-predictive_models`, integrationBranch: branch,
-    composePrefix: `ws-${id}`,
+    composePrefix: `ws-${runName ?? id}`,
   };
 }
 
@@ -28,9 +30,10 @@ export async function participantWorkspaceFor(subject: string, branch?: string):
 
 /** Only controlled identifiers and an already-validated repository URL are templated. */
 export function personaliseWorkshopText(text: string, workspace: ParticipantWorkspace, repositoryUrl: string | null): string {
-  const names = workspaceForParticipant(workspace.id, workspace.branch);
+  const names = workspaceForParticipant(workspace.id, workspace.branch, workspace.runName);
   const values: Record<string, string> = {
     participantId: names.id,
+    runName: names.runName ?? names.branch,
     branch: names.branch,
     pipelineBranch: names.pipelineBranch,
     modelsBranch: names.modelsBranch,

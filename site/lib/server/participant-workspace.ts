@@ -1,6 +1,6 @@
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, notExists } from "drizzle-orm";
 import { getDb } from "../../db";
-import { participantSettings } from "../../db/schema";
+import { participantSettings, workshopRuns } from "../../db/schema";
 import { participantWorkspaceFor, workspaceForParticipant, type ParticipantWorkspace } from "../participant";
 import { participantBranchCandidates } from "../progress";
 
@@ -8,6 +8,12 @@ import { participantBranchCandidates } from "../progress";
 export async function workspaceForAuthenticatedParticipant(user: { userId: string; fullName: string | null }): Promise<ParticipantWorkspace> {
   const identity = await participantWorkspaceFor(user.userId);
   const db = getDb();
+  const active = await db.select({ name: participantSettings.activeRunName }).from(participantSettings).where(eq(participantSettings.ownerId, user.userId)).limit(1);
+  if (active[0]?.name) {
+    const runs = await db.select().from(workshopRuns).where(and(eq(workshopRuns.name, active[0].name), eq(workshopRuns.ownerId, user.userId))).limit(1);
+    if (!runs.length) throw new Error("Active run unavailable");
+    return workspaceForParticipant(identity.id, runs[0].name, runs[0].name);
+  }
   const allocated = async () => {
     const rows = await db.select({ branchName: participantSettings.branchName }).from(participantSettings)
       .where(eq(participantSettings.ownerId, user.userId)).limit(1);
@@ -18,14 +24,11 @@ export async function workspaceForAuthenticatedParticipant(user: { userId: strin
 
   for (const branchName of participantBranchCandidates(user.fullName, identity.id)) {
     try {
-      const rows = await db.insert(participantSettings).values({
-        ownerId: user.userId, branchName, updatedAt: new Date().toISOString(),
-      }).onConflictDoUpdate({
-        target: participantSettings.ownerId,
-        set: { branchName },
-        // Another request may already have allocated this owner's branch.
-        setWhere: isNull(participantSettings.branchName),
-      }).returning({ branchName: participantSettings.branchName });
+      await db.insert(participantSettings).values({ ownerId: user.userId, updatedAt: new Date().toISOString() }).onConflictDoNothing();
+      const rows = await db.update(participantSettings).set({ branchName }).where(and(
+        eq(participantSettings.ownerId, user.userId), isNull(participantSettings.branchName),
+        notExists(db.select().from(workshopRuns).where(eq(workshopRuns.name, branchName))),
+      )).returning({ branchName: participantSettings.branchName });
       const saved = rows[0]?.branchName ?? await allocated();
       if (saved) return workspaceForParticipant(identity.id, saved);
     } catch (error) {

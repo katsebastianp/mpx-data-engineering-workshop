@@ -6,6 +6,7 @@ export type AuthenticatedProgress = {
   authenticated: true;
   account: ParticipantAccount;
   workspace: ParticipantWorkspace;
+  availableRuns: string[];
   completedSteps: string[];
   repositoryUrl: string | null;
   updatedAt: string | null;
@@ -14,6 +15,7 @@ export type AuthenticatedProgress = {
 export type AnonymousProgress = { authenticated: false; signInUrl: string };
 export type ProgressResponse = AuthenticatedProgress | AnonymousProgress;
 export type ProgressMutation =
+  | { action: "run"; name: string | null }
   | { action: "complete"; stepId: string; completed: boolean }
   | { action: "repository"; repositoryUrl: string | null }
   | { action: "import"; completedSteps: string[]; repositoryUrl?: string | null };
@@ -112,6 +114,10 @@ export function validateProgressMutation(value: unknown, validStepIds: ReadonlyS
     if (typeof id !== "string" || !validStepIds.has(id)) throw new ProgressError("Choose a valid workshop step.");
     return id;
   };
+  if (payload.action === "run") {
+    exactKeys(["action", "name"]);
+    return { action: "run", name: payload.name === null ? null : validateRunName(payload.name) };
+  }
   if (payload.action === "complete") {
     exactKeys(["action", "stepId", "completed"]);
     if (typeof payload.completed !== "boolean") throw new ProgressError("Step completion must be true or false.");
@@ -159,4 +165,11 @@ export async function readProgressMutation(request: Request, validStepIds: Reado
     throw new ProgressError("Progress data could not be read as UTF-8 JSON.");
   } finally { reader.releaseLock(); }
   return validateProgressMutation(parseProgressJson(source), validStepIds);
+}
+
+export function validateRunName(value: unknown): string {
+  if (typeof value !== "string" || value.length > 48 || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) || ["main", "master", "head", "trunk", "develop"].includes(value)) {
+    throw new ProgressError("Use a name like leon-test1: lowercase letters, numbers and hyphens, starting with a letter (max 48 characters).");
+  }
+  return value;
 }

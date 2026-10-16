@@ -205,3 +205,17 @@ test("each lane asks Codex to push and create a PR into the participant's person
     }
   }
 });
+
+
+test("named runs separate every executable name while retaining account identity", () => {
+  const first = workspaceForParticipant(idA, "leon-test1", "leon-test1");
+  const second = workspaceForParticipant(idA, "leon-test2", "leon-test2");
+  assert.equal(first.id, second.id);
+  for (const key of ["branch", "pipelineBranch", "modelsBranch", "composePrefix"] as const) assert.notEqual(first[key], second[key]);
+  assert.equal(personaliseWorkshopText("name: {{runName}}", second, null), "name: leon-test2");
+  assert.throws(() => workspaceForParticipant(idA, "leon-test1", "different"));
+  for (const step of workshopExercises) {
+    const prompt = [step.prompt, ...(step.extraPrompts ?? []).map(p => p.prompt)].join("\n");
+    assert.ok(!/team:|participantId/.test(prompt));
+  }
+});

@@ -11,7 +11,7 @@ const format = (value: number | undefined, decimals = 3) =>
   typeof value === "number" && Number.isFinite(value) ? value.toFixed(decimals) : "—";
 const finalPrompt = [
   "- On {{branch}}, confirm both reviewed PRs are integrated and the chosen model was selected on validation.",
-  "- Keep the frozen features, parameters, seed, explanation and team: {{participantId}} in config/experiments.yaml.",
+  "- Keep the frozen features, parameters, seed, explanation and name: {{runName}} in config/experiments.yaml.",
   "- Reuse an existing final result. Otherwise set evaluation: test and run predict then postprocessing once with Compose project {{composePrefix}}-integration and no competing heavy jobs.",
   "- Validate the generated data/04_submissions/ JSON against config/evaluation.json with the trusted postprocessing.leaderboard collector. Check complete IDs and the fixed timing protocol.",
   "- Show the exact file under 1 MB and a concise result summary. I will upload it here under my signed-in account.",

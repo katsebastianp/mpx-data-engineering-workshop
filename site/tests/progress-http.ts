@@ -30,7 +30,7 @@ const cwd = fileURLToPath(new URL("../", import.meta.url));
 const passed: string[] = [];
 let cookie = "";
 let fixtureStarted = false;
-const tables = ["workshop_completed_steps", "workshop_participant_settings"] as const;
+const tables = ["workshop_completed_steps", "workshop_participant_settings", "workshop_runs", "workshop_run_steps"] as const;
 const snapshots = new Map<string, Row[]>();
 
 const literal = (value: string | number | null): string => value === null ? "NULL"
@@ -42,7 +42,7 @@ const identifier = (value: string): string => {
 
 async function dbQuery(sql: string): Promise<Row[]> {
   const result = await run(process.execPath, [
-    "node_modules/wrangler/bin/wrangler.js", "d1", "execute", "DB", "--local",
+    "--import", "./scripts/sites-env.mjs", "node_modules/wrangler/bin/wrangler.js", "d1", "execute", "DB", "--local",
     "--persist-to", ".wrangler/state", "--config", "dist/server/wrangler.json",
     "--command", sql, "--json",
   ], { cwd, maxBuffer: 2_000_000 });
@@ -120,7 +120,8 @@ try {
   assert.ok(cookie, "local sign-in must provide its trusted authentication cookie");
   // Preserve any participant progress already in the developer's local preview.
   // Do not use a remote D1 command or touch any leaderboard rows.
-  const backups = await Promise.all(tables.map(async (table) => ({ table, ownRows: await rowsFor(table, ownerA), otherRows: await rowsFor(table, ownerB) })));
+  const backups = [];
+  for (const table of tables) backups.push({ table, ownRows: await rowsFor(table, ownerA), otherRows: await rowsFor(table, ownerB) });
   for (const { table, ownRows, otherRows } of backups) {
     snapshots.set(table, ownRows);
     assert.equal(otherRows.length, 0, "the randomly generated fixture owner must not already exist");
@@ -224,8 +225,39 @@ try {
   passed.push("simultaneous mutations of different steps both persist");
 
   assert.deepEqual(await rowsFor(tables[0], ownerB), [{ owner_id: ownerB, step_id: "upload", updated_at: fixtureDate }]);
-  assert.deepEqual(await rowsFor(tables[1], ownerB), [{ owner_id: ownerB, repository_url: otherRepository, branch_name: branchCandidates[0], updated_at: fixtureDate }]);
+  assert.deepEqual(await rowsFor(tables[1], ownerB), [{ owner_id: ownerB, repository_url: otherRepository, branch_name: branchCandidates[0], active_run_name: null, updated_at: fixtureDate }]);
   assert.equal((await readProgress()).workspace.branch, historicalBranch, "progress and repository writes must never reset the allocated branch");
+  const run1 = `run-${randomUUID().replaceAll("-", "").slice(0, 12)}-one`;
+  const run2 = run1.replace(/-one$/, "-two");
+  await patch({ action: "run", name: "main" }, 400);
+  await patch({ action: "run", name: "x; echo unsafe" }, 400);
+  await patch({ action: "run", name: branchCandidates[0] }, 409);
+  await patch({ action: "run", name: historicalBranch }, 409);
+  await dbQuery(`INSERT INTO workshop_runs (name, owner_id, updated_at) VALUES ('reserved-other-run', ${literal(ownerB)}, ${literal(fixtureDate)})`);
+  await patch({ action: "run", name: "reserved-other-run" }, 409);
+  await patch({ action: "run", name: run1 });
+  const firstRun = await readProgress();
+  assert.equal(firstRun.workspace.branch, run1);
+  assert.equal(firstRun.workspace.composePrefix, `ws-${run1}`);
+  assert.equal(firstRun.workspace.id, initial.workspace.id);
+  assert.deepEqual(firstRun.completedSteps, []);
+  assert.equal(firstRun.repositoryUrl, null);
+  await patch(completeProject, 409); // Original tab cannot modify the new run.
+  await patch(completeProject, 200, { "X-Workshop-Run": run1 });
+  await patch({ action: "repository", repositoryUrl: repository }, 200, { "X-Workshop-Run": run1 });
+  await patch({ action: "run", name: run2 }, 200, { "X-Workshop-Run": run1 });
+  assert.deepEqual((await readProgress()).completedSteps, []);
+  assert.equal((await readProgress()).repositoryUrl, null);
+  await patch(completeProject, 409, { "X-Workshop-Run": run1 });
+  await patch({ action: "run", name: run1 }, 200, { "X-Workshop-Run": run2 });
+  const resumedRun = await readProgress();
+  assert.deepEqual(resumedRun.completedSteps, ["project"]);
+  assert.equal(resumedRun.repositoryUrl, repository);
+  assert.deepEqual(resumedRun.availableRuns, [run1, run2].sort());
+  await patch({ action: "run", name: null }, 200, { "X-Workshop-Run": run1 });
+  assert.deepEqual((await readProgress()).completedSteps, concurrent.completedSteps);
+  assert.equal((await readProgress()).workspace.branch, historicalBranch);
+  passed.push("two named runs isolate and resume branches, Docker, checklist and repository; legacy progress survives; collisions, unsafe names and stale tabs are rejected");
   await readAnonymous();
   passed.push("all mutations leave the other owner unchanged and anonymous reads remain private");
 } finally {

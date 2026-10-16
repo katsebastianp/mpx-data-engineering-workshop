@@ -1,10 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
 import { chatGPTSignInPath, chatGPTSignOutPath, getChatGPTUser, type ChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
-import { participantSettings, workshopCompletedSteps } from "../../../db/schema";
+import { participantSettings, workshopCompletedSteps, workshopRuns, workshopRunSteps } from "../../../db/schema";
 import { workshopExercises } from "../../../components/workshop-content";
 import { assertProgressWriteContext, ProgressError, readProgressMutation, type AuthenticatedProgress, type ProgressResponse } from "../../../lib/progress";
 import { workspaceForAuthenticatedParticipant } from "../../../lib/server/participant-workspace";
+
+import { selectWorkshopRun, saveRunProgress } from "../../../lib/server/workshop-runs";
 
 export const dynamic = "force-dynamic";
 const responseHeaders = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -14,7 +16,11 @@ const signInUrl = chatGPTSignInPath("/workshop");
 async function progressFor(user: ChatGPTUser): Promise<AuthenticatedProgress> {
   const db = getDb();
   const workspace = await workspaceForAuthenticatedParticipant(user);
-  const [steps, settings] = await Promise.all([
+  const availableRuns = await db.select({ name: workshopRuns.name }).from(workshopRuns).where(eq(workshopRuns.ownerId, user.userId)).orderBy(workshopRuns.name);
+  const [steps, settings] = workspace.runName ? await Promise.all([
+    db.select({ stepId: workshopRunSteps.stepId, updatedAt: workshopRunSteps.updatedAt }).from(workshopRunSteps).where(and(eq(workshopRunSteps.ownerId, user.userId), eq(workshopRunSteps.runName, workspace.runName))),
+    db.select({ repositoryUrl: workshopRuns.repositoryUrl, updatedAt: workshopRuns.updatedAt }).from(workshopRuns).where(and(eq(workshopRuns.ownerId, user.userId), eq(workshopRuns.name, workspace.runName))).limit(1),
+  ]) : await Promise.all([
     db.select({ stepId: workshopCompletedSteps.stepId, updatedAt: workshopCompletedSteps.updatedAt }).from(workshopCompletedSteps).where(eq(workshopCompletedSteps.ownerId, user.userId)),
     db.select({ repositoryUrl: participantSettings.repositoryUrl, updatedAt: participantSettings.updatedAt }).from(participantSettings).where(eq(participantSettings.ownerId, user.userId)).limit(1),
   ]);
@@ -23,6 +29,7 @@ async function progressFor(user: ChatGPTUser): Promise<AuthenticatedProgress> {
     authenticated: true,
     account: { subject: user.userId, displayName: user.displayName, email: user.email },
     workspace,
+    availableRuns: availableRuns.map(row => row.name),
     completedSteps: workshopExercises.filter((exercise) => completed.has(exercise.id)).map((exercise) => exercise.id),
     repositoryUrl: settings[0]?.repositoryUrl ?? null,
     updatedAt: [settings[0]?.updatedAt, ...steps.map((row) => row.updatedAt)].filter((value): value is string => Boolean(value)).sort().at(-1) ?? null,
@@ -54,6 +61,18 @@ export async function PATCH(request: Request) {
     if (!user) return Response.json({ error: "Sign in with ChatGPT to save your own workshop progress.", signInUrl }, { status: 401, headers: responseHeaders });
     assertProgressWriteContext(request, user.userId);
     const mutation = await readProgressMutation(request, stepIds);
+    const workspace = await workspaceForAuthenticatedParticipant(user);
+    if ((request.headers.get("x-workshop-run") || null) !== workspace.runName) throw new ProgressError("Your active run changed. Reload before saving.", 409);
+    if (mutation.action === "run") {
+      await selectWorkshopRun(user.userId, mutation.name, workspace.runName);
+      console.info("progress.run_selected");
+      return Response.json(await progressFor(user), { headers: responseHeaders });
+    }
+    if (workspace.runName) {
+      await saveRunProgress(user.userId, workspace.runName, mutation);
+      console.info("progress.run_saved", { action: mutation.action });
+      return Response.json(await progressFor(user), { headers: responseHeaders });
+    }
     const db = getDb();
     const updatedAt = new Date().toISOString();
     const ownerId = user.userId;

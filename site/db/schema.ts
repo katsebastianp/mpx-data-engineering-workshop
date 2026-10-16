@@ -22,5 +22,21 @@ export const participantSettings = sqliteTable("workshop_participant_settings", 
   ownerId: text("owner_id").primaryKey(),
   repositoryUrl: text("repository_url"),
   branchName: text("branch_name"),
+  activeRunName: text("active_run_name"),
   updatedAt: text("updated_at").notNull(),
 }, (table) => [uniqueIndex("workshop_unique_branch_name").on(table.branchName)]);
+
+
+export const workshopRuns = sqliteTable("workshop_runs", {
+  name: text("name").primaryKey(),
+  ownerId: text("owner_id").notNull(),
+  repositoryUrl: text("repository_url"),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const workshopRunSteps = sqliteTable("workshop_run_steps", {
+  ownerId: text("owner_id").notNull(),
+  runName: text("run_name").notNull(),
+  stepId: text("step_id").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (table) => [primaryKey({ columns: [table.ownerId, table.runName, table.stepId] })]);

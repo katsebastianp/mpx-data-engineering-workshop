@@ -15,6 +15,7 @@ type ProgressState = {
   status: "loading" | "authenticated" | "anonymous" | "error";
   account: ParticipantAccount | null;
   workspace: ParticipantWorkspace | null;
+  availableRuns: string[];
   completed: string[];
   repository: string;
   saving: boolean;
@@ -26,7 +27,7 @@ type ProgressState = {
 };
 
 const initialState: ProgressState = {
-  status: "loading", account: null, workspace: null, completed: [], repository: "", saving: false,
+  status: "loading", account: null, workspace: null, availableRuns: [], completed: [], repository: "", saving: false,
   error: "", saveNotice: "", legacy: null, signInUrl: null, signOutUrl: null,
 };
 
@@ -77,7 +78,8 @@ async function readResponse(response: Response): Promise<ProgressResponse> {
   return {
     authenticated: true,
     account: { subject: account.subject, displayName: account.displayName, email: account.email },
-    workspace: workspaceForParticipant(workspace.id, workspace.branch),
+    workspace: workspaceForParticipant(workspace.id, workspace.branch, typeof workspace.runName === "string" ? workspace.runName : null),
+    availableRuns: Array.isArray(payload.availableRuns) ? payload.availableRuns.filter((name): name is string => typeof name === "string") : [],
     completedSteps: [...new Set(payload.completedSteps.filter((id: unknown): id is string => typeof id === "string" && stepIds.has(id)))],
     repositoryUrl: canonicalRepositoryUrl(payload.repositoryUrl),
     updatedAt: payload.updatedAt,
@@ -113,7 +115,7 @@ export function useParticipantProgress() {
 
   const applyPayload = useCallback((payload: ProgressResponse, notice?: string, error = "") => {
     update(previous => payload.authenticated ? {
-      status: "authenticated", account: payload.account, workspace: payload.workspace, completed: payload.completedSteps,
+      status: "authenticated", account: payload.account, workspace: payload.workspace, availableRuns: payload.availableRuns, completed: payload.completedSteps,
       repository: payload.repositoryUrl ?? "", saving: false, error,
       saveNotice: notice ?? (previous.account?.subject === payload.account.subject ? previous.saveNotice : ""),
       legacy: legacyDismissed.current ? null : legacyCandidate.current,
@@ -180,7 +182,7 @@ export function useParticipantProgress() {
     try {
       const response = await fetch("/api/progress", {
         method: "PATCH", credentials: "same-origin", cache: "no-store", signal: controller.signal,
-        headers: { "Content-Type": "application/json", "X-Workshop-Account": expectedSubject },
+        headers: { "Content-Type": "application/json", "X-Workshop-Account": expectedSubject, "X-Workshop-Run": current.workspace?.runName ?? "" },
         body: JSON.stringify(mutation),
       });
       if (request !== generation.current || controller.signal.aborted) return false;
@@ -188,7 +190,7 @@ export function useParticipantProgress() {
         active.current = null;
         refreshQueued.current = false;
         update(() => ({ ...initialState, error: "Your sign-in changed. Check your account before saving again" }));
-        await loadProgress("Your sign-in changed. Check your account before saving again");
+        await loadProgress(await responseError(response, "Your account or active run changed. Reload before saving"));
         return false;
       }
       if (!response.ok) throw new Error(await responseError(response, "Your change was not saved. Try again"));
@@ -198,7 +200,7 @@ export function useParticipantProgress() {
         active.current = null;
         refreshQueued.current = false;
         update(() => ({ ...initialState, error: "Your sign-in changed. Check your account before saving again" }));
-        await loadProgress("Your sign-in changed. Check your account before saving again");
+        await loadProgress(await responseError(response, "Your account or active run changed. Reload before saving"));
         return false;
       }
       applyPayload(payload, notice);
@@ -258,5 +260,7 @@ export function useParticipantProgress() {
     return true;
   }, [dismissLegacy, mutate]);
 
-  return { ...state, refresh, setStepComplete, saveRepository, importLegacy, dismissLegacy };
+  const useRun = useCallback((name: string | null) => mutate({ action: "run", name }, "Run saved"), [mutate]);
+
+  return { ...state, refresh, setStepComplete, saveRepository, importLegacy, dismissLegacy, useRun };
 }

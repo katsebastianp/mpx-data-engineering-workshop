@@ -30,10 +30,14 @@ def _feature_names(kind, selected):
 
 def read_config(path):
     config = yaml.safe_load(Path(path).read_text())
+    if isinstance(config, dict) and "name" in config:
+        if "team" in config and config["team"] != config["name"]:
+            raise ValueError("Use name only; name and legacy team must not disagree.")
+        config = {**config, "team": config["name"]}
     if (not isinstance(config, dict) or not isinstance(config.get("team"), str)
             or not config["team"].strip() or len(config["team"]) > 128):
-        raise ValueError("experiments.yaml must contain a nonempty team name of at most 128 characters.")
-    if set(config) - {"team", "explanation", "seed", "max_workers", "evaluation", "experiments"}:
+        raise ValueError("experiments.yaml must contain a nonempty run name of at most 128 characters.")
+    if set(config) - {"name", "team", "explanation", "seed", "max_workers", "evaluation", "experiments"}:
         raise ValueError("Unknown top-level experiment setting.")
     seed, workers = config.get("seed", 42), config.get("max_workers", 1)
     if isinstance(seed, bool) or not isinstance(seed, int) or not 0 <= seed <= 2**31 - 1:

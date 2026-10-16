@@ -14,6 +14,7 @@ import { personaliseWorkshopText } from "../lib/participant";
 const exerciseIds = new Set(workshopExercises.map(exercise => exercise.id));
 const firstStep = workshopExercises[0].id;
 const previews: Record<string, string> = {
+  runName: "your-run-name",
   branch: "your-name",
   integrationBranch: "your-name",
   pipelineBranch: "your-name-pipeline_optimization",
@@ -72,7 +73,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
 
   return <div className="workshop-tree-page">
     <ChapterIntro number="03" eyebrow="WORKSHOP" title="Workshop instructions" description={`${total} steps · 2-hour target with the image built`} />
-    {(participant.status !== "authenticated" || participant.legacy) && <ParticipantAccountPanel participant={participant} />}
+    <ParticipantAccountPanel participant={participant} />
 
     <div className="worktree-progress-bar section-wrap">
       <div><strong>{completedCore}<span> / {total}</span></strong><span> core steps complete</span></div>
@@ -100,13 +101,13 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
         {selected.id === "download-data" && <SampleDownloads />}
         {selected.download && <a className="secondary-button" href={selected.download.href} download>{selected.download.label} <ArrowUpRight size={13}/></a>}
 
-        <div key={`${selected.id}-${workspace?.id ?? "signed-out"}-prompt`}>
-          {workspace || selected.id === "codex-project" || selected.id === "download-data" ? <>
+        <div key={`${selected.id}-${workspace?.branch ?? "signed-out"}-prompt`}>
+          {workspace || selected.id === "download-data" ? <>
             {selected.prompt && <Prompt title="Starting prompt">{personalise(selected.prompt)}</Prompt>}
             {selected.extraPrompts?.map(item => <Prompt key={item.title} title={item.title}>{personalise(item.prompt)}</Prompt>)}
           </> : selected.prompt || selected.extraPrompts?.length ? <p className="step-signin-notice">Sign in to get a prompt with your personal branch names.</p> : null}
         </div>
-        {selected.commands && (workspace || selected.id === "codex-project") && <details className="step-command-details"><summary>{selected.commandTitle || "Show terminal commands"}</summary><pre>{personalise(selected.commands)}</pre></details>}
+        {selected.commands && workspace && <details className="step-command-details"><summary>{selected.commandTitle || "Show terminal commands"}</summary><pre>{personalise(selected.commands)}</pre></details>}
         {(selected.concept || selected.hint || selected.checkpoint) && <details className="step-help"><summary>More context</summary>
           {selected.concept && <p className="step-context"><strong>{selected.concept.title} </strong>{personalise(selected.concept.body)}</p>}
           {selected.hint && <p className="step-hint">{personalise(selected.hint)}</p>}
