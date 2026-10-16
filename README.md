@@ -1,6 +1,6 @@
 # Particle workshop code and data
 
-Prepare simulated particle jets with Spark, compare two simple classifiers, and explore their predictions. The frozen Sophon model is an optional extension.
+Start with a three-feature logistic regression on simulated jets, then add and compare your own classifiers and features.
 
 **Participant setup, prompts, exercises and submission steps live only on the [workshop Site](https://ringier-collision-lab.openai.chatgpt.site/workshop).**
 
@@ -16,7 +16,7 @@ docker compose run --rm lab -m predict
 docker compose run --rm lab -m postprocessing
 ```
 
-The default `config/experiments.yaml` trains logistic regression and XGBoost using the same three measurements. It scores the 1,000 validation jets; the separate 1,000 test jets stay unused for model selection. Choose one experiment on validation before setting `evaluation: test` for a final run. Keep `max_workers: 1` for the core workshop; extra runs and models are optional.
+The default `config/experiments.yaml` runs only logistic regression on `jet_pt`, `jet_sdmass` and `particle_count`. It scores 1,000 validation jets; the separate 1,000 test jets stay unused for model selection. Choose your next model, features and tuning parameters, compare with the saved baseline, then select one experiment before setting `evaluation: test`. Keep `max_workers: 1`.
 
 The pipeline exercise changes only `SHUFFLE_PARTITIONS` in `src/preprocessing/pipeline.py` from 64 to 4. Save the existing `data/02_preprocessed/` folder as `data/02_preprocessed_baseline/` first; rerun preprocessing once after the edit. Verify every saved value and inspect recorded task counts/time without retraining:
 
@@ -46,6 +46,21 @@ Run checks with `docker compose run --rm lab -m pytest -q`.
 | `site/` | Hosted workshop UI, accounts and leaderboard; full repository only |
 
 The `Predictor` interface is in `src/predict/base.py`; each model has its own module. `AnalyticsStore` in `src/postprocessing/database.py` owns transactional database writes. `compose.yaml` mounts each checkout’s source and isolates its writable data/models, using a shared image with 2 CPUs and 2 GiB.
+
+## Add a model or feature
+
+| Change | Edit |
+|---|---|
+| Try XGBoost or more features | Set `model: xgboost`, `features: shape`, or an explicit feature list in your YAML |
+| Tune a model | Add `params`, such as logistic `C` or XGBoost `max_depth`; model modules define supported settings |
+| Add a classifier | Implement `Predictor` in `src/predict/`, then register its class in `PREDICTORS` in `models.py` |
+| Calculate a new feature | Add a function and a `DERIVED_FEATURES` entry in `src/preprocessing/features.py`; rerun preprocessing |
+
+A feature function receives only `ParticleMeasurements`. For example, `def mass_over_pt(jet): return jet.mass / jet.pt`; register `"mass_over_pt": mass_over_pt`, then select `features: [jet_pt, jet_sdmass, particle_count, mass_over_pt]` in YAML. Existing feature definitions stay unchanged. After merging, `scripts/compare_preprocessing.py BEFORE AFTER --allow-added-features` checks all original values while allowing the new columns.
+
+A classifier implements `train` (save its artifact and return metadata including `trained` and `parameters`), `__init__` (load the artifact), and `_predict` (one signal score in `[0, 1]` per row). The runner supplies train rows only; inference receives declared measurements without labels or IDs. Use the logistic module as a small example. Added dependencies belong in `requirements.txt`; rebuild the image after changing them.
+
+Run `predict` and `postprocessing` as above after each chosen experiment. The same comparison/export path accepts added classifiers and features. Sophon’s supplied ONNX weights are frozen; fine-tuning those weights requires a separate training implementation and checkpoint.
 
 ## Data and artifacts
 

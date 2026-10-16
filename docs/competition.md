@@ -13,7 +13,9 @@ Participant instructions are maintained on the [workshop Site](https://ringier-c
 | Persistence | Compact verified metrics in D1 | Static JSON export |
 | Validation-only entries | Accepted, unranked | Final entries required |
 
-Quality ranks final test ROC-AUC for participant-trained models. Efficiency ranks normalized inference time among trained entries within **0.02 AUC** of the best. Frozen Sophon is a separate reference and excluded from awards.
+Quality ranks final test ROC-AUC for participant-trained models. Efficiency ranks normalized inference time among trained entries within **0.02 AUC** of the best. Frozen models remain visible as references and are excluded from awards.
+
+Participants can publish added classifiers and measured features without changing the Site. New results declare `trained: true` or `false`; custom model names require this field. Older logistic/XGBoost results infer `true`, and supplied Sophon always remains `false`. Parameter metadata accepts bounded numbers, booleans, null or short option names. The Site receives scores and metadata, never executable model code or weights.
 
 Normalized time is `(inference seconds / 128 jets) / (CPU reference seconds / 64 iterations)`. Timings and scores are participant-reported; quality is recomputed against fixed labels, but inference is not rerun centrally. Hardware correction is approximate. Sophon has richer inputs and prior training.
 

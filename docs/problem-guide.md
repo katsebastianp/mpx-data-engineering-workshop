@@ -26,7 +26,7 @@ flowchart LR
 
 ## Look at the data
 
-Each row contains jet-level values and particle lists: `part_energy`, `part_deta`, `part_dphi`. Matching positions describe the same particle. Preprocessing calculates eight numerical features.
+Each row contains jet-level values and particle lists: `part_energy`, `part_deta`, `part_dphi`. Matching positions describe the same particle. Preprocessing keeps three supplied measurements and calculates five more features.
 
 ![Two measured jets from the supplied validation sample](assets/jet-examples.png)
 
@@ -53,7 +53,7 @@ Each row contains jet-level values and particle lists: `part_energy`, `part_deta
 
 ## Read the predictions
 
-The core workshop runs logistic regression and XGBoost on the three basic features. **Sophon** is an optional reference with richer particle inputs; it stays pretrained/frozen, CPU, batch size 1. [Sophon model](https://huggingface.co/jet-universe/sophon).
+The baseline runs only logistic regression on the three basic features. Participants choose what to try next: more features, tuning, XGBoost or another classifier. **Sophon** is an optional reference with richer particle inputs; the supplied ONNX integration stays pretrained/frozen, CPU, batch size 1. [Sophon model](https://huggingface.co/jet-universe/sophon).
 
 These example scores were recorded on 12 October. The XGBoost example uses all eight shape features; they are not new results from your basic-feature run.
 

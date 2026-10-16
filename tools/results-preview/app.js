@@ -11,18 +11,20 @@
   const el = (tag, value, className) => { const node = document.createElement(tag); if (value !== undefined) node.textContent = value; if (className) node.className = className; return node; };
   const set = (id, value) => { if ($(id)) $(id).textContent = value; };
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
-  const modelLabel = experiment => experiment.model === 'sophon' ? 'Sophon (frozen reference)' : experiment.model;
+  const isTrained = experiment => experiment.model !== 'sophon' && (typeof experiment.trained === 'boolean' ? experiment.trained : ['logistic', 'xgboost'].includes(experiment.model));
+  const modelLabel = experiment => isTrained(experiment) ? experiment.model : `${experiment.model === 'sophon' ? 'Sophon' : experiment.model} (frozen reference)`;
   const label = experiment => `${experiment.team} · ${modelLabel(experiment)} · ${experiment.experiment_id || experiment.feature_set}`;
   const splitNames = ['validation', 'test'];
   let requestGeneration = 0;
 
   function validate(data) {
     assert(object(data) && data.version === 1 && /^[a-f0-9]{64}$/.test(data.dataset_id || ''), 'Choose a version-1 comparison.json or leaderboard.json export.');
-    if (!object(data.leaderboard) || !Array.isArray(data.experiments)) throw new Error('This looks like a team submission. Run the postprocessing step to preview it, or submit the JSON through GitHub for the shared leaderboard.');
+    if (!object(data.leaderboard) || !Array.isArray(data.experiments)) throw new Error('This looks like a submission. Run the postprocessing step to preview it, or upload the JSON to the workshop leaderboard while signed in.');
     assert(data.experiments.length <= 500 && Array.isArray(data.leaderboard.quality) && Array.isArray(data.leaderboard.efficiency), 'The results export has an invalid experiment or ranking list.');
     const experiments = new Map();
     for (const row of data.experiments) {
       assert(object(row) && text(row.experiment_key) && text(row.team) && text(row.model) && text(row.run_id) && text(row.feature_set) && object(row.metrics) && object(row.timings), 'An experiment is missing its result fields.');
+      assert(/^[a-z][a-z0-9_-]{0,63}$/.test(row.model) && (typeof row.trained === 'boolean' || row.trained === undefined && ['logistic', 'xgboost', 'sophon'].includes(row.model)), 'New model identifiers require a trained boolean. Regenerate the results export.');
       assert(!experiments.has(row.experiment_key), 'Duplicate experiment identifiers; regenerate the export.');
       assert(Array.isArray(row.evaluated_splits) && row.evaluated_splits.every(split => splitNames.includes(split)), 'An experiment has an unsupported evaluation split.');
       for (const split of row.evaluated_splits) assert(object(row.metrics[split]) && number(row.metrics[split].roc_auc) && row.metrics[split].roc_auc >= 0 && row.metrics[split].roc_auc <= 1, 'A saved ROC-AUC is invalid.');
@@ -32,7 +34,7 @@
     }
     for (const entries of [data.leaderboard.quality, data.leaderboard.efficiency]) {
       assert(entries.length <= 500, 'The ranking list is too large.');
-      for (const row of entries) assert(object(row) && text(row.team) && text(row.run_id) && text(row.model) && number(row.rank) && number(row.test_auc) && number(row.normalized_inference_time) && [...experiments.values()].some(experiment => experiment.team === row.team && experiment.run_id === row.run_id && experiment.test_selection === 'final' && experiment.evaluated_splits.includes('test')), 'Rankings must refer to explicit final test selections.');
+      for (const row of entries) assert(object(row) && text(row.team) && text(row.run_id) && text(row.model) && number(row.rank) && number(row.test_auc) && number(row.normalized_inference_time) && isTrained(row) && [...experiments.values()].some(experiment => experiment.team === row.team && experiment.run_id === row.run_id && experiment.model === row.model && isTrained(experiment) && experiment.test_selection === 'final' && experiment.evaluated_splits.includes('test')), 'Rankings must refer to trained models with explicit final test selections.');
     }
     if (!('population' in data || 'jets' in data)) return { kind: 'leaderboard', data };
     assert(Array.isArray(data.population) && data.population.length <= 20000 && Array.isArray(data.predictions) && data.predictions.length <= 100000 && Array.isArray(data.jets) && data.jets.length <= 200, 'Comparison arrays are missing or exceed the bounded export size.');
@@ -76,7 +78,7 @@
   const tableRow = values => { const row = el('tr'); for (const value of values) row.append(el('td', value)); return row; };
   function emptyTable(id, columns, message) { const row = el('tr'), cell = el('td', message); cell.colSpan = columns; row.append(cell); $(id)?.append(row); }
   function renderRankings() {
-    const board = rankingSource()?.leaderboard, quality = (board?.quality || []).filter(row => row.model !== 'sophon'), efficiency = (board?.efficiency || []).filter(row => row.model !== 'sophon');
+    const board = rankingSource()?.leaderboard, quality = (board?.quality || []).filter(isTrained), efficiency = (board?.efficiency || []).filter(isTrained);
     set('quality-winner', quality.length ? `${quality[0].team} · ${quality[0].model} · AUC ${format(quality[0].test_auc, 4)}` : 'Awaiting final test submissions');
     set('efficiency-winner', efficiency.length ? `${efficiency[0].team} · ${efficiency[0].model}` : 'Awaiting an eligible final submission');
     $('rankings')?.replaceChildren();
@@ -118,7 +120,7 @@
     svgText(svg, 65, 16, `${split === 'test' ? 'Final test' : 'Validation'} ROC-AUC`); svgText(svg, 335, 263, 'Normalized inference cost · logarithmic · lower is faster', { 'text-anchor': 'middle' });
     for (const row of points) {
       const title = `${label(row)}; ROC-AUC ${format(row.metrics[split].roc_auc, 4)}; normalized cost ${format(row.timings.normalized_inference_time, 6)}`;
-      const dot = svgNode('circle', { cx: x(row.timings.normalized_inference_time), cy: y(row.metrics[split].roc_auc), r: 6, fill: row.model === 'sophon' ? '#777' : '#161616', stroke: '#fff', 'stroke-width': 1, tabindex: 0, 'aria-label': title });
+      const dot = svgNode('circle', { cx: x(row.timings.normalized_inference_time), cy: y(row.metrics[split].roc_auc), r: 6, fill: isTrained(row) ? '#161616' : '#777', stroke: '#fff', 'stroke-width': 1, tabindex: 0, 'aria-label': title });
       dot.append(svgNode('title', {}, title)); svg.append(dot);
     }
   }

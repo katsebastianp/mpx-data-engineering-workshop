@@ -22,7 +22,7 @@ Seed 42 and hashed source identities define disjoint, balanced samples. Balance 
 
 `src/preprocessing/features.py` defines eight measured features, including pairwise angular energy correlation. Labels, source identifiers and generator truth are excluded.
 
-The default config compares logistic regression and XGBoost using the three basic measurements: jet momentum, jet mass and particle count. Both learn from training rows only. Use validation results to choose one model; score the test data once after that choice. Extra shape features are an experiment participants can design, rather than another default run.
+The default config runs only logistic regression using jet momentum, jet mass and particle count. Participants choose additional classifiers, measured features and tuning parameters. All training uses the train split; validation selects the approach, and test is scored once after that choice. The feature registry in `src/preprocessing/features.py` accepts additional calculations from measured inputs; rerun preprocessing after changing it.
 
 Optional `config/experiments-sophon.yaml` runs frozen Sophon, which uses at most 128 particles; raw arrays remain complete. Its support flag means **200 < jet_pt < 2500 GeV** and **20 < jet_sdmass < 500 GeV**. Model scores rank jets from more background-like to more signal-like; they are not calibrated probabilities. Simulation truth stays separate from model inputs.
 

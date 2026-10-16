@@ -1,33 +1,94 @@
-"""Participant exercise: make these calculations faster without changing their values."""
+"""Measured jet features. Add a calculator to DERIVED_FEATURES, then preprocess again."""
 
+from dataclasses import dataclass
 import math
+import re
 
-FEATURE_NAMES = (
-    "jet_pt", "jet_sdmass", "particle_count", "energy_sum",
-    "leading_energy_fraction", "radial_energy_moment", "energy_dispersion", "ecf2_beta1",
-)
-FEATURE_SETS = {"basic": FEATURE_NAMES[:3], "shape": FEATURE_NAMES}
+
+@dataclass(frozen=True)
+class ParticleMeasurements:
+    """Only measured inputs are exposed to feature calculators; no labels or IDs."""
+    pt: float
+    mass: float
+    count: int
+    energy: tuple
+    deta: tuple
+    dphi: tuple
+    total_energy: float
+    energy_fractions: tuple
+
+
+def energy_sum(jet):
+    return jet.total_energy
+
+
+def leading_energy_fraction(jet):
+    return max(jet.energy_fractions)
+
+
+def radial_energy_moment(jet):
+    return sum(weight * math.hypot(eta, phi)
+               for weight, eta, phi in zip(jet.energy_fractions, jet.deta, jet.dphi))
+
+
+def energy_dispersion(jet):
+    return math.sqrt(sum(weight * weight for weight in jet.energy_fractions))
+
+
+def ecf2_beta1(jet):
+    correlation = 0.0
+    for first in range(jet.count):
+        for second in range(first + 1, jet.count):
+            angle = (jet.dphi[first] - jet.dphi[second] + math.pi) % (2 * math.pi) - math.pi
+            distance = math.hypot(jet.deta[first] - jet.deta[second], angle)
+            correlation += jet.energy_fractions[first] * jet.energy_fractions[second] * distance
+    return correlation
+
+
+BASIC_FEATURES = ("jet_pt", "jet_sdmass", "particle_count")
+# Add a named function and one entry here. Keep existing definitions unchanged.
+DERIVED_FEATURES = {
+    "energy_sum": energy_sum,
+    "leading_energy_fraction": leading_energy_fraction,
+    "radial_energy_moment": radial_energy_moment,
+    "energy_dispersion": energy_dispersion,
+    "ecf2_beta1": ecf2_beta1,
+}
+FEATURE_NAMES = (*BASIC_FEATURES, *DERIVED_FEATURES)
+FEATURE_SETS = {"basic": BASIC_FEATURES, "shape": FEATURE_NAMES}
+
+
+def validate_feature_names(names):
+    """Select registered numeric measurements, never metadata or generator truth."""
+    if not isinstance(names, (list, tuple)) or not names or len(names) > 100:
+        raise ValueError("Choose a nonempty list of registered measured features.")
+    reserved = {"truth_label", "truth_group", "record_id", "source_file", "source_row", "split", "jet_label"}
+    if (any(not isinstance(name, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", name)
+            or name in reserved or name.startswith(("truth_", "genpart_", "genjet_", "aux_genpart_")) for name in names)
+            or len(set(names)) != len(names) or not set(names).issubset(FEATURE_NAMES)):
+        raise ValueError("Use unique registered measured features; labels, identifiers and generator truth are forbidden.")
+    return list(names)
 
 
 def particle_features(pt, mass, count, energy, deta, dphi):
-    """Eight measured features; pairwise correlation is the deliberate Python baseline."""
-    if count < 1 or any(len(values) != count for values in (energy, deta, dphi)):
+    """Return supplied measurements followed by registered derived features."""
+    validate_feature_names(FEATURE_NAMES)
+    if isinstance(count, bool) or not isinstance(count, int) or count < 1 or any(len(values) != count for values in (energy, deta, dphi)):
         raise ValueError("Particle arrays must be nonempty and aligned.")
     if not all(math.isfinite(float(value)) for value in (pt, mass, *energy, *deta, *dphi)):
         raise ValueError("Jet measurements must be finite.")
     total = sum(energy)
     if pt <= 0 or total <= 0 or any(value < 0 for value in energy):
         raise ValueError("Jet momentum and total particle energy must be positive.")
-    fractions = [value / total for value in energy]
-    radial = sum(weight * math.hypot(eta, phi) for weight, eta, phi in zip(fractions, deta, dphi))
-    dispersion = math.sqrt(sum(weight * weight for weight in fractions))
-    correlation = 0.0
-    for first in range(count):
-        for second in range(first + 1, count):
-            angle = (dphi[first] - dphi[second] + math.pi) % (2 * math.pi) - math.pi
-            distance = math.hypot(deta[first] - deta[second], angle)
-            correlation += fractions[first] * fractions[second] * distance
-    return (float(pt), float(mass), float(count), total, max(fractions), radial, dispersion, correlation)
+    jet = ParticleMeasurements(float(pt), float(mass), count, tuple(energy), tuple(deta), tuple(dphi),
+                               total, tuple(value / total for value in energy))
+    derived = []
+    for name, calculate in DERIVED_FEATURES.items():
+        value = calculate(jet)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError(f"Feature {name} must return one finite number.")
+        derived.append(float(value))
+    return (jet.pt, jet.mass, float(jet.count), *derived)
 
 
 def build_features(jets):

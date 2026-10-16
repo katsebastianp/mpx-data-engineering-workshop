@@ -171,7 +171,7 @@ def setup(raw_dir: Path, model_dir: Path, *, skip_sophon: bool = False) -> dict:
     LOGGER.info("Verified all 6,000 raw jets: 4,000 train / 1,000 validation / 1,000 test")
     model = None
     if skip_sophon:
-        LOGGER.info("Sophon explicitly skipped. The two core models are ready; optional Sophon assets were not checked. "
+        LOGGER.info("Sophon explicitly skipped. The logistic baseline is ready; optional Sophon assets were not checked. "
                     "To enable that reference later, rerun setup without --skip-sophon.")
     else:
         model = setup_sophon(model_dir)

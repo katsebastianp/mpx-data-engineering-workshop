@@ -1,14 +1,11 @@
-# Core workshop: compare two quick models on the same three measurements.
-# Design one change in Plan mode before editing this file.
+# Start with one simple model on three supplied measurements.
+# Use Plan mode to choose your next model, feature or parameter experiment.
 team: example-team
-explanation: "Compare logistic regression and XGBoost on jet momentum, mass and particle count."
+explanation: "Baseline logistic regression using jet momentum, mass and particle count."
 evaluation: validation  # Set to test once, after selecting your final approach.
 seed: 42
 max_workers: 1  # Two training jobs are supported; timings are always measured serially.
 experiments:
   - id: linear-basic
     model: logistic
-    features: basic
-  - id: trees-basic
-    model: xgboost
     features: basic

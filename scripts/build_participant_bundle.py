@@ -37,6 +37,7 @@ STATIC_REPOSITORY_FILES = (
     "docs/assets/jet-examples.json", "docs/assets/jet-examples.png", "docs/competition.md",
     "docs/validation/parallel.json", "docs/validation/participant-kit-v05.json", "docs/validation/amd64-v05.json",
     "docs/validation/layout-v06.json", "docs/validation/core-redesign-20261015.json",
+    "docs/validation/single-baseline-20261016.json",
     "scripts/build_participant_bundle.py", "scripts/prepare_data.py", "scripts/setup_workshop.py",
     "scripts/stage_site_sample.py", "scripts/compare_preprocessing.py",
     "config/evaluation.json",

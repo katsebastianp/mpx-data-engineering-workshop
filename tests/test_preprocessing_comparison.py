@@ -69,3 +69,31 @@ def test_changed_dataset_cannot_be_called_equivalent(outputs):
 def test_same_output_folder_cannot_be_its_own_baseline(outputs):
     with pytest.raises(ValueError, match="separate baseline"):
         compare(outputs[0], outputs[0])
+
+
+def test_added_feature_needs_explicit_mode_and_cannot_hide_changed_existing_values(outputs):
+    before, after = outputs
+    manifest_path = after / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["feature_names"].append("mass_over_pt")
+    manifest["feature_source_sha256"] = "a" * 64
+    for split in ("train", "validation", "test"):
+        path = after / f"{split}.parquet"
+        rows = pq.read_table(path).to_pylist()
+        for row in rows:
+            row["mass_over_pt"] = row["jet_sdmass"] / row["jet_pt"]
+        pq.write_table(pa.Table.from_pylist(rows), path)
+        manifest["splits"][split]["sha256"] = sha256(path)
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="feature_source_sha256 changed"):
+        compare(before, after)
+    result = compare(before, after, allow_added_features=True)
+    assert result["original_values_preserved"] is True
+    assert result["equivalent"] is False
+    assert result["added_features"] == ["mass_over_pt"]
+    rows[0]["jet_pt"] += 1
+    pq.write_table(pa.Table.from_pylist(rows), path)
+    manifest["splits"]["test"]["sha256"] = sha256(path)
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="values differ"):
+        compare(before, after, allow_added_features=True)

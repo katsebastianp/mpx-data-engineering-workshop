@@ -84,7 +84,9 @@ def test_full_flow_preserves_every_jet_particle_score_and_metrics(comparison_fil
     assert len(export["jets"]) == 200
     assert len(export["population"]) == len(export["predictions"]) == 256
     assert export["leaderboard"]["quality"][0]["test_auc"] == 1
+    assert export["experiments"][0]["trained"] is True
     assert len(receipt["submission_files"]) == 1
+    assert json.loads(Path(receipt["submission_files"][0]).read_text())["trained"] is True
     with duckdb.connect(str(analytics / "analytics.duckdb"), read_only=True) as db:
         assert db.execute("SELECT count(*) FROM jets").fetchone()[0] == 384
         assert db.execute("SELECT count(*) FROM particles").fetchone()[0] == 768
@@ -94,6 +96,28 @@ def test_full_flow_preserves_every_jet_particle_score_and_metrics(comparison_fil
     assert compare(*comparison_files)["experiments"] == 1
     with duckdb.connect(str(analytics / "analytics.duckdb"), read_only=True) as db:
         assert db.execute("SELECT count(*) FROM predictions").fetchone()[0] == 256
+
+
+@pytest.mark.parametrize("trained", [True, False])
+def test_custom_model_training_status_survives_collect_export_and_json_only_reload(comparison_files, trained):
+    prepared, results, submissions, analytics = comparison_files
+    result_path = next(results.glob("*/result.json"))
+    result = json.loads(result_path.read_text())
+    result.update(model="custom_classifier", trained=trained,
+                  parameters={"criterion": "gini", "bootstrap": True, "max_features": None})
+    result_path.write_text(json.dumps(result))
+    receipt = compare(*comparison_files)
+    submitted = json.loads(Path(receipt["submission_files"][0]).read_text())
+    assert submitted["trained"] is trained and submitted["model"] == "custom_classifier"
+    shutil.rmtree(results)
+    compare(prepared, results, submissions, analytics)
+    export = json.loads((analytics / "comparison.json").read_text())
+    assert export["experiments"][0]["trained"] is trained
+    assert len(export["leaderboard"]["quality"]) == int(trained)
+    assert len(export["leaderboard"]["references"]) == int(not trained)
+    with duckdb.connect(str(analytics / "analytics.duckdb"), read_only=True) as db:
+        metadata = json.loads(db.execute("SELECT metadata FROM experiments").fetchone()[0])
+        assert metadata["trained"] is trained
 
 
 def test_database_is_portable_without_source_parquet(comparison_files, tmp_path):

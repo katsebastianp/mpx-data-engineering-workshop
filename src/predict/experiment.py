@@ -101,7 +101,8 @@ def _save_result(job, config, manifest, metadata, metrics, predictions, timings,
     model_manifest = model_directory / "manifest.json"
     result = {
         "version": 1, "status": "succeeded", "run_id": directory.name, "experiment_id": entry["id"],
-        "team": config["team"], "model": entry["model"], "feature_names": entry["feature_names"],
+        "team": config["team"], "model": entry["model"], "trained": metadata["trained"],
+        "feature_names": entry["feature_names"],
         "feature_set": entry["feature_set"], "parameters": metadata["parameters"],
         "dataset_id": manifest["dataset_id"], "seed": config["seed"],
         "feature_source_sha256": manifest["feature_source_sha256"],

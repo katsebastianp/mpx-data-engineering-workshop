@@ -49,8 +49,8 @@ def test_logistic_scaling_comes_only_from_training_rows(tmp_path):
 
 def test_training_rejects_holdout_rows_and_leaking_features(tmp_path):
     rows = train_rows()
-    for feature in ("truth_label", "record_id", "genjet_pt"):
-        with pytest.raises(ValueError, match="measured features"):
+    for feature in ("truth_label", "truth_group", "split", "record_id", "source_row", "genjet_pt"):
+        with pytest.raises(ValueError, match="feature|metadata|forbidden"):
             train_model("logistic", rows, [feature], {}, tmp_path / feature)
     rows[-1]["split"] = "test"
     with pytest.raises(ValueError, match="train split"):
@@ -81,3 +81,41 @@ def test_metrics_distinguish_confusion_and_undefined_single_class_auc():
         classification_metrics([0, 187], [.1, .2])
     with pytest.raises(ValueError):
         feature_matrix([{"jet_pt": float("nan")}], ["jet_pt"])
+
+
+@pytest.mark.parametrize("split", ["validation", "test"])
+def test_registry_dispatch_rejects_non_train_rows_before_new_classifier_runs(tmp_path, monkeypatch, split):
+    from predict.models import PREDICTORS
+
+    class UncalledPredictor(LogisticPredictor):
+        kind = "new-classifier"
+
+        @classmethod
+        def train(cls, *args):
+            pytest.fail("New classifiers must receive only valid training rows")
+
+    monkeypatch.setitem(PREDICTORS, UncalledPredictor.kind, UncalledPredictor)
+    rows = train_rows()
+    rows[-1]["split"] = split
+    with pytest.raises(ValueError, match="train split"):
+        train_model(UncalledPredictor.kind, rows, ["jet_pt"], {}, tmp_path / "never-created")
+    assert not (tmp_path / "never-created").exists()
+
+
+def test_inference_receives_measurements_only_even_for_new_classifier():
+    class InspectingPredictor(Predictor):
+        kind = "new-classifier"
+        model_file = "unused.json"
+
+        @classmethod
+        def train(cls, *args):
+            raise NotImplementedError
+
+        def _predict(self, rows):
+            assert rows == [{"jet_pt": 300.0}, {"jet_pt": 301.0}]
+            return [.2, .8]
+
+    model = InspectingPredictor({"feature_names": ["jet_pt"]})
+    np.testing.assert_array_equal(model.predict(train_rows()[:2]), [.2, .8])
+    with pytest.raises(ValueError, match="feature|metadata|forbidden"):
+        InspectingPredictor({"feature_names": ["truth_label"]})

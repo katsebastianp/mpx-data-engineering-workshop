@@ -1,0 +1,23 @@
+{
+  "all_original_prepared_values_equal": true,
+  "dataset_id": "4f94bfde07e778e7dd0edd9e15fde722b32efae4c3c79d528c5803f5ce9260e0",
+  "default_experiments": 1,
+  "exported_experiments": 1,
+  "features": [
+    "jet_pt",
+    "jet_sdmass",
+    "particle_count"
+  ],
+  "model": "logistic",
+  "prepared_rows": {
+    "test": 1000,
+    "train": 4000,
+    "validation": 1000
+  },
+  "reloaded_predictions_exact": true,
+  "sophon_one_jet_compatible": true,
+  "test_evaluated": false,
+  "trained": true,
+  "validation_auc": 0.75268,
+  "validation_rows": 1000
+}

@@ -1,8 +1,12 @@
 # Recorded validation
 
+## One baseline — 16 October 2026
+
+**175 Docker tests passed.** The default run fitted one logistic regression with three supplied features, scored 1,000 validation jets (ROC-AUC **0.75268**), and exported one experiment. Reloaded predictions matched exactly. All original prepared values across 6,000 jets were unchanged; no test scores were evaluated. A saved Sophon artifact still loaded and reproduced one recorded score. [Recorded evidence](validation/single-baseline-20261016.json).
+
 ## Shorter core — 15 October 2026
 
-The core now runs two trained models; downloading and running Sophon is optional. **142 Docker tests passed**. An isolated run with the unchanged 6,000-jet sample verified setup with `--skip-sophon`, preprocessing, both models, and DuckDB export. Both models scored validation only: 1,000 predictions each; AUC **0.75268** for logistic regression and **0.830294** for XGBoost.
+This historical revision ran two trained models; the current default is logistic regression only. **142 Docker tests passed** at that revision. An isolated run with the unchanged 6,000-jet sample verified setup with `--skip-sophon`, preprocessing, both models, and DuckDB export. Both models scored validation only: 1,000 predictions each; AUC **0.75268** for logistic regression and **0.830294** for XGBoost.
 
 The one-setting pipeline exercise was checked in separate fresh Python/JVM processes:
 
