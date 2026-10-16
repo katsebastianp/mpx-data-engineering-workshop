@@ -167,9 +167,9 @@ test("both completed paths must rejoin before validation, final test, and upload
 
 test("core completion never requires an optional exercise", () => {
   const optionalIds = new Set(optionalWorkshopExercises.map((step) => step.id));
-  assert.ok(optionalIds.has("final-test"));
-  assert.ok(optionalIds.has("upload"));
-  assert.ok(coreWorkshopExercises.some((step) => step.id === "results-site"));
+  assert.deepEqual([...optionalIds], ["sophon-reference"]);
+  assert.deepEqual(coreWorkshopExercises.slice(-2).map(step => step.id), ["final-test", "upload"]);
+  assert.ok(!byId.has("results-site"));
   for (const step of coreWorkshopExercises) {
     assert.ok(!step.optional, `${step.id} is marked optional but included in core progress`);
     assert.ok(!optionalIds.has(step.id), `${step.id} is included in both core and optional progress`);

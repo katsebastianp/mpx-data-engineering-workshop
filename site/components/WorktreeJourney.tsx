@@ -95,10 +95,10 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
 
       <div className="journey-map-spine journey-map-integration">
         <div className="journey-map-stage-label"><GitMerge size={13} aria-hidden="true" /><span>Bring it together</span></div>
-        <NodeSequence ids={["integrate", "preprocess", "results-site"]} {...props} />
+        <NodeSequence ids={["integrate", "preprocess", "final-test", "upload"]} {...props} />
       </div>
       <details className="optional-journey" open={optionalWorkshopExercises.some(exercise => exercise.id === props.selectedId) || undefined}>
-        <summary>Optional · Sophon, final test and sharing</summary>
+        <summary>Optional · Try Sophon</summary>
         <p>If you have more time, try Sophon: a transformer model already trained on simulated particle jets. Use the supplied pack to compare it with your models, without training it yourself. <a className="text-link" href={SOPHON_PAPER_URL} target="_blank" rel="noreferrer">Read the paper ↗</a></p>
         <NodeSequence ids={optionalWorkshopExercises.map(exercise => exercise.id)} {...props} />
       </details>
