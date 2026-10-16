@@ -53,7 +53,7 @@ The Sites publishing helper requires a standalone Git root. For publication, ope
 
 `components/SampleDownloads.tsx` links to four versioned static assets under `public/downloads/jetclass2-v1/`. Before publication, run `python3 scripts/stage_site_sample.py` from the parent repository; it validates the local raw files against `config/workshop-sample.lock.json` before staging them. Sync those verified assets into the standalone Site checkout with the source. The parent `.gitignore` excludes them from GitHub; the standalone Sites source and deployment include them. Keep the existing Site audience: browser downloads use the visitor’s Site access. Do not distribute a service token to participants.
 
-The offline comparison viewer is `../tools/results-preview/`; it is available in the Git checkout. The legacy archive builder excludes the authenticated Site source and runtime data. This repository has no GitHub Pages deployment workflow; the authenticated app is deployed through Sites.
+The offline comparison viewer is `../tools/model-explorer/`; it is available in the Git checkout. The legacy archive builder excludes the authenticated Site source and runtime data. This repository has no GitHub Pages deployment workflow; the authenticated app is deployed through Sites.
 
 For a separate Ringier-owned deployment, export clean source without the existing `project_id`, retain `d1: "DB"` and all migrations, and register a new Site in the intended workspace. Never copy source credentials or runtime data. Verify sharing with actual participant accounts before the session.
 

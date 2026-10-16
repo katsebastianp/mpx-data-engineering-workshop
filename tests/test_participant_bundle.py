@@ -52,14 +52,14 @@ def test_allowlist_has_current_commands_and_no_hosting_or_submission_identity(tm
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests/test_example.py").write_text("pass")
     names = bundle.repository_files(tmp_path) + bundle.ASSET_FILES + bundle.EMPTY_OUTPUT_FILES
-    assert {"src/preprocessing/__main__.py", "src/predict/__main__.py", "src/postprocessing/__main__.py",
+    assert {"src/preprocessing/__main__.py", "src/predict/__main__.py", "src/postprocessing/__main__.py", "src/postprocessing/explorer.py",
             "AGENTS.md", "docs/model-outputs.md",
             "config/experiments.yaml", "config/evaluation.json", "scripts/prepare_data.py", ".worktreeinclude",
             "data/01_raw/train.parquet", "data/01_raw/validation.parquet",
             "data/01_raw/test.parquet", "src/predict/logistic.py", "src/predict/base.py",
-            "tools/results-preview/index.html", "tools/results-preview/app.js",
-            "tools/results-preview/style.css", "tools/results-preview/comparison.json",
-            "tools/results-preview/leaderboard.json"}.issubset(names)
+            "tools/model-explorer/index.html", "tools/model-explorer/app.js",
+            "tools/model-explorer/style.css", "tools/model-explorer/comparison.json",
+            "tools/model-explorer/leaderboard.json"}.issubset(names)
     assert not any(name.startswith(("site/", "results/", "submissions/", "archive/", "artifacts/", "facilitator/", ".cache/"))
                    or ".openai" in name for name in names)
     output_prefixes = ("data/02_preprocessed/", "data/03_predictions/", "data/04_submissions/", "data/05_analytics/")

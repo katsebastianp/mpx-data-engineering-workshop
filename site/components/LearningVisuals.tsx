@@ -8,7 +8,7 @@ const codeLocations = [
   "src/preprocessing/pipeline.py · check_inputs()",
   "src/preprocessing/features.py · particle_features() → build_features()",
   "src/predict/logistic.py · LogisticPredictor._predict()",
-  "tools/results-preview/app.js · renderThreshold()",
+  "tools/model-explorer/app.js · renderThreshold()",
 ];
 
 /** Historical validation examples, copied from docs/assets/jet-examples.json. */
@@ -74,5 +74,5 @@ export function PipelineVisual() {
 }
 
 export function WorktreeVisual() {
-  return <div className="learning-visual"><h3>Two chats, two folders</h3><div className="worktree-explainer"><span>Your personal branch</span><div><p><strong>Worktree A</strong>Pipeline code</p><p><strong>Worktree B</strong>Model choices</p></div><span>Review PRs → merge back</span></div><p className="learning-caption">Each chat edits its own copy. Run one Docker job at a time.</p></div>;
+  return <div className="learning-visual"><h3>Two chats, two folders</h3><div className="worktree-explainer"><span>Your personal branch</span><div><p><strong>Worktree A</strong>Pipeline code</p><p><strong>Worktree B</strong>Model choices</p></div><span>Review PRs → merge back</span></div><p className="learning-caption">Each chat edits its own copy.</p></div>;
 }

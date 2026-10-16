@@ -15,5 +15,6 @@ COPY src /workspace/src
 COPY config /workspace/config
 COPY tests /workspace/tests
 COPY scripts /workspace/scripts
+COPY tools/model-explorer /workspace/tools/model-explorer
 ENTRYPOINT ["python3"]
 CMD ["-m", "predict"]

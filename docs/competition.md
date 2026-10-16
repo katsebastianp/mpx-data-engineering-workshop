@@ -19,4 +19,4 @@ Participants can publish added classifiers and measured features without changin
 
 Normalized time is `(inference seconds / 128 jets) / (CPU reference seconds / 64 iterations)`. Timings and scores are participant-reported; quality is recomputed against fixed labels, but inference is not rerun centrally. Hardware correction is approximate. Sophon has richer inputs and prior training.
 
-The offline viewer in `tools/results-preview/` reads exported JSON locally. The authenticated workshop Site is deployed through Sites; this repository has no GitHub Pages deployment workflow.
+Postprocessing generates `data/05_analytics/model-explorer.html` from `tools/model-explorer/`, with comparison data embedded for local exploration. The authenticated workshop Site is deployed through Sites; this repository has no GitHub Pages deployment workflow.

@@ -15,6 +15,7 @@ from common import (
     sha256, write_json,
 )
 from postprocessing.database import AnalyticsStore
+from postprocessing.explorer import load_template, render_explorer, write_explorer
 from postprocessing.leaderboard import (
     FIELDS, leaderboard, load_evaluation, make_submission, read_json, submission_name, validate_submission,
 )
@@ -208,15 +209,20 @@ def compare(prepared_dir: Path, results_dir: Path, submissions_dir: Path, output
             raise ValueError("Prepared evaluation IDs or labels differ from the canonical reference.")
     experiments, local = collect_experiments(results_dir, submissions_dir, manifest["dataset_id"], truth)
     export = discovery_export(manifest, datasets, experiments)
+    explorer_template = load_template()
     database = output_dir / "analytics.duckdb"
     with AnalyticsStore(database) as store:
         store.replace(manifest, datasets, experiments)
     submission_files = _write_submissions(local, submissions_dir)
     export["submission_files"] = submission_files
     write_json(output_dir / "comparison.json", export)
-    LOGGER.info("Compared %d experiments; saved actual jet/particle data to %s", len(experiments), database)
+    explorer = output_dir / "model-explorer.html"
+    write_explorer(explorer, render_explorer(export, explorer_template))
+    LOGGER.info("Compared %d experiments; saved actual jet/particle data to %s; open %s",
+                len(experiments), database, explorer)
     return {"experiments": len(experiments), "database": str(database),
-            "sites_export": str(output_dir / "comparison.json"), "submission_files": submission_files}
+            "sites_export": str(output_dir / "comparison.json"), "model_explorer": str(explorer),
+            "submission_files": submission_files}
 
 
 def main(argv=None) -> int:

@@ -20,11 +20,12 @@ class Element {
   set value(value) { this._value = String(value); }
   get value() { return this._value ?? (this.tagName === 'SELECT' ? this.children[0]?.value || '' : ''); }
 }
-function viewer(protocol = 'file:') {
+function viewer(protocol = 'file:', embedded = '') {
   const nodes = Object.fromEntries([...html.matchAll(/<([a-z][a-z0-9]*)\b[^>]*\bid="([^"]+)"/g)].map(([, tag, id]) => [id, new Element(tag)]));
   nodes.threshold.value = '0.5';
+  nodes['model-explorer-data'].textContent = embedded;
   const calls = [], window = {};
-  const sandbox = { window, location: { protocol }, TextDecoder,
+  const sandbox = { window, location: { protocol }, TextDecoder, TextEncoder,
     document: { getElementById: id => nodes[id] || null, createElement: tag => new Element(tag), createElementNS: (_, tag) => new Element(tag) },
     fetch: async filename => { calls.push(filename); return new Response(fs.readFileSync(path.join(__dirname, filename)), { status: 200 }); },
   };
@@ -147,4 +148,48 @@ test('final-test controls appear only for saved test results and never replace v
   assert.equal(app.window.__workshopView.operatingPoints[0].split, 'test');
   assert.equal(app.window.__workshopView.operatingPoints[0].rows, 1000);
   assert.equal(app.nodes.experiments.textContent, validationTable);
+});
+
+test('embedded comparison autoloads every experiment without a picker or network request', () => {
+  // A third synthetic entry exercises custom classifier metadata and all-row rendering.
+  const data = structuredClone(fixture), third = structuredClone(data.experiments[0]);
+  third.experiment_key = 'synthetic-third'; third.experiment_id = 'planned-tree';
+  third.run_id = 'synthetic-third-run'; third.model = 'decision_tree'; third.trained = true;
+  third.parameters = { criterion: 'gini', max_depth: 3 };
+  data.experiments.push(third);
+  data.predictions.push(...data.predictions.filter(row => row.experiment_key === data.experiments[0].experiment_key).map(row => ({ ...row, experiment_key: third.experiment_key })));
+  for (const protocol of ['file:', 'https:']) {
+    const app = viewer(protocol, JSON.stringify(data));
+    assert.equal(app.calls.length, 0);
+    assert.equal(app.nodes.content.hidden, false);
+    assert.equal(app.nodes.empty.hidden, true);
+    assert.equal(app.nodes['import-controls'].hidden, true);
+    assert.equal(app.nodes['import-help'].hidden, true);
+    assert.equal(app.nodes.experiments.children.length, 3);
+    assert.equal(app.nodes.experiment.children.length, 3);
+    assert.equal(app.window.__workshopView.selectedExperiment, data.experiments[0].experiment_key);
+    assert.equal(app.window.__workshopView.baselineExperiment, data.experiments[0].experiment_key);
+    assert.equal(app.nodes.baseline.value, data.experiments[0].experiment_key);
+    assert.equal(app.nodes['auc-delta'].textContent, 'Selected baseline.');
+    assert.equal(app.window.__workshopView.predictions, 3000);
+    assert.equal(app.window.__workshopView.operatingPoints[0].rows, 1000);
+    for (const row of data.experiments) assert.ok(app.nodes.experiments.textContent.includes(row.run_id));
+  }
+  assert.ok(html.indexOf('id="experiments-section"') < html.indexOf('id="experiment-section"'));
+});
+test('invalid embedded data stays empty, reports an error and permits manual recovery without fetching', async () => {
+  const incomplete = structuredClone(fixture); incomplete.predictions.pop();
+  const leaderboard = { version: 1, dataset_id: fixture.dataset_id, experiments: [], leaderboard: { quality: [], efficiency: [] } };
+  for (const embedded of ['{bad JSON', JSON.stringify(incomplete), JSON.stringify(leaderboard)]) {
+    const app = viewer('file:', embedded);
+    assert.equal(app.calls.length, 0);
+    assert.equal(app.nodes.content.hidden, true);
+    assert.equal(app.nodes.empty.hidden, false);
+    assert.equal(app.nodes['import-controls'].hidden, false);
+    assert.match(app.nodes.status.textContent, /Embedded results rejected/);
+    await app.open(fixture);
+    assert.equal(app.nodes.content.hidden, false);
+    assert.equal(app.window.__workshopView.predictions, 2000);
+    assert.equal(app.calls.length, 0);
+  }
 });

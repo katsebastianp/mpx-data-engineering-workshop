@@ -113,7 +113,7 @@
     set('auc-delta', delta(row?.metrics.validation?.roc_auc, baseline?.metrics.validation?.roc_auc, '', 4));
     set('training-delta', delta(row?.timings.training_seconds, baseline?.timings.training_seconds, ' s', 4));
     set('inference-delta', delta(row?.timings.per_jet_ms, baseline?.timings.per_jet_ms, ' ms', 6));
-    set('baseline-note', baseline ? `Comparison baseline: ${baseline.experiment_id}. Its saved feature list and parameters are available in the experiment selector.` : 'Choose a saved baseline above to see the differences.');
+    set('baseline-note', baseline ? `Comparison baseline: ${baseline.experiment_id}. Its saved feature list and parameters are available in the experiment selector.` : 'Choose a comparison baseline to see the differences.');
   }
   const rankingSource = () => state.shared && (!state.comparison || state.shared.dataset_id === state.comparison.dataset_id) ? state.shared : state.comparison;
   const tableRow = values => { const row = el('tr'); for (const value of values) row.append(el('td', value)); return row; };
@@ -288,4 +288,20 @@
   $('reload').hidden = location.protocol === 'file:';
   render();
   set('status', 'No results loaded.');
+  const embedded = $('model-explorer-data')?.textContent.trim();
+  if (embedded) {
+    try {
+      assert(new TextEncoder().encode(embedded).length <= MAX_BYTES, 'Embedded results exceed the 10 MB preview limit.');
+      const loaded = validate(JSON.parse(embedded));
+      assert(loaded.kind === 'comparison', 'Embedded results require the complete comparison export.');
+      state.comparison = loaded.data; state.shared = null; state.preview = true;
+      state.example = typeof loaded.data.title === 'string' && loaded.data.title.startsWith('Recorded validation examples:');
+      state.selected = null; state.baseline = undefined; indexComparison(); render();
+      $('import-controls').hidden = true; $('import-help').hidden = true;
+      set('status', state.example ? 'Historical example results.' : 'All saved experiments are shown below.');
+    } catch (error) {
+      state.comparison = null; indexComparison(); render();
+      set('status', `Embedded results rejected: ${error.message}`);
+    }
+  }
 })();

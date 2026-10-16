@@ -31,7 +31,7 @@ STATIC_REPOSITORY_FILES = (
     "src/predict/config.py", "src/predict/data.py", "src/predict/benchmark.py",
     "src/predict/models.py",
     "src/postprocessing/__init__.py", "src/postprocessing/__main__.py",
-    "src/postprocessing/compare.py", "src/postprocessing/database.py", "src/postprocessing/leaderboard.py",
+    "src/postprocessing/compare.py", "src/postprocessing/explorer.py", "src/postprocessing/database.py", "src/postprocessing/leaderboard.py",
     "config/workshop-data.lock.json", "config/workshop-sample.lock.json",
     "docs/data.md", "docs/results.md", "docs/problem-guide.md", "docs/model-outputs.md",
     "docs/assets/jet-examples.json", "docs/assets/jet-examples.png", "docs/competition.md",
@@ -41,8 +41,8 @@ STATIC_REPOSITORY_FILES = (
     "scripts/build_participant_bundle.py", "scripts/prepare_data.py", "scripts/setup_workshop.py",
     "scripts/stage_site_sample.py", "scripts/compare_preprocessing.py",
     "config/evaluation.json",
-    "tools/results-preview/index.html", "tools/results-preview/app.js", "tools/results-preview/style.css",
-    "tools/results-preview/comparison.json", "tools/results-preview/leaderboard.json",
+    "tools/model-explorer/index.html", "tools/model-explorer/app.js", "tools/model-explorer/style.css",
+    "tools/model-explorer/comparison.json", "tools/model-explorer/leaderboard.json",
 )
 EMPTY_OUTPUT_FILES = (
     "data/02_preprocessed/.gitkeep", "data/03_predictions/.gitkeep",
@@ -82,11 +82,11 @@ def validate_assets(files: dict[str, bytes]) -> str:
                                  sort_keys=True, separators=(",", ":")).encode())
     if identity != raw["dataset_id"]:
         raise ValueError("Participant dataset identity differs from its split hashes")
-    for name in ("config/evaluation.json", "tools/results-preview/comparison.json", "tools/results-preview/leaderboard.json"):
+    for name in ("config/evaluation.json", "tools/model-explorer/comparison.json", "tools/model-explorer/leaderboard.json"):
         value = json.loads(files[name])
         if value["dataset_id"] != raw["dataset_id"]:
             raise ValueError(f"Different dataset in portable competition asset: {name}")
-        if name.startswith("tools/results-preview/") and any(row.get("team") != "example-team" for row in value["experiments"]):
+        if name.startswith("tools/model-explorer/") and any(row.get("team") != "example-team" for row in value["experiments"]):
             raise ValueError("The portable demo board may contain only clearly labeled example-team results")
     return raw["dataset_id"]
 
@@ -141,7 +141,7 @@ def write_archive(output: Path, files: dict[str, bytes], dataset_id: str) -> dic
     """Publish only after ZIP integrity and manifest verification succeed."""
     manifest = {
         "bundle_version": 2, "workshop_version": "0.6.0", "dataset_id": dataset_id,
-        "contents": "Logistic starter and extensible preprocessing/predict/postprocessing modules, core scripts/tests/docs, 4,000 train + 1,000 validation + 1,000 test jets, canonical competition reference and offline results viewer in tools/results-preview/.",
+        "contents": "Logistic starter and extensible preprocessing/predict/postprocessing modules, core scripts/tests/docs, 4,000 train + 1,000 validation + 1,000 test jets, canonical competition reference and offline results viewer in tools/model-explorer/.",
         "demo_data": "The offline results viewer contains example-team results only. Participant result folders and actual submission files are excluded.",
         "excluded": ["optional classifier implementations and model weights", "optional reference model packs", "hosted Site source", "Site dependencies and database state", "Docker images", "Git history", "source shard caches", "historical archives", "participant results", "submission files", "secrets", "hosting identity"],
         "files": {name: {"size_bytes": len(data), "sha256": digest(data)} for name, data in sorted(files.items())},

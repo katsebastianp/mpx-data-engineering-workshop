@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -21,7 +22,7 @@ from test_competition import sample_submission
 
 
 def test_bundled_preview_cannot_reveal_final_test_results_before_model_selection():
-    directory = Path(__file__).resolve().parents[1] / "tools/results-preview"
+    directory = Path(__file__).resolve().parents[1] / "tools/model-explorer"
     comparison = json.loads((directory / "comparison.json").read_text())
     board = json.loads((directory / "leaderboard.json").read_text())
     assert len(comparison["experiments"]) == 2
@@ -80,6 +81,11 @@ def test_full_flow_preserves_every_jet_particle_score_and_metrics(comparison_fil
     prepared, results, submissions, analytics = comparison_files
     receipt = compare(*comparison_files)
     export = json.loads((analytics / "comparison.json").read_text())
+    page = Path(receipt["model_explorer"])
+    assert page == analytics / "model-explorer.html"
+    embedded = re.search(r'<script type="application/json" id="model-explorer-data">(.*?)</script>',
+                         page.read_text(), re.DOTALL)
+    assert embedded and json.loads(embedded.group(1)) == export
     assert receipt["experiments"] == 1
     assert len(export["jets"]) == 200
     assert len(export["population"]) == len(export["predictions"]) == 256
@@ -96,6 +102,43 @@ def test_full_flow_preserves_every_jet_particle_score_and_metrics(comparison_fil
     assert compare(*comparison_files)["experiments"] == 1
     with duckdb.connect(str(analytics / "analytics.duckdb"), read_only=True) as db:
         assert db.execute("SELECT count(*) FROM predictions").fetchone()[0] == 256
+
+
+def test_generated_explorer_includes_all_successful_runs_in_custom_output_dir(comparison_files, tmp_path):
+    prepared, results, submissions, _ = comparison_files
+    first_path = next(results.glob("*/result.json"))
+    first = json.loads(first_path.read_text())
+    second_dir = results / "planned-shape"
+    second_dir.mkdir()
+    shutil.copyfile(first_path.parent / "predictions.parquet", second_dir / "predictions.parquet")
+    second = {**first, "run_id": "planned-shape", "experiment_id": "shape", "feature_set": "shape"}
+    (second_dir / "result.json").write_text(json.dumps(second))
+    failed = results / "failed"
+    failed.mkdir()
+    (failed / "result.json").write_text(json.dumps({"status": "failed"}))
+    output = tmp_path / "Custom outputs" / "nested"
+    receipt = compare(prepared, results, submissions, output)
+    html = Path(receipt["model_explorer"]).read_text()
+    match = re.search(r'<script type="application/json" id="model-explorer-data">(.*?)</script>', html, re.DOTALL)
+    embedded = json.loads(match.group(1))
+    assert receipt["experiments"] == 2
+    assert {row["run_id"] for row in embedded["experiments"]} == {first["run_id"], "planned-shape"}
+    assert len(embedded["predictions"]) == 2 * first["predictions"]["rows"]
+    assert embedded == json.loads((output / "comparison.json").read_text())
+
+
+def test_missing_explorer_assets_fail_before_replacing_comparison(comparison_files, monkeypatch):
+    import importlib
+    compare_module = importlib.import_module("postprocessing.compare")
+    _, _, _, analytics = comparison_files
+    compare(*comparison_files)
+    original = {path.name: path.read_bytes() for path in analytics.iterdir()}
+    def unavailable():
+        raise ValueError("Cannot read model explorer assets")
+    monkeypatch.setattr(compare_module, "load_template", unavailable)
+    with pytest.raises(ValueError, match="Cannot read model explorer assets"):
+        compare(*comparison_files)
+    assert {path.name: path.read_bytes() for path in analytics.iterdir()} == original
 
 
 @pytest.mark.parametrize("trained", [True, False])
