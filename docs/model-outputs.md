@@ -1,81 +1,40 @@
-# Model output contract
+# Model contract
 
-Every classifier uses the same runner and export so the results can be compared and explored together. The code is the source of truth: [Predictor](../src/predict/base.py), [model registry](../src/predict/models.py), [result writer](../src/predict/experiment.py) and [comparison exporter](../src/postprocessing/compare.py).
+Technical reference for Codex. Participant instructions are on the [Site](https://ringier-collision-lab.openai.chatgpt.site/workshop).
 
-## One planned batch
+## Models and features
 
-1. **Plan experiments.** Agree on the hypotheses, classifier, measured features and parameters for each variant. Put the complete batch in `config/experiments.yaml`, with unique experiment IDs and an explanation for each. Keep `evaluation: validation`, `seed: 42` and `max_workers: 1`.
-2. **Run experiments.** Implement the planned variants, then run the complete batch and export it once. Include the unchanged baseline below in the same batch so it is present in this worktree's comparison.
-3. **Explore results.** After all planned experiments finish, open the generated `data/05_analytics/model-explorer.html` from the same worktree. Model Explorer contains the comparison results; no manual JSON loading is needed. Compare validation ROC-AUC and inference time; inspect errors and the threshold/confusion-matrix view.
-4. **Choose model.** Select one completed configuration and explain the tradeoff. The workshop moves on from this choice; do not start another experiment loop. At the later final evaluation step, retain only that configuration, set `evaluation: test` and use a fresh run ID.
+- Implement [Predictor](../src/predict/base.py) and register it in [PREDICTORS](../src/predict/models.py). Use [logistic.py](../src/predict/logistic.py) as the example: `train` saves the artifact and returns `trained` and actual `parameters`; `__init__` reloads it; `_predict` returns one finite score in `[0, 1]` per row, in input order.
+- Add measured features to `DERIVED_FEATURES` in [features.py](../src/preprocessing/features.py), then rerun preprocessing. Preserve existing feature values. Labels and IDs never enter model inputs.
+- Define the batch in `config/experiments.yaml`: unique IDs, explanations, `seed: 42`, `evaluation: validation`, `max_workers: 1`. Keep `linear-basic` unchanged: `model: logistic`, `features: basic`, default parameters (`C: 1.0`, `max_iter: 500`).
+- Fit models and learned transforms on training rows only. Choose on validation; test only the chosen configuration at final evaluation.
 
-Keep this entry unchanged alongside the planned variants:
+Parameter names must be safe identifiers, without path/code keys. Values: finite numbers, booleans, null, enum strings matching `[A-Za-z][A-Za-z0-9_.:@-]{0,63}`, or lists with at most 32 elements and two list levels. Objects, code and paths are rejected.
 
-```yaml
-- id: linear-basic
-  model: logistic
-  features: basic
-  explanation: "Baseline logistic regression using jet momentum, mass and particle count."
-```
+## Generated outputs
 
-It uses `jet_pt`, `jet_sdmass`, `particle_count` and the default logistic parameters (`C: 1.0`, `max_iter: 500`). Fit any scaling or other learned preprocessing on training rows only.
+Use the shared `predict` runner and `postprocessing` exporter; do not write replacement results. Run IDs are immutable: use a fresh ID for retries. Postprocessing collects successful runs; verify the baseline and every planned variant are present.
 
-Run the agreed batch after any required feature preparation:
+| Path | Contents |
+|---|---|
+| `data/03_predictions/<run>-<experiment>/result.json` | Status, model, features, parameters, metrics, timings and provenance |
+| `data/03_predictions/<run>-<experiment>/predictions.parquet` | Evaluated jet IDs and scores |
+| `models/<run>-<experiment>/` | Saved model and checksummed `manifest.json` |
+| `data/05_analytics/comparison.json` | All successful experiments and their evaluation scores |
+| `data/05_analytics/model-explorer.html` | Explorer with the comparison embedded |
+| `data/05_analytics/analytics.duckdb` | Queryable comparison tables |
+| `data/04_submissions/` | Submission JSON after final test evaluation |
 
-```sh
-docker compose run --rm lab -m predict --run-id planned-01
-docker compose run --rm lab -m postprocessing
-```
+Prediction columns are exactly `split` (string), `record_id` (unchanged string ID), and `signal_score` (float64). Validation produces 1,000 rows; final evaluation includes validation and test. Higher scores mean more signal-like, not calibrated probabilities.
 
-`planned-01` is an example run prefix. Outputs are immutable: use a fresh prefix if a command must be retried. Check that every planned experiment succeeded and appears in the export before exploring; postprocessing skips failed runs. Existing successful runs are also collected, so identify this batch by its run prefix.
+In the comparison, join experiments to predictions by `experiment_key`, then scores to population by `(split, record_id)`. Calculate threshold counts from **all predictions**, not the limited `jets` display examples. Keep generated metadata and checksums intact; [the exporter](../src/postprocessing/compare.py) validates them against `config/evaluation.json`.
 
-## Standard artifacts
+## Preserve results after merging
 
-For experiment `linear-basic` with run prefix `planned-01`, `<run>-<experiment>` is `planned-01-linear-basic`.
-
-| Location | Written by | Contents |
-|---|---|---|
-| `data/03_predictions/<run>-<experiment>/result.json` | Shared experiment runner | Version 1 result, model/settings, metrics, timings and provenance |
-| `data/03_predictions/<run>-<experiment>/predictions.parquet` | Shared experiment runner | One score per evaluated jet, with exactly the columns below |
-| `models/<run>-<experiment>/manifest.json` | Shared model writer | Model kind, ordered feature names, parameters, seed, trained flag, artifact filename and checksum |
-| `models/<run>-<experiment>/<model_file>` | Predictor implementation | Saved model loaded again for evaluation |
-| `data/05_analytics/comparison.json` | Postprocessing | Validated experiment metadata, scores, truth population and display jets for exploration |
-| `data/05_analytics/model-explorer.html` | Postprocessing | Self-contained Model Explorer with all comparison results embedded |
-| `data/05_analytics/analytics.duckdb` | Postprocessing | The same comparison in queryable tables |
-
-`predictions.parquet` has exactly these columns:
-
-| Column | Type | Meaning |
-|---|---|---|
-| `split` | string | `validation`; the final test run contains both `validation` and `test` |
-| `record_id` | string | The unchanged prepared-data ID |
-| `signal_score` | float64 | One finite signal score in `[0, 1]`; larger means more signal-like |
-
-A normal validation experiment produces 1,000 rows. It contains no truth labels or model features. The runner attaches IDs and splits to the predictor's scores; the predictor receives measured features only.
-
-`result.json` records `status`, `run_id`, `experiment_id`, `team`, `model`, `trained`, `feature_set`, ordered `feature_names`, `parameters`, `seed`, `explanation`, `dataset_id` and `feature_source_sha256`. It also records `evaluation`, `evaluated_splits`, `test_selection`, threshold policy, metrics, timings, latency protocol, hardware, timestamp and checksummed model/prediction references. Keep these generated fields intact.
-
-In `comparison.json`, join `experiments` to `predictions` using `experiment_key`; join scores to `population` using `(split, record_id)`. Use the full prediction/population rows for the confusion matrix and threshold counts. `jets` contains at most 200 examples for display, not the full evaluation population. Final submission JSON is generated by postprocessing only after final test evaluation.
-
-Postprocessing uses the source template in `tools/model-explorer/` to generate the HTML alongside the JSON. Open the generated HTML directly; do not edit it or load JSON by hand.
-
-## Keep the batch after merging
-
-Before leaving the model worktree, copy its complete `data/05_analytics/comparison.json` into the original checkout at `data/evidence/models/comparison.json`. After merging and running the selected configuration once on the combined code, import the saved batch:
+Copy the model worktree's `data/05_analytics/comparison.json` to `data/evidence/models/comparison.json` in the original checkout. After the integration run:
 
 ```sh
-docker compose run --rm --no-deps lab -m postprocessing \
-  --import-comparison data/evidence/models/comparison.json
+docker compose run --rm --no-deps lab -m postprocessing --import-comparison data/evidence/models/comparison.json
 ```
 
-The regenerated JSON and Model Explorer contain the saved baseline, every completed variant and the new integration run. No variant is retrained. Repeat `--import-comparison` for additional saved batches; include it whenever rebuilding this comparison. Identical runs are deduplicated by team/run ID; conflicting runs, missing scores, changed labels and invalid metadata stop the export before existing outputs change.
-
-Imports accept complete validation exports from the same dataset, up to 10 MiB each. Scores, metadata and the full validation population are checked; metrics are recomputed. Display jets and rankings are rebuilt from current prepared data and checked experiments. Imported files stay unchanged. Final test evaluation remains separate.
-
-## Adding a classifier
-
-Implement `Predictor` in `src/predict/` and register it in `PREDICTORS`. Use the logistic implementation as the example: declare `kind` and `model_file`; implement `train`, artifact loading in `__init__`, and `_predict`. `train` saves the native artifact and returns metadata including a boolean `trained` and the actual `parameters`. `_predict` returns one signal score per input row in the same order.
-
-Parameter names must be safe identifiers, without path/code keys. Values may be finite numbers, booleans, null, enum strings or lists. Strings start with a letter, contain only letters, numbers, `.`, `:`, `@`, `-` or `_`, and have at most 64 characters. Lists have at most 32 elements each and two list levels. Examples: `objective: binary:logistic`, `eval_metric: error@0.5`, `hidden_layer_sizes: [32, 16]`, `interaction_constraints: [[0, 1], [2]]`. Nested objects, code and paths are rejected.
-
-Run it through `python -m predict` and `python -m postprocessing`. The shared code validates training inputs, reloads the saved model, evaluates it, measures timing, writes artifacts and checks the export. Do not add an independent results writer, change the prediction schema, or handcraft JSON to make a model appear in the comparison.
+Include this argument each time you rebuild the combined comparison. It imports the saved validation batch without retraining; identical runs are deduplicated. Imports must use the same dataset and be at most 10 MiB. Conflicting runs or invalid scores stop the export before existing outputs change.
