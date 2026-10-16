@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from postprocessing.leaderboard import REFERENCE_KERNEL, classification_metrics, leaderboard, read_json, validate_submission
+from postprocessing.leaderboard import FIELDS, REFERENCE_KERNEL, classification_metrics, leaderboard, make_submission, read_json, validate_submission
 
 
 def sample_submission(final=True):
@@ -42,6 +42,64 @@ def test_metrics_are_recomputed_and_bad_reported_claim_is_flagged():
     assert result["reported_metrics_match"] is False
     assert result["timings"]["normalized_inference_time"] == pytest.approx(.1)
     assert result["timings"]["relative_speed"] == pytest.approx(5)
+
+
+def test_custom_classifier_features_and_scalar_metadata_can_be_published():
+    payload, truth = sample_submission()
+    payload.update(model="random_forest", trained=True, feature_names=["energy_ratio", "jet_pt"],
+                   parameters={"bootstrap": True, "criterion": "gini", "max_features": None, "offset": -1})
+    checked = validate_submission(payload, payload["dataset_id"], truth)
+    assert checked["trained"] is True
+    assert checked["parameters"] == payload["parameters"]
+    assert checked["feature_names"] == payload["feature_names"]
+    exported = make_submission(checked, payload["predictions"])
+    assert set(exported) == FIELDS and exported["trained"] is True
+    assert leaderboard([checked])["quality"][0]["trained"] is True
+
+
+def test_legacy_results_are_normalized_without_mutating_the_input():
+    payload, truth = sample_submission()
+    for model in ("logistic", "xgboost", "sophon"):
+        payload["model"] = model
+        if model == "sophon":
+            payload["parameters"] = {"batch_size": 1, "threads": 1}
+            payload["latency_protocol"]["batch_strategy"] = "one jet per ONNX call"
+        checked = validate_submission(payload, payload["dataset_id"], truth)
+        assert checked["trained"] is (model != "sophon")
+        assert make_submission(payload, payload["predictions"])["trained"] is (model != "sophon")
+        assert "trained" not in payload
+
+
+@pytest.mark.parametrize("change", [
+    {"model": "random_forest"}, {"trained": 1}, {"trained": "true"},
+    {"model": "../classifier", "trained": True}, {"model": "x" * 65, "trained": True},
+    {"parameters": {"criterion": "run()"}}, {"parameters": {"weights": [1, 2]}},
+    {"parameters": {"settings": {"depth": 3}}}, {"parameters": {"criterion": "x" * 65}},
+    {"parameters": {"model_dir": "models"}}, {"parameters": {"code": "run"}},
+])
+def test_extended_metadata_remains_bounded_and_explicit(change):
+    payload, truth = sample_submission()
+    payload.update(change)
+    with pytest.raises(ValueError):
+        validate_submission(payload, payload["dataset_id"], truth)
+
+
+def test_all_frozen_models_stay_outside_training_awards():
+    payload, truth = sample_submission()
+    trained = validate_submission(payload, payload["dataset_id"], truth)
+    trained["metrics"]["test"]["roc_auc"] = .85
+    frozen = copy.deepcopy(trained)
+    frozen.update(model="frozen_reference", trained=False, team="Reference")
+    frozen["metrics"]["test"]["roc_auc"] = 1.0
+    legacy_unknown = {key: value for key, value in frozen.items() if key != "trained"}
+    for reference in (frozen, legacy_unknown):
+        ranks = leaderboard([trained, reference])
+        assert ranks["best_test_auc"] == .85
+        assert len(ranks["quality"]) == len(ranks["efficiency"]) == 1
+        assert ranks["references"][0]["trained"] is False
+    payload.update(model="sophon", trained=True, parameters={"batch_size": 1, "threads": 1})
+    payload["latency_protocol"]["batch_strategy"] = "one jet per ONNX call"
+    assert validate_submission(payload, payload["dataset_id"], truth)["trained"] is False
 
 
 @pytest.mark.parametrize("damage", ["duplicate", "missing", "foreign", "train", "nan", "range", "bool", "extra", "dataset", "protocol", "benchmark_ids", "time", "leak", "untagged", "split_object", "model_object", "param_path"])

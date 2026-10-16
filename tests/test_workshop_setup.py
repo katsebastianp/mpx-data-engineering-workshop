@@ -1,14 +1,14 @@
-"""Setup must reject mismatched downloads and install only pinned model bytes."""
+"""Core setup verifies the pinned sample without optional model assets or downloads."""
 
 import hashlib
-import io
 import json
-import stat
-import urllib.error
+import builtins
+import urllib.request
 
 import pytest
 
 from scripts import setup_workshop as setup
+from scripts import prepare_data
 
 
 def digest(value):
@@ -72,96 +72,48 @@ def test_sample_identity_must_match_verified_split_hashes(sample):
         setup.verify_sample(raw, lock)
 
 
-class Response(io.BytesIO):
-    status = 200
 
-
-def test_download_verifies_bytes_and_second_run_makes_no_request(tmp_path, monkeypatch):
-    payload = b"pinned model"
+def test_setup_validates_the_sample_without_models_or_network(tmp_path, monkeypatch):
+    manifest = {"dataset_id": "fixture", "splits": {"train": {"rows": 4000},
+                "validation": {"rows": 1000}, "test": {"rows": 1000}}}
+    config = tmp_path / "config"
+    config.mkdir()
+    lock = config / "workshop-data.lock.json"
+    lock.write_text('{"version": 1}')
     calls = []
-    def fetch(request, timeout):
-        calls.append(request.full_url)
-        assert timeout == 120
-        return Response(payload)
-    monkeypatch.setattr(setup.urllib.request, "urlopen", fetch)
-    destination = tmp_path / "model.onnx"
-    for _ in range(2):
-        setup.download_file("https://huggingface.co/pinned/model", destination, digest(payload), len(payload))
-    assert destination.read_bytes() == payload
-    assert calls == ["https://huggingface.co/pinned/model"]
-    assert not list(tmp_path.glob("*.partial"))
+    raw = tmp_path / "raw"
+    monkeypatch.setattr(setup, "ROOT", tmp_path)
+    monkeypatch.setattr(setup, "verify_sample", lambda path: manifest if path == raw else pytest.fail("Wrong sample path"))
+    monkeypatch.setattr(prepare_data, "validate_bundle", lambda *args: calls.append(args))
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *args, **kwargs: pytest.fail("Setup must not download assets"))
+    original_import = builtins.__import__
+    def without_optional_models(name, *args, **kwargs):
+        if name.startswith(("predict.sophon", "predict.xgboost")):
+            pytest.fail("Setup must not import optional classifier implementations")
+        return original_import(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, "__import__", without_optional_models)
+    result = setup.setup(raw)
+    assert calls == [(raw, {"version": 1}, setup.sha256(lock))]
+    assert result == {"dataset_id": "fixture", "rows": 6000, "status": "ready"}
+    assert not (tmp_path / "models").exists()
 
 
-def test_download_retries_transient_failure_then_publishes(tmp_path, monkeypatch):
-    payload = b"pinned model"
+@pytest.mark.parametrize("legacy_args", [[], ["--skip-sophon"]])
+def test_cli_checks_only_data_with_current_or_legacy_commands(tmp_path, monkeypatch, capsys, legacy_args):
     calls = []
-    def fetch(*args, **kwargs):
-        calls.append(1)
-        if len(calls) == 1:
-            raise urllib.error.URLError("temporary failure")
-        return Response(payload)
-    monkeypatch.setattr(setup.urllib.request, "urlopen", fetch)
-    monkeypatch.setattr(setup.time, "sleep", lambda seconds: None)
-    destination = tmp_path / "model.onnx"
-    setup.download_file("https://huggingface.co/pinned/model", destination, digest(payload), len(payload))
-    assert len(calls) == 2
-    assert destination.read_bytes() == payload
+    def verify(raw):
+        calls.append(raw)
+        return {"dataset_id": "fixture", "rows": 6000, "status": "ready"}
+    monkeypatch.setattr(setup, "setup", verify)
+    assert setup.main(["--raw-dir", str(tmp_path), *legacy_args]) == 0
+    assert calls == [tmp_path]
+    assert json.loads(capsys.readouterr().out) == {"dataset_id": "fixture", "rows": 6000, "status": "ready"}
 
 
-@pytest.mark.parametrize("payload", [b"wrong value!", b"short", b"oversized unexpected body"])
-def test_bad_download_is_never_published_and_temporary_files_removed(tmp_path, monkeypatch, payload):
-    expected = b"pinned model"
-    calls = []
-    def fetch(*args, **kwargs):
-        calls.append(1)
-        return Response(payload)
-    monkeypatch.setattr(setup.urllib.request, "urlopen", fetch)
-    monkeypatch.setattr(setup.time, "sleep", lambda seconds: None)
-    destination = tmp_path / "model.onnx"
-    with pytest.raises(RuntimeError, match="Could not download verified model.onnx"):
-        setup.download_file("https://huggingface.co/pinned/model", destination, digest(expected), len(expected))
-    assert len(calls) == 3
-    assert not destination.exists()
-    assert not list(tmp_path.glob("*.partial"))
-
-
-def test_existing_corrupt_model_is_preserved_without_network(tmp_path, monkeypatch):
-    destination = tmp_path / "model.onnx"
-    destination.write_bytes(b"user file")
-    monkeypatch.setattr(setup.urllib.request, "urlopen", lambda *args, **kwargs: pytest.fail("No network on conflict"))
-    with pytest.raises(ValueError, match="was not overwritten"):
-        setup.download_file("https://huggingface.co/pinned/model", destination, digest(b"pinned model"), 12)
-    assert destination.read_bytes() == b"user file"
-
-
-def test_concurrent_file_cannot_be_overwritten(tmp_path):
-    temporary = tmp_path / "download.partial"
-    temporary.write_bytes(b"expected")
-    destination = tmp_path / "model.onnx"
-    destination.write_bytes(b"other file")
-    with pytest.raises(ValueError, match="Checksum"):
-        setup.publish_new_file(temporary, destination, digest(b"expected"))
-    assert destination.read_bytes() == b"other file"
-
-
-@pytest.mark.parametrize("filename", ["model.onnx", "model.lock.json"])
-def test_published_model_and_metadata_are_readable_by_host_user(tmp_path, filename):
-    temporary = tmp_path / "download.partial"
-    temporary.write_bytes(b"verified asset")
-    temporary.chmod(0o600)
-    destination = tmp_path / filename
-    setup.publish_new_file(temporary, destination, digest(b"verified asset"))
-    assert stat.S_IMODE(destination.stat().st_mode) == 0o644
-    assert destination.read_bytes() == b"verified asset"
-
-
-@pytest.mark.parametrize("contents", [b"{truncated", b'{}', b"\xff"])
-def test_bad_model_metadata_has_actionable_error_and_no_download(tmp_path, monkeypatch, contents):
-    directory = tmp_path / "sophon"
-    directory.mkdir()
-    metadata = directory / "model.lock.json"
-    metadata.write_bytes(contents)
-    monkeypatch.setattr(setup.urllib.request, "urlopen", lambda *args, **kwargs: pytest.fail("No network on metadata conflict"))
-    with pytest.raises(ValueError, match="Conflicting Sophon metadata.*was not overwritten"):
-        setup.setup_sophon(directory)
-    assert metadata.read_bytes() == contents
+def test_cli_reports_missing_sample_without_creating_or_replacing_files(tmp_path, caplog):
+    precious = tmp_path / "notes.txt"
+    precious.write_text("keep me")
+    assert setup.main(["--raw-dir", str(tmp_path)]) == 1
+    assert "Missing regular file" in caplog.text and setup.SITE in caplog.text
+    assert precious.read_text() == "keep me"
+    assert list(tmp_path.iterdir()) == [precious]

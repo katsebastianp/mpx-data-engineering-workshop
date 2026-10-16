@@ -22,8 +22,9 @@ FIELDS = {
     "version", "dataset_id", "experiment_id", "run_id", "team", "model", "feature_names",
     "feature_set", "parameters", "seed", "feature_source_sha256", "decision_threshold",
     "evaluated_splits", "test_selection", "metrics", "timings", "hardware", "explanation",
-    "timestamp", "latency_protocol", "predictions",
+    "timestamp", "latency_protocol", "predictions", "trained",
 }
+LEGACY_FIELDS = FIELDS - {"trained"}
 
 
 def classification_metrics(labels: list[int], scores: list[float], threshold: float = .5) -> dict:
@@ -124,11 +125,41 @@ def _number(value: Any, name: str, *, positive: bool = False) -> float:
 
 def make_submission(result: dict, predictions: list[dict]) -> dict:
     """Copy only the public result contract; never include paths, models or code."""
-    payload = {name: result[name] for name in FIELDS - {"predictions"}}
+    payload = {name: result[name] for name in LEGACY_FIELDS - {"predictions"}}
+    payload["trained"] = _trained(result, require_explicit=True)
     payload["predictions"] = predictions
     if len(json.dumps(payload, allow_nan=False).encode()) > MAX_BYTES:
         raise ValueError("Submission exceeds the 2 MB limit.")
     return payload
+
+
+def _trained(row: dict, *, require_explicit: bool = False) -> bool:
+    """Legacy known models retain their status; unknown references never earn awards by default."""
+    if "trained" in row and type(row["trained"]) is not bool:
+        raise ValueError("trained must be a boolean.")
+    if row["model"] == "sophon":
+        return False
+    if "trained" in row:
+        return row["trained"]
+    if row["model"] in {"logistic", "xgboost"}:
+        return True
+    if require_explicit:
+        raise ValueError("New model identifiers require an explicit trained boolean.")
+    return False
+
+
+def _validate_parameters(parameters: dict) -> None:
+    """Only display metadata crosses this boundary; the local runtime validates supported settings."""
+    for name, value in parameters.items():
+        if (not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", name)
+                or re.search(r"(?:^|_)(?:path|dir|directory|file|filename|code|script|command|url)(?:_|$)", name, re.I)
+                or name in {"constructor", "prototype"}):
+            raise ValueError("Submission parameters require setting names, not paths or code.")
+        if (value is None or type(value) is bool
+                or type(value) in (int, float) and math.isfinite(value)
+                or isinstance(value, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,63}", value)):
+            continue
+        raise ValueError(f"parameter {name} must be finite numeric, boolean, null or a short enum value; no paths or code.")
 
 
 def submission_name(payload: dict) -> str:
@@ -160,8 +191,9 @@ def _validate_metadata(payload: dict, dataset_id: str) -> None:
     timestamp = datetime.fromisoformat(payload["timestamp"].replace("Z", "+00:00"))
     if timestamp.tzinfo is None:
         raise ValueError("Submission timestamp must include its timezone.")
-    if not isinstance(payload["model"], str) or payload["model"] not in {"sophon", "xgboost", "logistic"}:
-        raise ValueError("Unknown model; use sophon, xgboost or logistic.")
+    if not isinstance(payload["model"], str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", payload["model"]):
+        raise ValueError("model must be a lowercase identifier of at most 64 letters, numbers, '-' or '_'.")
+    _trained(payload, require_explicit=True)
     names = payload["feature_names"]
     if (not isinstance(names, list) or not names or len(names) > 100
             or any(not isinstance(name, str) or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", name)
@@ -173,16 +205,9 @@ def _validate_metadata(payload: dict, dataset_id: str) -> None:
     for key in ("parameters", "hardware", "latency_protocol", "timings", "metrics"):
         if not isinstance(payload[key], dict):
             raise ValueError(f"{key} must be an object.")
-    allowed_parameters = {
-        "logistic": {"C", "max_iter"},
-        "xgboost": {"n_estimators", "max_depth", "learning_rate", "subsample", "colsample_bytree", "min_child_weight", "reg_lambda"},
-        "sophon": {"batch_size", "threads"},
-    }
-    if set(payload["parameters"]) - allowed_parameters[payload["model"]]:
-        raise ValueError("Submission parameters must be supported numeric model settings, not paths or code.")
-    for name, value in payload["parameters"].items():
-        _number(value, f"parameter {name}")
-    if payload["model"] == "sophon" and payload["parameters"] != {"batch_size": 1, "threads": 1}:
+    _validate_parameters(payload["parameters"])
+    if payload["model"] == "sophon" and (payload["parameters"] != {"batch_size": 1, "threads": 1}
+            or any(type(value) not in (int, float) for value in payload["parameters"].values())):
         raise ValueError("Sophon is frozen and must use batch size 1 and one thread.")
     if type(payload["seed"]) is not int or not 0 <= payload["seed"] < 2**32:
         raise ValueError("seed must be an integer between 0 and 2^32−1.")
@@ -261,14 +286,15 @@ def validate_submission(payload: dict, dataset_id: str,
     Scores and timings remain team-reported. This checks their structure and
     evaluates the submitted scores; it does not authenticate model execution.
     """
-    if set(payload) != FIELDS:
+    if set(payload) not in (FIELDS, LEGACY_FIELDS):
         raise ValueError(f"Unexpected submission fields: {sorted(set(payload) ^ FIELDS)}")
     _bounded_json(payload)
     _validate_metadata(payload, dataset_id)
     metrics = _prediction_metrics(payload, truth)
     timings = _validated_timings(payload, truth)
     experiment_key = hashlib.sha256(json.dumps([payload["team"], payload["run_id"]]).encode()).hexdigest()[:24]
-    return {**payload, "experiment_key": experiment_key, "metrics": metrics, "timings": timings,
+    return {**payload, "trained": _trained(payload, require_explicit=True),
+            "experiment_key": experiment_key, "metrics": metrics, "timings": timings,
             "reported_metrics_match": _metrics_match(payload["metrics"], metrics),
             "metrics_recomputed": True,
             "reporting": "Team-reported scores and timings; quality recomputed against fixed reference labels."}
@@ -281,6 +307,7 @@ def _leaderboard_entry(row: dict, rank: int) -> dict:
         "experiment_id": row["experiment_id"],
         "run_id": row["run_id"],
         "model": row["model"],
+        "trained": _trained(row),
         "feature_set": row["feature_set"],
         "test_auc": row["metrics"]["test"]["roc_auc"],
         "normalized_inference_time": row["timings"]["normalized_inference_time"],
@@ -304,12 +331,12 @@ def _best_per_team(rows: list[dict]) -> list[dict]:
 
 def leaderboard(experiments: list[dict]) -> dict:
     """Two separate rankings; no weighted composite or hidden hardware correction."""
-    references = [{name: row[name] for name in ("team", "experiment_id", "run_id", "model", "metrics", "timings")}
-                  for row in experiments if row["model"] == "sophon"]
+    references = [{**{name: row[name] for name in ("team", "experiment_id", "run_id", "model", "metrics", "timings")},
+                   "trained": False} for row in experiments if not _trained(row)]
     policy = {"references": references, "quality_margin": QUALITY_MARGIN,
-              "rules": "Team awards compare trained models only. Supplied Sophon stays visible as a frozen reference. Efficiency requires AUC within 0.02 of the best trained final result; lower normalized time wins.",
+              "rules": "Team awards compare trained models only. Frozen models stay visible as references. Efficiency requires AUC within 0.02 of the best trained final result; lower normalized time wins.",
               "timing_caveat": "Self-reported. The fixed CPU reference is only an approximate hardware adjustment, not a certified cross-device benchmark."}
-    final = [row for row in experiments if row["test_selection"] == "final" and row["model"] != "sophon"]
+    final = [row for row in experiments if row["test_selection"] == "final" and _trained(row)]
     if not final:
         return {"quality": [], "efficiency": [], "best_test_auc": None, **policy}
     best = max(row["metrics"]["test"]["roc_auc"] for row in final)

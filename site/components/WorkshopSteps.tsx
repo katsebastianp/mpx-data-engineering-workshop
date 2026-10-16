@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CheckCircle2, Circle } from "lucide-react";
 import { ChapterIntro, Prompt } from "./WorkshopApp";
-import { workshopExercises } from "./workshop-content";
+import { coreWorkshopExercises, workshopExercises, WORKSHOP_SOURCE_URL } from "./workshop-content";
 import type { useParticipantProgress } from "./useParticipantProgress";
 import { ParticipantAccountPanel } from "./ParticipantAccount";
 import { WorktreeJourney } from "./WorktreeJourney";
 import { SampleDownloads } from "./SampleDownloads";
+import { DataFlowExplorer, NextStepsFlow, PipelineVisual, WorktreeVisual } from "./LearningVisuals";
 import { personaliseWorkshopText } from "../lib/participant";
 
 const exerciseIds = new Set(workshopExercises.map(exercise => exercise.id));
@@ -34,7 +35,8 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
     ? personaliseWorkshopText(value, workspace, null)
     : value.replace(/\{\{([a-zA-Z]+)\}\}/g, (_, key: string) => previews[key] || "available after sign-in");
   const done = completed.includes(selected.id);
-  const total = workshopExercises.length;
+  const total = coreWorkshopExercises.length;
+  const completedCore = coreWorkshopExercises.filter(exercise => completed.includes(exercise.id)).length;
 
   useEffect(() => {
     const readStep = () => {
@@ -69,13 +71,13 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
   }
 
   return <div className="workshop-tree-page">
-    <ChapterIntro number="03" eyebrow="WORKSHOP INSTRUCTIONS" title="Your workshop, step by step" description="Set up your project, improve the pipeline and models, then share your results." />
+    <ChapterIntro number="03" eyebrow="WORKSHOP" title="Workshop instructions" description="15 steps · about 90 minutes with Docker ready" />
     {(participant.status !== "authenticated" || participant.legacy) && <ParticipantAccountPanel participant={participant} />}
 
     <div className="worktree-progress-bar section-wrap">
-      <div><strong>{completed.length}<span> / {total}</span></strong><span> steps complete</span></div>
-      <div className="worktree-total-progress" role="progressbar" aria-label="Completed workshop steps" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed.length}>
-        <span style={{ width: `${completed.length / total * 100}%` }} />
+      <div><strong>{completedCore}<span> / {total}</span></strong><span> core steps complete</span></div>
+      <div className="worktree-total-progress" role="progressbar" aria-label="Completed core workshop steps" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completedCore}>
+        <span style={{ width: `${completedCore / total * 100}%` }} />
       </div>
       <p aria-live="polite">{participant.saving ? "Saving…" : participant.status === "authenticated" ? "Your checklist · saved to your account" : "Sign in to save your progress"}</p>
     </div>
@@ -85,22 +87,37 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
         <WorktreeJourney completed={completed} selectedId={selected.id} onSelect={selectStep} />
       </div>
       <aside id="workshop-step-details" ref={panel} className={`step-detail-panel lane-${selected.location}`} aria-labelledby="selected-step-title" tabIndex={-1}>
+        {selected.time && <span className="step-time">{selected.optional ? "OPTIONAL · " : ""}{selected.time}</span>}
         <div className="step-detail-title"><h2 id="selected-step-title">{selected.title}</h2></div>
         <p className="step-instruction">{personalise(selected.instruction)}</p>
+        {selected.id === "codex-project" && <a className="text-link" href={WORKSHOP_SOURCE_URL} target="_blank" rel="noreferrer">Open the workshop repository <ArrowUpRight size={13}/></a>}
+        {selected.id === "overview" && <DataFlowExplorer />}
+        {selected.id === "smoke" && <NextStepsFlow />}
+        {selected.id === "worktrees" && <WorktreeVisual />}
+        {selected.id === "profile" && <PipelineVisual />}
+        {selected.decision && <p className="step-decision">{personalise(selected.decision)}</p>}
         {selected.actions && <ol className="step-actions">{selected.actions.map(action => <li key={action}>{personalise(action)}</li>)}</ol>}
         {selected.id === "download-data" && <SampleDownloads />}
+        {selected.download && <a className="secondary-button" href={selected.download.href} download>{selected.download.label} <ArrowUpRight size={13}/></a>}
 
         <div key={`${selected.id}-${workspace?.id ?? "signed-out"}-prompt`}>
           {workspace || selected.id === "codex-project" || selected.id === "download-data" ? <>
-            <Prompt title="Codex prompt">{personalise(selected.prompt)}</Prompt>
+            {selected.prompt && <Prompt title="Starting prompt">{personalise(selected.prompt)}</Prompt>}
             {selected.extraPrompts?.map(item => <Prompt key={item.title} title={item.title}>{personalise(item.prompt)}</Prompt>)}
-          </> : <p className="step-signin-notice">Sign in to get a prompt with your personal branch names.</p>}
+          </> : selected.prompt || selected.extraPrompts?.length ? <p className="step-signin-notice">Sign in to get a prompt with your personal branch names.</p> : null}
         </div>
+        {selected.commands && (workspace || selected.id === "codex-project") && <details className="step-command-details"><summary>{selected.commandTitle || "Show terminal commands"}</summary><pre>{personalise(selected.commands)}</pre></details>}
+        {(selected.concept || selected.hint || selected.checkpoint) && <details className="step-help"><summary>More context</summary>
+          {selected.concept && <p className="step-context"><strong>{selected.concept.title} </strong>{personalise(selected.concept.body)}</p>}
+          {selected.hint && <p className="step-hint">{personalise(selected.hint)}</p>}
+          {selected.checkpoint && <p className="step-context"><strong>Done when: </strong>{personalise(selected.checkpoint)}</p>}
+        </details>}
 
         <button className={`complete-step-button${done ? " is-complete" : ""}`} onClick={toggleComplete} aria-pressed={done} disabled={!canSave}>
           {done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
           {participant.saving ? "Saving…" : participant.status !== "authenticated" ? "Sign in to track this step" : done ? "Completed · Undo" : "Mark complete"}
         </button>
+        {selected.id === "worktrees" && <p className="completion-explainer">Mark complete saves this checklist. It does not merge your code.</p>}
         {participant.status === "anonymous" && <a href={participant.signInUrl || "/signin-with-chatgpt?return_to=/workshop"} target="_top" className="step-signin-link">Sign in with ChatGPT <ArrowUpRight size={13} /></a>}
         {participant.error && <p role="alert" className="step-save-error">{participant.error}</p>}
         {selected.id === "upload" && <a href="/leaderboard" className="workshop-next">Open the leaderboard <ArrowUpRight size={15} /></a>}

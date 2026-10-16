@@ -92,7 +92,7 @@ test("validation-only entries are accepted but not ranked", () => {
 
 const invalidCases: [string, (payload: Fixture) => void, RegExp][] = [
   ["wrong dataset", (p) => { p.dataset_id = "b".repeat(64); }, /different dataset/],
-  ["unknown model", (p) => { p.model = "random_forest"; }, /Unknown model/],
+  ["new model without training status", (p) => { p.model = "random_forest"; }, /explicit trained/],
   ["wrong version", (p) => { p.version = 2; }, /version/],
   ["missing prediction", (p) => { p.predictions.pop(); }, /complete fixed/],
   ["duplicate record", (p) => { p.predictions[1] = { ...p.predictions[0] }; }, /duplicate/],
@@ -126,16 +126,49 @@ for (const [name, mutate, message] of invalidCases) test(`rejects ${name}`, () =
   const payload = fixture(); mutate(payload); assert.throws(() => validateSubmission(payload, truth), message);
 });
 
-test("unknown fields, code-like parameters and booleans masquerading as numbers are rejected", () => {
+test("unknown fields, code-like parameters and booleans masquerading as timings are rejected", () => {
   assert.throws(() => validateSubmission({ ...fixture(), path: "/tmp/model" }, truth), /unexpected fields/);
-  assert.throws(() => validateSubmission({ ...fixture(), parameters: { code: "run()" } }, truth), /supported numeric/);
-  assert.throws(() => validateSubmission({ ...fixture(), parameters: { max_depth: true } }, truth), /finite/);
+  assert.throws(() => validateSubmission({ ...fixture(), parameters: { code: "run()" } }, truth), /paths or code/);
+  assert.throws(() => validateSubmission({ ...fixture(), timings: { ...fixture().timings, training_seconds: true } }, truth), /finite/);
   assert.throws(() => validateSubmission({ ...fixture(), timings: { ...fixture().timings, repeat_count: true } }, truth), /three measured/);
+});
+test("custom classifiers, engineered features and scalar parameter metadata survive publication", () => {
+  const payload = { ...fixture(), model: "random_forest", trained: true,
+    feature_names: ["energy_ratio", "jet_pt"], parameters: { bootstrap: true, criterion: "gini", max_features: null, offset: -1 } };
+  const entry = bindParticipantSubmission(validateSubmission(payload, truth), { id: "p-custom", displayName: "Custom" });
+  assert.equal(entry.trained, true);
+  assert.deepEqual(entry.parameters, payload.parameters);
+  assert.deepEqual(entry.feature_names, payload.feature_names);
+  assert.equal(buildAwards([entry]).quality[0].model, "random_forest");
+});
+test("extended metadata rejects paths, code, nested settings, invalid slugs and ambiguous training flags", () => {
+  for (const patch of [
+    { trained: 1 }, { trained: "true" }, { trained: null },
+    { model: "../classifier", trained: true }, { model: "x".repeat(65), trained: true },
+    { parameters: { criterion: "run()" } }, { parameters: { weights: [1, 2] } },
+    { parameters: { settings: { depth: 3 } } }, { parameters: { criterion: "x".repeat(65) } },
+    { parameters: { model_dir: "models" } }, { parameters: { code: "run" } },
+  ]) assert.throws(() => validateSubmission({ ...fixture(), ...patch }, truth), SubmissionError);
+});
+test("legacy stored known models remain ranked and every frozen model remains a reference", () => {
+  const trained = validated(); delete trained.trained;
+  const custom = { ...trained, model: "custom_reference", trained: false, participant: { id: "p-ref", displayName: "Reference" } };
+  const unknownLegacy: LeaderboardEntry = { ...custom }; delete unknownLegacy.trained;
+  assert.equal(bindParticipantSubmission(trained, trained.participant).trained, true);
+  assert.equal(bindParticipantSubmission(unknownLegacy, unknownLegacy.participant).trained, false);
+  for (const reference of [custom, unknownLegacy, { ...custom, model: "sophon", trained: true }]) {
+    const awards = buildAwards([trained, reference]);
+    assert.equal(awards.quality.length, 1);
+    assert.equal(awards.efficiency.length, 1);
+    assert.equal(awards.references[0].model, reference.model);
+  }
 });
 test("Sophon requires the frozen batch, threading and latency protocol", () => {
   const payload = { ...fixture(), model: "sophon", parameters: { batch_size: 1, threads: 1 } };
   payload.latency_protocol.batch_strategy = "one jet per ONNX call";
   const entry = validateSubmission(payload, truth);
+  assert.equal(entry.trained, false);
+  assert.equal(validateSubmission({ ...payload, trained: true }, truth).trained, false);
   assert.equal(buildAwards([bindParticipantSubmission(entry, { id: "p-alpha", displayName: "Alpha" })]).references.length, 1);
   assert.equal(buildAwards([bindParticipantSubmission(entry, { id: "p-alpha", displayName: "Alpha" })]).quality.length, 0);
   payload.parameters.batch_size = 4;

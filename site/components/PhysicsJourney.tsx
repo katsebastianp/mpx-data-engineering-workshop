@@ -158,6 +158,6 @@ export default function PhysicsJourney() {
         <ul>{(inside ? current.bullets : ["Two beams circulate in opposite directions through a 27-kilometre underground ring", "Superconducting magnets guide the beams towards collision points", "Detectors record the particles produced in each interaction"]).map(item=><li key={item}>{item}</li>)}</ul>
       </div>
     </div>
-    <div className="journey-footnote"><span>Blender model & interactive 3D</span><span>Geometry, distances and time are illustrative</span><a href="#workshop-data">Explore the workshop data <ArrowDown size={12}/></a></div>
+    <div className="journey-footnote"><span>Blender model & interactive 3D</span><span>Geometry, distances and time are illustrative</span><a href="/brief#prediction-title">Explore the workshop data <ArrowDown size={12}/></a></div>
   </section>;
 }

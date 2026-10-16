@@ -9,7 +9,8 @@ const FIELDS = ["version", "dataset_id", "experiment_id", "run_id", "team", "mod
 
 type JsonObject = Record<string, unknown>;
 export type Split = "validation" | "test";
-export type Model = "logistic" | "xgboost" | "sophon";
+export type Model = string;
+export type ParameterValue = number | boolean | null | string;
 export type Metrics = {
   rows: number; signal_rows: number; background_rows: number;
   roc_auc: number | null; average_precision: number | null; accuracy: number; f1: number;
@@ -24,7 +25,9 @@ export type Timings = {
 export type LeaderboardParticipant = { id: string; displayName: string };
 export type SubmissionResult = {
   experiment_id: string; run_id: string; model: Model;
-  feature_set: string; feature_names: string[]; parameters: Record<string, number>;
+  /** Missing only in legacy stored rows; new validation always sets this flag. */
+  trained?: boolean;
+  feature_set: string; feature_names: string[]; parameters: Record<string, ParameterValue>;
   seed: number; explanation: string; timestamp: string; updated_at: string;
   test_selection: "final" | "not_evaluated";
   metrics: Partial<Record<Split, Metrics>>; timings: Timings;
@@ -70,6 +73,28 @@ function text(value: unknown, name: string, maximum = 128): string {
 function number(value: unknown, name: string, positive = false): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || (positive && value === 0)) fail(`${name} must be a finite ${positive ? "positive" : "nonnegative"} number.`);
   return value;
+}
+/** Legacy known models retain their status; an unknown reference is never ranked by default. */
+export function isTrained(entry: { model: string; trained?: boolean }): boolean {
+  if (entry.model === "sophon") return false;
+  if (typeof entry.trained === "boolean") return entry.trained;
+  return entry.model === "logistic" || entry.model === "xgboost";
+}
+function trainedStatus(payload: JsonObject, model: string): boolean {
+  if (Object.hasOwn(payload, "trained")) {
+    if (typeof payload.trained !== "boolean") fail("trained must be a boolean.");
+    return isTrained({ model, trained: payload.trained });
+  }
+  if (!["logistic", "xgboost", "sophon"].includes(model)) fail("New model identifiers require an explicit trained boolean.");
+  return isTrained({ model });
+}
+function validateParameters(parameters: JsonObject): asserts parameters is Record<string, ParameterValue> {
+  // Display metadata only. The local runtime validates the settings a predictor supports.
+  for (const [key, value] of Object.entries(parameters)) {
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key) || /(?:^|_)(?:path|dir|directory|file|filename|code|script|command|url)(?:_|$)/i.test(key) || ["constructor", "prototype"].includes(key)) fail("Submission parameters require setting names, not paths or code.");
+    if (value === null || typeof value === "boolean" || typeof value === "number" && Number.isFinite(value) || typeof value === "string" && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)) continue;
+    fail(`parameter ${key} must be finite numeric, boolean, null or a short enum value; no paths or code.`);
+  }
 }
 function validTimestamp(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.exec(value);
@@ -261,7 +286,7 @@ export function leaderboardParticipant(id: string, fullName: string | null): Lea
 /** Explicitly copy result fields so uploaded/legacy aliases cannot become identity. */
 export function bindParticipantSubmission(entry: SubmissionResult, participant: LeaderboardParticipant): LeaderboardEntry {
   return {
-    participant, experiment_id: entry.experiment_id, run_id: entry.run_id, model: entry.model,
+    participant, experiment_id: entry.experiment_id, run_id: entry.run_id, model: entry.model, trained: isTrained(entry),
     feature_set: entry.feature_set, feature_names: entry.feature_names, parameters: entry.parameters,
     seed: entry.seed, explanation: entry.explanation, timestamp: entry.timestamp, updated_at: entry.updated_at,
     test_selection: entry.test_selection, metrics: entry.metrics, timings: entry.timings,
@@ -283,7 +308,8 @@ export function assertSubmissionWriteContext(request: Request, authenticatedSubj
 }
 
 export function validateSubmission(input: unknown, truth: Truth, now = new Date().toISOString()): SubmissionResult {
-  const payload = object(input, "Submission"); exactFields(payload, FIELDS, "Submission"); boundedJson(payload);
+  const payload = object(input, "Submission");
+  exactFields(payload, Object.hasOwn(payload, "trained") ? [...FIELDS, "trained"] : FIELDS, "Submission"); boundedJson(payload);
   if (payload.version !== 1) fail("Submission version must be 1.");
   if (payload.dataset_id !== truth.dataset_id) fail("Submission belongs to a different dataset.");
   const experimentId = text(payload.experiment_id, "experiment_id");
@@ -294,16 +320,15 @@ export function validateSubmission(input: unknown, truth: Truth, now = new Date(
   const featureSet = text(payload.feature_set, "feature_set");
   const timestamp = text(payload.timestamp, "timestamp");
   if (!validTimestamp(timestamp)) fail("Submission timestamp must be a valid ISO 8601 date with a timezone.");
-  if (payload.model !== "sophon" && payload.model !== "xgboost" && payload.model !== "logistic") fail("Unknown model; use sophon, xgboost or logistic.");
+  if (typeof payload.model !== "string" || !/^[a-z][a-z0-9_-]{0,63}$/.test(payload.model)) fail("model must be a lowercase identifier of at most 64 letters, numbers, '-' or '_'.");
   const model: Model = payload.model;
+  const trained = trainedStatus(payload, model);
   const names = payload.feature_names;
   if (!Array.isArray(names) || names.length === 0 || names.length > 100 || names.some((name) => typeof name !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(name)) || new Set(names).size !== names.length) fail("feature_names must be a nonempty, unique list of column names.");
   if ((names as string[]).some((name) => ["truth_label", "truth_group", "record_id", "source_file", "source_row", "split", "jet_label"].includes(name) || /^(genpart_|genjet_|aux_genpart_)/.test(name))) fail("Labels, identities and generator truth are not prediction features.");
   for (const key of ["parameters", "hardware", "latency_protocol", "timings", "metrics"]) object(payload[key], key);
   const parameters = payload.parameters as JsonObject;
-  const allowed: Record<Model, string[]> = { logistic: ["C", "max_iter"], xgboost: ["n_estimators", "max_depth", "learning_rate", "subsample", "colsample_bytree", "min_child_weight", "reg_lambda"], sophon: ["batch_size", "threads"] };
-  if (Object.keys(parameters).some((key) => !allowed[model].includes(key))) fail("Submission parameters must be supported numeric model settings, not paths or code.");
-  for (const [key, value] of Object.entries(parameters)) number(value, `parameter ${key}`);
+  validateParameters(parameters);
   if (model === "sophon" && (Object.keys(parameters).length !== 2 || parameters.batch_size !== 1 || parameters.threads !== 1)) fail("Sophon is frozen and must use batch size 1 and one thread.");
   if (typeof payload.seed !== "number" || !Number.isInteger(payload.seed) || payload.seed < 0 || payload.seed >= 2 ** 32) fail("seed must be an integer between 0 and 2^32−1.");
   if (typeof payload.feature_source_sha256 !== "string" || !/^[0-9a-f]{64}$/.test(payload.feature_source_sha256)) fail("Missing feature source checksum.");
@@ -342,16 +367,16 @@ export function validateSubmission(input: unknown, truth: Truth, now = new Date(
   const normalizedTime = (inference / 128) / (reference / 64);
   const perJet = inference / 128 * 1_000; const relativeSpeed = reference / inference;
   if (![normalizedTime, perJet, relativeSpeed].every((value) => Number.isFinite(value) && value > 0)) fail("Timing values are outside the supported numeric range.");
-  return { experiment_id: experimentId, run_id: runId, model, feature_set: featureSet,
-    feature_names: names as string[], parameters: parameters as Record<string, number>, seed: payload.seed,
+  return { experiment_id: experimentId, run_id: runId, model, trained, feature_set: featureSet,
+    feature_names: names as string[], parameters, seed: payload.seed,
     explanation, timestamp, updated_at: now, test_selection: testSelection, metrics,
     timings: { training_seconds: training, inference_seconds: inference, reference_seconds: reference, benchmark_rows: 128, repeat_count: 3, per_jet_ms: perJet, relative_speed: relativeSpeed, normalized_inference_time: normalizedTime },
     reported_metrics_match: metricsMatch(payload.metrics, metrics), metrics_recomputed: true, self_reported: true };
 }
 
 export function buildAwards(entries: LeaderboardEntry[]): Awards {
-  const references = entries.filter((entry) => entry.model === "sophon");
-  const finals = entries.filter((entry) => entry.test_selection === "final" && entry.model !== "sophon" && typeof entry.metrics.test?.roc_auc === "number");
+  const references = entries.filter((entry) => !isTrained(entry));
+  const finals = entries.filter((entry) => entry.test_selection === "final" && isTrained(entry) && typeof entry.metrics.test?.roc_auc === "number");
   const best = finals.length ? Math.max(...finals.map((entry) => entry.metrics.test!.roc_auc!)) : null;
   const compareText = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
   const byName = (a: LeaderboardEntry, b: LeaderboardEntry) => compareText(a.participant.displayName, b.participant.displayName) || compareText(a.participant.id, b.participant.id) || compareText(a.run_id, b.run_id);
@@ -367,7 +392,7 @@ export function buildAwards(entries: LeaderboardEntry[]): Awards {
     quality: bestPerParticipant([...finals].sort((a, b) => b.metrics.test!.roc_auc! - a.metrics.test!.roc_auc! || byName(a, b))),
     efficiency: bestPerParticipant(finals.filter((entry) => best !== null && entry.metrics.test!.roc_auc! >= best - QUALITY_MARGIN - 1e-12).sort((a, b) => a.timings.normalized_inference_time - b.timings.normalized_inference_time || b.metrics.test!.roc_auc! - a.metrics.test!.roc_auc! || byName(a, b))),
     references, best_test_auc: best, quality_margin: QUALITY_MARGIN,
-    rules: "Participant awards compare trained models only. Sophon is a frozen reference. Efficiency requires test AUC within 0.02 of the best trained final result; lower normalized time wins.",
+    rules: "Participant awards compare trained models only. Frozen models stay visible as references. Efficiency requires test AUC within 0.02 of the best trained final result; lower normalized time wins.",
     timing_caveat: "Scores and timings are participant-reported. Quality is recomputed against fixed labels; models are not rerun. The CPU reference is an approximate hardware adjustment, not a certified cross-device benchmark.",
   };
 }

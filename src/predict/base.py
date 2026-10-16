@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from preprocessing.features import FEATURE_NAMES
+from preprocessing.features import validate_feature_names
 
 
 class Predictor(ABC):
@@ -15,6 +15,8 @@ class Predictor(ABC):
 
     def __init__(self, metadata: dict):
         self.metadata = metadata
+        if self.kind != "sophon":
+            validate_feature_names(metadata["feature_names"])
 
     @classmethod
     @abstractmethod
@@ -22,7 +24,11 @@ class Predictor(ABC):
         """Write the model artifact and return its model-specific metadata."""
 
     def predict(self, rows: list[dict]) -> np.ndarray:
-        scores = np.asarray(self._predict(rows), dtype=np.float64)
+        # Every classifier receives only its declared measurements at inference.
+        # This also protects a participant's new implementation from accidentally
+        # reading truth labels, record IDs or the split from the supplied rows.
+        measured = [{name: row.get(name) for name in self.metadata["feature_names"]} for row in rows]
+        scores = np.asarray(self._predict(measured), dtype=np.float64)
         if scores.shape != (len(rows),) or not np.isfinite(scores).all() or np.any((scores < 0) | (scores > 1)):
             raise ValueError("Model must return one finite score in [0, 1] per jet.")
         return scores
@@ -33,10 +39,7 @@ class Predictor(ABC):
 
 
 def feature_matrix(rows, feature_names):
-    names = tuple(feature_names)
-    if (not names or any(not isinstance(name, str) for name in names)
-            or len(set(names)) != len(names) or not set(names).issubset(FEATURE_NAMES)):
-        raise ValueError("Choose a nonempty, unique subset of the eight measured features; labels and IDs are forbidden.")
+    names = validate_feature_names(feature_names)
     matrix = []
     for row in rows:
         values = [row.get(name) for name in names]

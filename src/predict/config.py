@@ -5,29 +5,27 @@ import re
 
 import yaml
 
-from preprocessing.features import FEATURE_NAMES, FEATURE_SETS
-from predict.sophon import MEASUREMENT_NAMES
+from preprocessing.features import FEATURE_SETS, validate_feature_names
+from predict.models import require_predictor
 
 
 def _feature_names(kind, selected):
+    require_predictor(kind)
     if kind == "sophon":
         if selected != "particles":
             raise ValueError("Sophon requires features: particles.")
+        from predict.sophon import MEASUREMENT_NAMES
+
         return list(MEASUREMENT_NAMES)
-    if kind not in ("logistic", "xgboost"):
-        raise ValueError("model must be logistic, xgboost or sophon.")
     if isinstance(selected, str):
         if selected not in FEATURE_SETS:
-            raise ValueError("Choose basic, shape, or an explicit numeric feature list.")
+            raise ValueError(f"Choose {', '.join(FEATURE_SETS)}, or an explicit measured feature list.")
         names = list(FEATURE_SETS[selected])
     elif isinstance(selected, list):
         names = selected
     else:
         raise ValueError("features must be a named set or list.")
-    if (not names or any(not isinstance(name, str) for name in names)
-            or len(set(names)) != len(names) or not set(names).issubset(FEATURE_NAMES)):
-        raise ValueError("Only unique measured numeric features are allowed; labels and identifiers are forbidden.")
-    return names
+    return validate_feature_names(names)
 
 
 def read_config(path):
@@ -61,7 +59,7 @@ def read_config(path):
         if not isinstance(identifier, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,39}", identifier) or identifier in seen:
             raise ValueError("Experiment IDs must be unique, 1–40 letters/digits/hyphens/underscores.")
         seen.add(identifier)
-        selected = entry.get("features", "shape")
+        selected = entry.get("features", "basic")
         names = _feature_names(entry.get("model"), selected)
         note = entry.get("explanation", explanation)
         if not isinstance(entry.get("params", {}), dict):

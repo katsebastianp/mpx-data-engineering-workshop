@@ -16,6 +16,7 @@ from predict import benchmark, experiment
 from predict.config import read_config
 from predict.data import FEATURE_SOURCE_PATH, load_prepared
 from predict.models import load_model
+from predict.logistic import LogisticPredictor
 from preprocessing.features import FEATURE_NAMES
 
 
@@ -84,6 +85,67 @@ def test_entry_explanation_can_replace_omitted_top_level_note(tmp_path):
     path = config(tmp_path, explanation="", experiments=[{
         "id": "linear", "model": "logistic", "features": "basic", "explanation": "Test the simple feature set."}])
     assert read_config(path)["experiments"][0]["explanation"] == "Test the simple feature set."
+
+
+def test_omitting_features_uses_the_three_baseline_measurements(tmp_path):
+    path = config(tmp_path, experiments=[{"id": "minimal", "model": "logistic"}])
+    assert read_config(path)["experiments"][0]["feature_names"] == ["jet_pt", "jet_sdmass", "particle_count"]
+
+
+def test_registered_classifier_with_explicit_features_runs_and_reloads(prepared, tmp_path, monkeypatch):
+    from predict.models import PREDICTORS
+
+    # Reuse known model math to test adding a classifier without a second config
+    # allowlist, with the same fit/save/reload and leakage rules as built-ins.
+    class ParticipantClassifier(LogisticPredictor):
+        kind = "participant-classifier"
+
+        @classmethod
+        def train(cls, rows, feature_names, params, directory, seed):
+            expected = {*feature_names, "truth_label", "split"}
+            assert all(set(row) == expected for row in rows)
+            return super().train(rows, feature_names, params, directory, seed)
+
+        def _predict(self, rows):
+            assert all(set(row) == set(self.metadata["feature_names"]) for row in rows)
+            return super()._predict(rows)
+
+    monkeypatch.setitem(PREDICTORS, ParticipantClassifier.kind, ParticipantClassifier)
+    selected = ["jet_sdmass", "energy_sum"]
+    path = config(tmp_path, experiments=[{"id": "participant-experiment", "model": ParticipantClassifier.kind,
+                                         "features": selected, "params": {"C": .5}}])
+    parsed = read_config(path)["experiments"][0]
+    assert parsed["feature_names"] == selected and parsed["feature_set"] == "custom"
+    results_dir, models_dir = tmp_path / "results", tmp_path / "models"
+    result = experiment.run_experiments(path, prepared, results_dir, "registered", models_dir)[0]
+    assert result["model"] == ParticipantClassifier.kind and result["trained"] is True
+    assert result["evaluated_splits"] == ["validation"]
+    model = load_model(models_dir / result["run_id"])
+    assert isinstance(model, ParticipantClassifier)
+    _, rows = load_prepared(prepared)
+    expected_scores = pq.read_table(results_dir / result["run_id"] / "predictions.parquet")["signal_score"].to_numpy()
+    changed = [{**row, "truth_label": 999, "record_id": "changed", "split": "test"} for row in rows["validation"]]
+    np.testing.assert_array_equal(model.predict(changed), expected_scores)
+    assert not list((models_dir / result["run_id"]).glob("*.pkl"))
+
+
+def test_unregistered_model_fails_with_extension_location(tmp_path):
+    path = config(tmp_path, experiments=[{"id": "new", "model": "not-registered", "features": "basic"}])
+    with pytest.raises(ValueError, match="registered model.*predict/models.py"):
+        read_config(path)
+
+
+@pytest.mark.parametrize("model,message", [
+    ("xgboost", "XGBoost is installed in Docker; implement and register"),
+    ("sophon", "Install the optional Sophon reference pack"),
+])
+def test_unavailable_model_explains_the_next_action(tmp_path, monkeypatch, model, message):
+    from predict.models import PREDICTORS
+
+    monkeypatch.delitem(PREDICTORS, model, raising=False)
+    path = config(tmp_path, experiments=[{"id": "choice", "model": model, "features": "basic"}])
+    with pytest.raises(ValueError, match=message):
+        read_config(path)
 
 
 def test_overlong_combined_run_id_is_rejected_before_loading_data_or_creating_results(tmp_path, monkeypatch):

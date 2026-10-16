@@ -10,7 +10,7 @@ __pycache__/
 .DS_Store
 .cache/
 /dist/
-# Sample files are hosted on the Site; model weights are downloaded during setup.
+# Sample files and the separate optional model pack are hosted on the Site.
 # These staged Site assets must never be pushed to GitHub.
 /site/public/downloads/
 data/01_raw/*
@@ -30,3 +30,6 @@ models/pretrained/sophon/*
 !models/pretrained/sophon/.gitkeep
 site/.sites/
 site/.codex-preview/
+
+# Opt-in reference pack, extracted only when requested.
+optional/
