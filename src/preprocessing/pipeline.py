@@ -15,9 +15,9 @@ from preprocessing.features import FEATURE_NAMES, FEATURE_SETS, build_features
 from common import ROOT, RAW_DIR, PREPROCESSED_DIR, sha256, utc_now, write_json
 
 LOGGER = logging.getLogger(__name__)
-# Intentional teaching baseline: try 4 instead, then compare saved values and
-# scheduled tasks. Fewer small tasks may help; measure wall time on your laptop.
-SHUFFLE_PARTITIONS = 64
+# Deliberately overpartitioned teaching baseline for 6,000 jets on local[1].
+# Try 4; benchmark_preprocessing.py repeats both settings and checks every value.
+SHUFFLE_PARTITIONS = 2048
 
 
 def execution_counts(context):

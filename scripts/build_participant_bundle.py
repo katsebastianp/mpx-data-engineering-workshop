@@ -35,7 +35,7 @@ STATIC_REPOSITORY_FILES = (
     "config/workshop-data.lock.json", "config/workshop-sample.lock.json",
     "docs/model-outputs.md", "docs/assets/jet-examples.json",
     "scripts/build_participant_bundle.py", "scripts/prepare_data.py", "scripts/setup_workshop.py",
-    "scripts/stage_site_sample.py", "scripts/compare_preprocessing.py",
+    "scripts/stage_site_sample.py", "scripts/compare_preprocessing.py", "scripts/benchmark_preprocessing.py",
     "config/evaluation.json",
     "tools/model-explorer/index.html", "tools/model-explorer/app.js", "tools/model-explorer/style.css",
     "tools/model-explorer/comparison.json", "tools/model-explorer/leaderboard.json",

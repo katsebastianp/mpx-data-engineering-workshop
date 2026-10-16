@@ -7,8 +7,8 @@ export function NextStepsFlow() {
 }
 
 export function PipelineVisual() {
-  const [partitions, setPartitions] = useState(64);
-  return <section className="learning-visual"><h3>Same work, fewer pieces</h3><p>Spark splits the work into partitions. Each piece takes time to schedule.</p><div className="learning-switch" aria-label="Illustrative partition count">{[64, 4].map(value => <button type="button" key={value} aria-pressed={partitions === value} onClick={() => setPartitions(value)}>{value} partitions</button>)}</div><div className="partition-grid" aria-label={`${partitions} illustrative partitions`}>{Array.from({ length: partitions }, (_, index) => <span key={index}/>)}</div><div className="learning-code"><code>src/preprocessing/pipeline.py · SHUFFLE_PARTITIONS</code></div><p className="learning-caption">Illustration. Your run will tell us whether it is faster.</p></section>;
+  const [partitions, setPartitions] = useState(2048);
+  return <section className="learning-visual"><h3>Same work, fewer pieces</h3><p>Spark splits the work into partitions. Each piece takes time to schedule.</p><div className="learning-switch" aria-label="Illustrative partition count">{[2048, 4].map(value => <button type="button" key={value} aria-pressed={partitions === value} onClick={() => setPartitions(value)}>{value.toLocaleString("en-US")} partitions</button>)}</div><div className="partition-grid" aria-label={`${partitions} illustrative partitions`}>{Array.from({ length: partitions }, (_, index) => <span key={index}/>)}</div><div className="learning-code"><code>src/preprocessing/pipeline.py · SHUFFLE_PARTITIONS</code></div><p className="learning-caption">Compare three runs per setting; check that the values stay identical.</p></section>;
 }
 
 export function WorktreeVisual() {
