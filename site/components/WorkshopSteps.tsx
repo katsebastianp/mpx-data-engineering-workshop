@@ -102,7 +102,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
 
         <div key={`${selected.id}-${workspace?.branch ?? "signed-out"}-prompt`}>
           {workspace || selected.id === "download-data" ? <>
-            {selected.prompt && <Prompt title="Starting prompt">{personalise(selected.prompt)}</Prompt>}
+            {selected.prompt && <Prompt title={selected.id === "overview" ? "Example prompt" : "Starting prompt"}>{personalise(selected.prompt)}</Prompt>}
             {selected.extraPrompts?.map(item => <Prompt key={item.title} title={item.title}>{personalise(item.prompt)}</Prompt>)}
           </> : selected.prompt || selected.extraPrompts?.length ? <p className="step-signin-notice">Sign in to get a prompt with your personal branch names.</p> : null}
         </div>
