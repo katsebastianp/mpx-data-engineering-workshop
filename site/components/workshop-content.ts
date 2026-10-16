@@ -30,6 +30,7 @@ export type WorkshopPart = {
 
 export const WORKSHOP_REPOSITORY_URL = "https://github.com/openai/machine-learning-lhc-workshop";
 export const WORKSHOP_SOURCE_BRANCH = "main";
+export const SOPHON_PAPER_URL = "https://arxiv.org/abs/2405.12972";
 export const WORKSHOP_SOURCE_URL = `${WORKSHOP_REPOSITORY_URL}/tree/${WORKSHOP_SOURCE_BRANCH}`;
 
 export const workshopParts: WorkshopPart[] = [
@@ -335,11 +336,17 @@ export const optionalWorkshopExercises: WorkshopExercise[] = [
     optional: true,
     title: "Optional: run Sophon",
     time: "Early finishers or closing demo",
-    instruction: "Download the ready-made pack and compare its pretrained model with your baseline.",
+    instruction: "Sophon is a pretrained transformer that uses the particles inside each jet. Compare its predictions with your own models on validation.",
+    actions: [
+      "Ask Codex to summarise the paper: its inputs, what it learned and how it differs from your model.",
+      "Create {{runName}}-experiment-sophon from {{modelsBranch}} in the model worktree.",
+      "Download the pack, run the supplied model, then compare it in Model Explorer.",
+    ],
     download: { label: "Download the Sophon pack", href: "/downloads/sophon-optional-v1.zip" },
-    prompt: "Extract the downloaded Sophon pack into optional/ in this model worktree. Follow this repository’s README to install it with Docker. Use name: {{runName}} as the only run label in config/experiments-sophon.yaml. Run predict with that config and postprocessing in {{composePrefix}}-models. Compare with the saved logistic baseline on validation. No host Python, Spark run or package installs; use the supplied integration as-is.",
+    prompt: "In the model worktree, preserve and commit completed model code on {{modelsBranch}}, excluding generated data and weights. Create and switch to {{runName}}-experiment-sophon from that commit; if it exists, verify and resume it without resetting work. Summarise https://arxiv.org/abs/2405.12972 in three short sentences. Extract the downloaded Sophon pack into optional/ and follow the repository README to install it with Docker. In config/experiments-sophon.yaml, use name: {{runName}} as the only run label. Run predict with that config, then postprocessing in {{composePrefix}}-sophon when other Docker jobs have finished. Follow docs/model-outputs.md; preserve existing results and compare Sophon with the baseline and my models in Model Explorer on validation only. Use the supplied weights and adapter unchanged; no training, Spark rerun or new dependencies. Commit only added source/config files on the Sophon branch; keep it separate from {{branch}}.",
     hint: "The pack includes verified weights and the input adapter. This is a frozen reference, not a coding or fine-tuning exercise.",
-    commands: "docker run --rm --network none -v \"$PWD:/workspace\" particle-workshop:0.6.0 optional/sophon-optional/install.py /workspace\ndocker compose -p {{composePrefix}}-models run --rm lab -m predict --config config/experiments-sophon.yaml\ndocker compose -p {{composePrefix}}-models run --rm lab -m postprocessing",
+    commandTitle: "Run after creating the Sophon branch",
+    commands: "docker run --rm --network none -v \"$PWD:/workspace\" particle-workshop:0.6.0 optional/sophon-optional/install.py /workspace\ndocker compose -p {{composePrefix}}-sophon run --rm --no-deps lab -m predict --config config/experiments-sophon.yaml\ndocker compose -p {{composePrefix}}-sophon run --rm --no-deps lab -m postprocessing",
     checkpoint: "Sophon’s validation result is compared with your baseline and labelled as a frozen reference.",
   },
   {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, GitBranch, GitMerge, Laptop } from "lucide-react";
-import { workshopExercises, optionalWorkshopExercises } from "./workshop-content";
+import { workshopExercises, optionalWorkshopExercises, SOPHON_PAPER_URL } from "./workshop-content";
 
 type WorktreeJourneyProps = {
   completed: string[];
@@ -99,7 +99,7 @@ export function WorktreeJourney(props: WorktreeJourneyProps) {
       </div>
       <details className="optional-journey" open={optionalWorkshopExercises.some(exercise => exercise.id === props.selectedId) || undefined}>
         <summary>Optional · Sophon, final test and sharing</summary>
-        <p>The core workshop ends with your results page or Model Explorer. For the optional leaderboard challenge, freeze your model, run the final test once, then upload its generated result.</p>
+        <p>If you have more time, try Sophon: a transformer model already trained on simulated particle jets. Use the supplied pack to compare it with your models, without training it yourself. <a className="text-link" href={SOPHON_PAPER_URL} target="_blank" rel="noreferrer">Read the paper ↗</a></p>
         <NodeSequence ids={optionalWorkshopExercises.map(exercise => exercise.id)} {...props} />
       </details>
     </section>

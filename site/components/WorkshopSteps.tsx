@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CheckCircle2, Circle } from "lucide-react";
 import { ChapterIntro, Prompt } from "./WorkshopApp";
-import { coreWorkshopExercises, workshopExercises, WORKSHOP_SOURCE_URL } from "./workshop-content";
+import { coreWorkshopExercises, workshopExercises, WORKSHOP_SOURCE_URL, SOPHON_PAPER_URL } from "./workshop-content";
 import type { useParticipantProgress } from "./useParticipantProgress";
 import { ParticipantAccountPanel } from "./ParticipantAccount";
 import { WorktreeJourney } from "./WorktreeJourney";
@@ -92,6 +92,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
         <div className="step-detail-title"><h2 id="selected-step-title">{selected.title}</h2></div>
         <p className="step-instruction">{personalise(selected.instruction)}</p>
         {selected.id === "codex-project" && <a className="text-link" href={WORKSHOP_SOURCE_URL} target="_blank" rel="noreferrer">Open the workshop repository <ArrowUpRight size={13}/></a>}
+        {selected.id === "sophon-reference" && <a className="text-link" href={SOPHON_PAPER_URL} target="_blank" rel="noreferrer">Read the Sophon paper <ArrowUpRight size={13}/></a>}
         {selected.id === "smoke" && <NextStepsFlow />}
         {selected.id === "worktrees" && <WorktreeVisual />}
         {selected.id === "profile" && <PipelineVisual />}

@@ -22,7 +22,7 @@ Tests: `docker compose run --rm --no-deps lab -m pytest -q`.
 
 ## Optional Sophon pack
 
-Extract the [pack](https://ringier-collision-lab.openai.chatgpt.site/downloads/sophon-optional-v1.zip) into `optional/` in the model worktree, then run from that worktree:
+Create `<run-name>-experiment-sophon` from your model branch first. Extract the [pack](https://ringier-collision-lab.openai.chatgpt.site/downloads/sophon-optional-v1.zip) into `optional/` in the model worktree, then run from that worktree:
 
 ```sh
 docker run --rm --network none -v "$PWD:/workspace" particle-workshop:0.6.0 optional/sophon-optional/install.py /workspace
