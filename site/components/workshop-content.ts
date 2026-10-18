@@ -28,7 +28,7 @@ export type WorkshopPart = {
   exercises: WorkshopExercise[];
 };
 
-export const WORKSHOP_REPOSITORY_URL = "https://github.com/openai/machine-learning-lhc-workshop";
+export const WORKSHOP_REPOSITORY_URL = "https://github.com/RingierIMU/mpx-data-engineering-workshop";
 export const WORKSHOP_SOURCE_BRANCH = "main";
 export const SOPHON_PAPER_URL = "https://arxiv.org/abs/2405.12972";
 export const WORKSHOP_SOURCE_URL = `${WORKSHOP_REPOSITORY_URL}/tree/${WORKSHOP_SOURCE_BRANCH}`;
@@ -55,7 +55,7 @@ export const workshopParts: WorkshopPart[] = [
         ],
         prompt: `Use the GitHub plugin to check access to ${WORKSHOP_REPOSITORY_URL}. In this Codex project's empty folder, clone its ${WORKSHOP_SOURCE_BRANCH} branch directly into . (the current folder), without creating a subfolder. If this folder is already the repository root, verify the remote and reuse it. If it is nonempty and not the repository root, stop and explain; preserve all files. Show the terminal command as a fallback. Confirm git rev-parse --show-toplevel matches the Codex project folder, and README.md, compose.yaml and src/ are directly inside it.`,
         commandTitle: "Terminal fallback · run in the empty project folder",
-        commands: `gh auth status\ngh repo clone openai/machine-learning-lhc-workshop . -- -b ${WORKSHOP_SOURCE_BRANCH}\n# If GitHub CLI is unavailable and Git access is already configured:\n# git clone -b ${WORKSHOP_SOURCE_BRANCH} ${WORKSHOP_REPOSITORY_URL}.git .`,
+        commands: `gh auth status\ngh repo clone ${WORKSHOP_REPOSITORY_URL} . -- -b ${WORKSHOP_SOURCE_BRANCH}\n# If GitHub CLI is unavailable and Git access is already configured:\n# git clone -b ${WORKSHOP_SOURCE_BRANCH} ${WORKSHOP_REPOSITORY_URL}.git .`,
         checkpoint: "The Codex project folder is the Git repository root, with README.md directly inside it.",
       },
       {
