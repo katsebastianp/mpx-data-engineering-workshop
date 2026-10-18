@@ -7,6 +7,13 @@ This is an authored scientific illustration, not a surveyed model of CERN.
 Ring geometry, the four detector stations and the campus are deliberately schematic.
 No downloaded models, textures, or generative images are used.
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 from pathlib import Path
 import logging
 import math
@@ -21,7 +28,13 @@ PUBLIC.mkdir(exist_ok=True)
 ASSETS.mkdir(exist_ok=True)
 
 
-def material(name, color, metallic=0.0, roughness=0.4, emission=0.0):
+def material(
+    name: str,
+    color: tuple[float, float, float],
+    metallic: float = 0.0,
+    roughness: float = 0.4,
+    emission: float = 0.0,
+) -> bpy.types.Material:
     result = bpy.data.materials.new(name)
     result.use_nodes = True
     shader = result.node_tree.nodes.get("Principled BSDF")
@@ -34,7 +47,7 @@ def material(name, color, metallic=0.0, roughness=0.4, emission=0.0):
     return result
 
 
-def finish(obj, name, mat, bevel=0.0):
+def finish(obj: bpy.types.Object, name: str, mat: bpy.types.Material, bevel: float = 0.0) -> bpy.types.Object:
     obj.name = name
     obj.data.materials.append(mat)
     for polygon in obj.data.polygons:
@@ -48,7 +61,14 @@ def finish(obj, name, mat, bevel=0.0):
     return obj
 
 
-def cube(name, position, size, mat, bevel=0.025, parent=None):
+def cube(
+    name: str,
+    position: tuple[float, float, float],
+    size: tuple[float, float, float],
+    mat: bpy.types.Material,
+    bevel: float = 0.025,
+    parent: bpy.types.Object | None = None,
+) -> bpy.types.Object:
     bpy.ops.mesh.primitive_cube_add(size=1, location=position)
     obj = bpy.context.object
     obj.dimensions = size
@@ -59,7 +79,15 @@ def cube(name, position, size, mat, bevel=0.025, parent=None):
     return obj
 
 
-def cylinder(name, position, radius, depth, mat, vertices=64, parent=None):
+def cylinder(
+    name: str,
+    position: tuple[float, float, float],
+    radius: float,
+    depth: float,
+    mat: bpy.types.Material,
+    vertices: int = 64,
+    parent: bpy.types.Object | None = None,
+) -> bpy.types.Object:
     bpy.ops.mesh.primitive_cylinder_add(vertices=vertices, radius=radius, depth=depth, location=position)
     obj = finish(bpy.context.object, name, mat, 0.012)
     if parent:
@@ -67,7 +95,16 @@ def cylinder(name, position, radius, depth, mat, vertices=64, parent=None):
     return obj
 
 
-def torus(name, radius, tube, position, mat, segments=128, sides=10, parent=None):
+def torus(
+    name: str,
+    radius: float,
+    tube: float,
+    position: tuple[float, float, float],
+    mat: bpy.types.Material,
+    segments: int = 128,
+    sides: int = 10,
+    parent: bpy.types.Object | None = None,
+) -> bpy.types.Object:
     bpy.ops.mesh.primitive_torus_add(major_segments=segments, minor_segments=sides, location=position, major_radius=radius, minor_radius=tube)
     obj = finish(bpy.context.object, name, mat)
     if parent:
@@ -75,7 +112,13 @@ def torus(name, radius, tube, position, mat, segments=128, sides=10, parent=None
     return obj
 
 
-def path(name, points, thickness, mat, parent=None):
+def path(
+    name: str,
+    points: Sequence[tuple[float, float, float]],
+    thickness: float,
+    mat: bpy.types.Material,
+    parent: bpy.types.Object | None = None,
+) -> bpy.types.Object:
     curve = bpy.data.curves.new(name, "CURVE")
     curve.dimensions = "3D"
     curve.resolution_u = 2
@@ -93,7 +136,17 @@ def path(name, points, thickness, mat, parent=None):
     return obj
 
 
-def arcs(name, count, radius, tube, z, arc_fraction, mat):
+def arcs(
+    name: str,
+    count: int,
+    radius: float,
+    tube: float,
+    z: float,
+    arc_fraction: float,
+    mat: bpy.types.Material,
+) -> bpy.types.Object:
+    vertices: list[tuple[float, float, float]]
+    faces: list[tuple[int, ...]]
     vertices, faces = [], []
     nlong, ncross = 5, 12
     for segment in range(count):
@@ -119,7 +172,14 @@ def arcs(name, count, radius, tube, z, arc_fraction, mat):
     return finish(obj, name, mat)
 
 
-def area(name, position, power, color, size, target=(0, 0, 0)):
+def area(
+    name: str,
+    position: tuple[float, float, float],
+    power: float,
+    color: tuple[float, float, float],
+    size: float,
+    target: tuple[float, float, float] = (0, 0, 0),
+) -> None:
     data = bpy.data.lights.new(name, "AREA")
     data.energy = power
     data.color = color
@@ -131,7 +191,7 @@ def area(name, position, power, color, size, target=(0, 0, 0)):
     obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
 
 
-def main():
+def main() -> None:
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     graphite = material("Graphite · satin anodised", (0.065, 0.073, 0.082), 0.7, 0.36)

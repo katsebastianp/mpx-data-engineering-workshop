@@ -7,6 +7,12 @@ Optional reference models are installed separately; setup never downloads models
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import Record
+
 import argparse
 import hashlib
 import json
@@ -34,7 +40,7 @@ def verify_file(path: Path, expected_hash: str, size: int | None = None) -> None
         raise ValueError(f"Checksum or size mismatch: {path}.")
 
 
-def verify_sample(directory: Path, sample_lock_path: Path = ROOT / "config/workshop-sample.lock.json") -> dict:
+def verify_sample(directory: Path, sample_lock_path: Path = ROOT / "config/workshop-sample.lock.json") -> Record:
     """Pin every received byte independently of the downloaded manifest."""
     release = json.loads(sample_lock_path.read_text())
     if release.get("version") != 1 or set(release.get("files", {})) != SAMPLE_FILES:
@@ -57,7 +63,7 @@ def verify_sample(directory: Path, sample_lock_path: Path = ROOT / "config/works
     return manifest
 
 
-def setup(raw_dir: Path) -> dict:
+def setup(raw_dir: Path) -> Record:
     """Validate the pinned sample and its contents without loading or fetching a model."""
     from scripts.prepare_data import validate_bundle as validate_raw_bundle
 
@@ -69,7 +75,7 @@ def setup(raw_dir: Path) -> dict:
             "rows": sum(split["rows"] for split in manifest["splits"].values()), "status": "ready"}
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw-dir", type=Path, default=ROOT / "data/01_raw")
     # Compatibility with older participant commands; setup now always checks data only.

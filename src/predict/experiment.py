@@ -4,6 +4,26 @@ Run: python -m predict. Fits may run in two processes; latency measurements run
 serially after every fit has completed.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from predict.base import Predictor
+    from workshop_types import (
+        Datasets,
+        ExperimentConfig,
+        FilePath,
+        FitResult,
+        Job,
+        Metrics,
+        Parameters,
+        Prediction,
+        Record,
+        Rows,
+    )
+
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 import argparse
@@ -29,7 +49,12 @@ from predict.models import load_model, train_model
 LOGGER = logging.getLogger(__name__)
 
 
-def _prepare_jobs(config, results_dir, models_dir, run_id):
+def _prepare_jobs(
+    config: ExperimentConfig,
+    results_dir: FilePath,
+    models_dir: FilePath,
+    run_id: str | None,
+) -> list[Job]:
     """Validate every output path before creating any files."""
     prefix = run_id
     if prefix is None:
@@ -53,7 +78,14 @@ def _prepare_jobs(config, results_dir, models_dir, run_id):
     return jobs
 
 
-def _fit_job(kind, train_rows, names, params, output, seed):
+def _fit_job(
+    kind: str,
+    train_rows: Rows,
+    names: list[str],
+    params: Parameters,
+    output: Path,
+    seed: int,
+) -> FitResult:
     start = time.perf_counter()
     metadata = train_model(kind, train_rows, names, params, output, seed)
     elapsed = time.perf_counter() - start
@@ -62,7 +94,7 @@ def _fit_job(kind, train_rows, names, params, output, seed):
     return metadata, training_seconds, setup_seconds
 
 
-def _fit_jobs(jobs, train_rows, config):
+def _fit_jobs(jobs: list[Job], train_rows: Rows, config: ExperimentConfig) -> list[FitResult]:
     arguments = [
         (entry["model"], [] if entry["model"] == "sophon" else train_rows,
          entry["feature_names"], entry["params"], model_directory, config["seed"])
@@ -76,8 +108,14 @@ def _fit_jobs(jobs, train_rows, config):
         return [future.result() for future in futures]
 
 
-def _evaluate_splits(model, splits, evaluation):
+def _evaluate_splits(
+    model: Predictor,
+    splits: Datasets,
+    evaluation: str,
+) -> tuple[dict[str, Metrics], list[Prediction]]:
     evaluated = ["validation", "test"] if evaluation == "test" else ["validation"]
+    metrics: dict[str, Metrics]
+    predictions: list[Prediction]
     metrics, predictions = {}, []
     for split in evaluated:
         rows = splits[split]
@@ -91,7 +129,16 @@ def _evaluate_splits(model, splits, evaluation):
     return metrics, predictions
 
 
-def _save_result(job, config, manifest, metadata, metrics, predictions, timings, protocol):
+def _save_result(
+    job: Job,
+    config: ExperimentConfig,
+    manifest: Record,
+    metadata: Record,
+    metrics: dict[str, Metrics],
+    predictions: list[Prediction],
+    timings: dict[str, float],
+    protocol: Record,
+) -> Record:
     entry, directory, model_directory = job
     prediction_path = directory / "predictions.parquet"
     schema = pa.schema([
@@ -127,8 +174,13 @@ def _save_result(job, config, manifest, metadata, metrics, predictions, timings,
     return result
 
 
-def run_experiments(config_path=CONFIG_DIR / "experiments.yaml", prepared_dir=PREPROCESSED_DIR,
-                    results_dir=PREDICTIONS_DIR, run_id=None, models_dir=MODELS_DIR):
+def run_experiments(
+    config_path: FilePath = CONFIG_DIR / "experiments.yaml",
+    prepared_dir: FilePath = PREPROCESSED_DIR,
+    results_dir: FilePath = PREDICTIONS_DIR,
+    run_id: str | None = None,
+    models_dir: FilePath = MODELS_DIR,
+) -> list[Record]:
     config = read_config(config_path)
     jobs = _prepare_jobs(config, results_dir, models_dir, run_id)
     manifest, splits = load_prepared(prepared_dir)
@@ -159,7 +211,7 @@ def run_experiments(config_path=CONFIG_DIR / "experiments.yaml", prepared_dir=PR
         raise
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=CONFIG_DIR / "experiments.yaml", type=Path)
     parser.add_argument("--prepared-dir", default=PREPROCESSED_DIR, type=Path)

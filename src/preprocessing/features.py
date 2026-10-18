@@ -1,5 +1,13 @@
 """Measured jet features. Add a calculator to DERIVED_FEATURES, then preprocess again."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pyspark.sql import DataFrame
+
 from dataclasses import dataclass
 import math
 import re
@@ -11,31 +19,31 @@ class ParticleMeasurements:
     pt: float
     mass: float
     count: int
-    energy: tuple
-    deta: tuple
-    dphi: tuple
+    energy: tuple[float, ...]
+    deta: tuple[float, ...]
+    dphi: tuple[float, ...]
     total_energy: float
-    energy_fractions: tuple
+    energy_fractions: tuple[float, ...]
 
 
-def energy_sum(jet):
+def energy_sum(jet: ParticleMeasurements) -> float:
     return jet.total_energy
 
 
-def leading_energy_fraction(jet):
+def leading_energy_fraction(jet: ParticleMeasurements) -> float:
     return max(jet.energy_fractions)
 
 
-def radial_energy_moment(jet):
+def radial_energy_moment(jet: ParticleMeasurements) -> float:
     return sum(weight * math.hypot(eta, phi)
                for weight, eta, phi in zip(jet.energy_fractions, jet.deta, jet.dphi))
 
 
-def energy_dispersion(jet):
+def energy_dispersion(jet: ParticleMeasurements) -> float:
     return math.sqrt(sum(weight * weight for weight in jet.energy_fractions))
 
 
-def ecf2_beta1(jet):
+def ecf2_beta1(jet: ParticleMeasurements) -> float:
     correlation = 0.0
     for first in range(jet.count):
         for second in range(first + 1, jet.count):
@@ -58,7 +66,7 @@ FEATURE_NAMES = (*BASIC_FEATURES, *DERIVED_FEATURES)
 FEATURE_SETS = {"basic": BASIC_FEATURES, "shape": FEATURE_NAMES}
 
 
-def validate_feature_names(names):
+def validate_feature_names(names: object) -> list[str]:
     """Select registered numeric measurements, never metadata or generator truth."""
     if not isinstance(names, (list, tuple)) or not names or len(names) > 100:
         raise ValueError("Choose a nonempty list of registered measured features.")
@@ -70,7 +78,14 @@ def validate_feature_names(names):
     return list(names)
 
 
-def particle_features(pt, mass, count, energy, deta, dphi):
+def particle_features(
+    pt: float,
+    mass: float,
+    count: int,
+    energy: Sequence[float],
+    deta: Sequence[float],
+    dphi: Sequence[float],
+) -> tuple[float, ...]:
     """Return supplied measurements followed by registered derived features."""
     validate_feature_names(FEATURE_NAMES)
     if isinstance(count, bool) or not isinstance(count, int) or count < 1 or any(len(values) != count for values in (energy, deta, dphi)):
@@ -91,7 +106,7 @@ def particle_features(pt, mass, count, energy, deta, dphi):
     return (jet.pt, jet.mass, float(jet.count), *derived)
 
 
-def build_features(jets):
+def build_features(jets: DataFrame) -> DataFrame:
     """Build a lazy Spark plan. Quality checks and writes later trigger its execution."""
     from pyspark.sql import functions as F, types as T
 

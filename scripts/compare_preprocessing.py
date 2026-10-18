@@ -6,6 +6,12 @@ Run: docker compose run --rm lab scripts/compare_preprocessing.py \
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import Record
+
 import argparse
 import json
 import logging
@@ -18,7 +24,7 @@ from postprocessing.compare import load_prepared
 LOGGER = logging.getLogger(__name__)
 
 
-def compare(before_dir: Path, after_dir: Path, allow_added_features=False) -> dict:
+def compare(before_dir: Path, after_dir: Path, allow_added_features: bool = False) -> Record:
     """Check every saved value; optionally permit explicitly added feature columns."""
     before_dir, after_dir = Path(before_dir), Path(after_dir)
     if before_dir.resolve() == after_dir.resolve():
@@ -59,7 +65,7 @@ def compare(before_dir: Path, after_dir: Path, allow_added_features=False) -> di
     return result
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("before_dir", type=Path)
     parser.add_argument("after_dir", type=Path)

@@ -1,5 +1,14 @@
 """Standardized logistic regression, saved as inspectable coefficients."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from pathlib import Path
+    from workshop_types import Parameters, Record, Rows
+
 import json
 import warnings
 
@@ -15,7 +24,7 @@ class LogisticPredictor(Predictor):
     kind = "logistic"
     model_file = "logistic.json"
 
-    def __init__(self, directory, metadata):
+    def __init__(self, directory: Path, metadata: Record) -> None:
         super().__init__(metadata)
         feature_matrix([], metadata["feature_names"])
         self.coefficients = json.loads((directory / self.model_file).read_text())
@@ -29,7 +38,7 @@ class LogisticPredictor(Predictor):
             raise ValueError("Invalid logistic coefficient or scaling contract.")
 
     @classmethod
-    def train(cls, rows, feature_names, params, directory, seed):
+    def train(cls, rows: Rows, feature_names: list[str], params: Parameters, directory: Path, seed: int) -> Record:
         from sklearn.exceptions import ConvergenceWarning
         from sklearn.linear_model import LogisticRegression
         from sklearn.preprocessing import StandardScaler
@@ -51,7 +60,7 @@ class LogisticPredictor(Predictor):
         })
         return {"format": "standardized-logistic-json", "trained": True, "parameters": settings}
 
-    def _predict(self, rows):
+    def _predict(self, rows: Rows) -> NDArray[np.float64]:
         matrix = feature_matrix(rows, self.metadata["feature_names"])
         coefficients = self.coefficients
         # Avoid starting BLAS threads for this small row reduction.

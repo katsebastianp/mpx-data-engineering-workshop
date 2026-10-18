@@ -1,5 +1,12 @@
 """Validate workshop experiment settings and resolve feature selections."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from workshop_types import ExperimentConfig, FilePath
+
 from pathlib import Path
 import re
 
@@ -9,7 +16,7 @@ from preprocessing.features import FEATURE_SETS, validate_feature_names
 from predict.models import require_predictor
 
 
-def _feature_names(kind, selected):
+def _feature_names(kind: object, selected: object) -> list[str]:
     require_predictor(kind)
     if kind == "sophon":
         if selected != "particles":
@@ -28,7 +35,7 @@ def _feature_names(kind, selected):
     return validate_feature_names(names)
 
 
-def read_config(path):
+def read_config(path: FilePath) -> ExperimentConfig:
     config = yaml.safe_load(Path(path).read_text())
     if isinstance(config, dict) and "name" in config:
         if "team" in config and config["team"] != config["name"]:
@@ -72,5 +79,5 @@ def read_config(path):
             raise ValueError("Each experiment needs a nonempty explanation of at most 2,000 characters (entry or top level).")
         entry.update(feature_names=names, feature_set=selected if isinstance(selected, str) else "custom",
                      params=entry.get("params", {}), explanation=note)
-    return {**config, "seed": seed, "max_workers": workers, "evaluation": evaluation}
+    return cast("ExperimentConfig", {**config, "seed": seed, "max_workers": workers, "evaluation": evaluation})
 

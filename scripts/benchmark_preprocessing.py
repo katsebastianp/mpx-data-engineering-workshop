@@ -4,6 +4,14 @@ Run: docker compose run --rm --no-deps lab scripts/benchmark_preprocessing.py \
     --before 2048 --after 4
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import FilePath, Record
+
 import argparse
 import json
 import logging
@@ -20,7 +28,7 @@ from scripts.compare_preprocessing import compare
 LOGGER = logging.getLogger(__name__)
 
 
-def run_once(partitions, output):
+def run_once(partitions: int, output: Path) -> Record:
     """A separate Python process ensures each run includes fresh JVM startup."""
     log_path = output.with_suffix(".log")
     with log_path.open("w") as log:
@@ -31,13 +39,13 @@ def run_once(partitions, output):
     return json.loads((output / "manifest.json").read_text())
 
 
-def benchmark(before, after, repeats, output):
+def benchmark(before: int, after: int, repeats: int, output: FilePath) -> Record:
     """Alternate execution order; never overwrite the participant's prepared data."""
     if before < 1 or after < 1 or before == after or repeats < 3:
         raise ValueError("Use two different positive partition counts and at least three repeats.")
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
-    runs = {"before": [], "after": []}
+    runs: dict[str, list[Record]] = {"before": [], "after": []}
     reference = None
     for repeat in range(repeats):
         order = ("before", "after") if repeat % 2 == 0 else ("after", "before")
@@ -74,7 +82,7 @@ def benchmark(before, after, repeats, output):
     return result
 
 
-def main(argv=None):
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--before", type=int, default=2048)
     parser.add_argument("--after", type=int, default=4)

@@ -1,5 +1,14 @@
 """Predictor interface and shared tabular input validation."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from numpy.typing import NDArray
+    from workshop_types import NumericParameters, Parameters, Record, Rows
+
 from abc import ABC, abstractmethod
 import math
 from pathlib import Path
@@ -13,17 +22,17 @@ class Predictor(ABC):
     kind: str
     model_file: str
 
-    def __init__(self, metadata: dict):
+    def __init__(self, metadata: Record) -> None:
         self.metadata = metadata
         if self.kind != "sophon":
             validate_feature_names(metadata["feature_names"])
 
     @classmethod
     @abstractmethod
-    def train(cls, rows, feature_names, params, directory: Path, seed: int) -> dict:
+    def train(cls, rows: Rows, feature_names: list[str], params: Parameters, directory: Path, seed: int) -> Record:
         """Write the model artifact and return its model-specific metadata."""
 
-    def predict(self, rows: list[dict]) -> np.ndarray:
+    def predict(self, rows: Rows) -> NDArray[np.float64]:
         # Every classifier receives only its declared measurements at inference.
         # This also protects a participant's new implementation from accidentally
         # reading truth labels, record IDs or the split from the supplied rows.
@@ -34,11 +43,11 @@ class Predictor(ABC):
         return scores
 
     @abstractmethod
-    def _predict(self, rows: list[dict]) -> np.ndarray:
+    def _predict(self, rows: Rows) -> NDArray[np.float64]:
         """Score measured inputs without using labels or identifiers."""
 
 
-def feature_matrix(rows, feature_names):
+def feature_matrix(rows: Rows, feature_names: Sequence[str]) -> NDArray[np.float64]:
     names = validate_feature_names(feature_names)
     matrix = []
     for row in rows:
@@ -49,7 +58,7 @@ def feature_matrix(rows, feature_names):
     return np.asarray(matrix, dtype=np.float64).reshape(len(rows), len(names))
 
 
-def training_data(rows, feature_names):
+def training_data(rows: Rows, feature_names: Sequence[str]) -> tuple[NDArray[np.float64], list[int]]:
     if not rows or any(row.get("split") != "train" for row in rows):
         raise ValueError("Training accepts only rows from the official prepared train split.")
     labels = []
@@ -63,7 +72,12 @@ def training_data(rows, feature_names):
     return feature_matrix(rows, feature_names), labels
 
 
-def validate_parameters(kind, params, defaults, limits):
+def validate_parameters(
+    kind: str,
+    params: Parameters,
+    defaults: NumericParameters,
+    limits: Mapping[str, tuple[float, float]],
+) -> NumericParameters:
     if set(params) - set(defaults):
         raise ValueError(f"Unsupported {kind} params: {sorted(set(params) - set(defaults))}.")
     values = {**defaults, **params}
@@ -74,4 +88,4 @@ def validate_parameters(kind, params, defaults, limits):
                 or not low <= value <= high or (integer and not isinstance(value, int))):
             expected = "an integer" if integer else "a number"
             raise ValueError(f"{kind} {name} must be {expected} in [{low}, {high}].")
-    return values
+    return cast("NumericParameters", values)

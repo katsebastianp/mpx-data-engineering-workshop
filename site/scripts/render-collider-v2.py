@@ -8,6 +8,13 @@ and experimental stations are deliberately illustrative rather than surveyed.
 GLB contract: Y up; ring radius 5.05, elevation .52; chosen detector (5.05,.52,0),
 axis Z. No external geometry, images or textures are used.
 """
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 from pathlib import Path
 import logging
 import math
@@ -21,7 +28,13 @@ RADIUS, BEAM_Z = 5.05, .52
 MATS = {}
 
 
-def material(name, color, metallic=0, roughness=.55, emission=0):
+def material(
+    name: str,
+    color: tuple[float, float, float],
+    metallic: float = 0,
+    roughness: float = .55,
+    emission: float = 0,
+) -> bpy.types.Material:
     mat=bpy.data.materials.new(name); mat.use_nodes=True
     s=mat.node_tree.nodes.get('Principled BSDF')
     s.inputs['Base Color'].default_value=(*color,1)
@@ -34,20 +47,33 @@ def material(name, color, metallic=0, roughness=.55, emission=0):
     return mat
 
 
-def finish(obj,name,mat,smooth=False):
+def finish(obj: bpy.types.Object, name: str, mat: bpy.types.Material, smooth: bool = False) -> bpy.types.Object:
     obj.name=name; obj.data.materials.append(mat)
     if smooth:
         for poly in obj.data.polygons: poly.use_smooth=True
     return obj
 
 
-def mesh(name,verts,faces,mat,smooth=False):
+def mesh(
+    name: str,
+    verts: Sequence[tuple[float, float, float]],
+    faces: Sequence[tuple[int, ...]],
+    mat: bpy.types.Material,
+    smooth: bool = False,
+) -> bpy.types.Object:
     data=bpy.data.meshes.new(name); data.from_pydata(verts,[],faces); data.update()
     ob=bpy.data.objects.new(name,data); bpy.context.collection.objects.link(ob)
     return finish(ob,name,mat,smooth)
 
 
-def cube(name,pos,size,mat,bevel=.015,angle=0):
+def cube(
+    name: str,
+    pos: tuple[float, float, float],
+    size: tuple[float, float, float],
+    mat: bpy.types.Material,
+    bevel: float = .015,
+    angle: float = 0,
+) -> bpy.types.Object:
     bpy.ops.mesh.primitive_cube_add(size=1,location=pos)
     obj=bpy.context.object; obj.dimensions=size
     bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
@@ -59,7 +85,13 @@ def cube(name,pos,size,mat,bevel=.015,angle=0):
     return obj
 
 
-def path(name,points,radius,mat,sides=0):
+def path(
+    name: str,
+    points: Sequence[tuple[float, float, float]],
+    radius: float,
+    mat: bpy.types.Material,
+    sides: int = 0,
+) -> bpy.types.Object:
     c=bpy.data.curves.new(name,'CURVE'); c.dimensions='3D'; c.resolution_u=1
     c.bevel_depth=radius; c.bevel_resolution=sides
     s=c.splines.new('POLY'); s.points.add(len(points)-1)
@@ -68,12 +100,19 @@ def path(name,points,radius,mat,sides=0):
     return ob
 
 
-def cylinder(name,pos,radius,depth,mat,vertices=16):
+def cylinder(
+    name: str,
+    pos: tuple[float, float, float],
+    radius: float,
+    depth: float,
+    mat: bpy.types.Material,
+    vertices: int = 16,
+) -> bpy.types.Object:
     bpy.ops.mesh.primitive_cylinder_add(vertices=vertices,radius=radius,depth=depth,location=pos)
     return finish(bpy.context.object,name,mat,True)
 
 
-def terrain_height(x,y):
+def terrain_height(x: float, y: float) -> float:
     # A gently rolling terrain, with a deliberately opened accelerator trench.
     hills=(.50*math.exp(-((x+4.8)**2/5+(y-4.8)**2/2.5))
         +.42*math.exp(-((x+1.3)**2/7+(y-5.2)**2/1.8))
@@ -83,7 +122,7 @@ def terrain_height(x,y):
     return .13+(hills+waves+.08)*trench
 
 
-def terrain(mat,edge_mat):
+def terrain(mat: bpy.types.Material, edge_mat: bpy.types.Material) -> None:
     nx,ny=100,92; xmin,xmax,ymin,ymax=-6.9,6.9,-6.1,6.1
     verts=[(xmin+(xmax-xmin)*i/nx,ymin+(ymax-ymin)*j/ny,terrain_height(xmin+(xmax-xmin)*i/nx,ymin+(ymax-ymin)*j/ny)) for j in range(ny+1) for i in range(nx+1)]
     faces=[]
@@ -100,7 +139,7 @@ def terrain(mat,edge_mat):
     mesh('Exposed upper geological cut',evert,[(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)],edge_mat)
 
 
-def contours(mat):
+def contours(mat: bpy.types.Material) -> None:
     # Contours follow the actual authored elevation; they are not claims of surveyed geography.
     n,m=68,60; dx,dy=13.4/n,11.8/m
     grid=[[-6.7+i*dx for i in range(n+1)],[-5.9+j*dy for j in range(m+1)]]
@@ -123,7 +162,11 @@ def contours(mat):
         ob=bpy.data.objects.new(f'Contour {level:.2f}',c); bpy.context.collection.objects.link(ob); ob.data.materials.append(mat)
 
 
-def magnet_segments(mat,coupling):
+def magnet_segments(mat: bpy.types.Material, coupling: bpy.types.Material) -> None:
+    vertices: list[tuple[float, float, float]]
+    faces: list[tuple[int, ...]]
+    cv: list[tuple[float, float, float]]
+    cf: list[tuple[int, ...]]
     n=144; vertices=[]; faces=[]; cv=[]; cf=[]
     for idx in range(n):
         angle=(idx+.5)/n*math.tau
@@ -145,17 +188,36 @@ def magnet_segments(mat,coupling):
     mesh('Cryogenic expansion collars',cv,cf,coupling,True)
 
 
-def station_point(angle,p):
+def station_point(angle: float, p: tuple[float, float, float]) -> tuple[float, float, float]:
     x,y,z=p
     return (RADIUS*math.cos(angle)+x*math.cos(angle)-y*math.sin(angle),RADIUS*math.sin(angle)+x*math.sin(angle)+y*math.cos(angle),BEAM_Z+z)
 
 
-def station_arc(name,angle,radius,tube,y,start,end,mat,segments=36):
+def station_arc(
+    name: str,
+    angle: float,
+    radius: float,
+    tube: float,
+    y: float,
+    start: float,
+    end: float,
+    mat: bpy.types.Material,
+    segments: int = 36,
+) -> None:
     pts=[station_point(angle,(radius*math.cos(start+(end-start)*i/segments),y,radius*math.sin(start+(end-start)*i/segments))) for i in range(segments+1)]
     path(name,pts,tube,mat,1)
 
 
-def station_shell(name,angle,radius,thickness,halfdepth,start,end,mat):
+def station_shell(
+    name: str,
+    angle: float,
+    radius: float,
+    thickness: float,
+    halfdepth: float,
+    start: float,
+    end: float,
+    mat: bpy.types.Material,
+) -> None:
     n=36; verts=[]; faces=[]
     for y in [-halfdepth,halfdepth]:
         for r in [radius-thickness,radius]:
@@ -168,7 +230,13 @@ def station_shell(name,angle,radius,thickness,halfdepth,start,end,mat):
     mesh(name,verts,faces,mat,True)
 
 
-def detector(index,red,white,metal,dark):
+def detector(
+    index: int,
+    red: bpy.types.Material,
+    white: bpy.types.Material,
+    metal: bpy.types.Material,
+    dark: bpy.types.Material,
+) -> None:
     a=index*math.pi/2; chosen=index==0
     r=[.43,.34,.37,.30][index]; half=[.50,.35,.43,.37][index]
     # A visible quadrant is removed from every instrument to expose nested tracking volumes.
@@ -211,7 +279,12 @@ def detector(index,red,white,metal,dark):
         path('Selected experiment footprint',[station_point(a,p) for p in outline],.011,red,1)
 
 
-def campus(white,dark,red,roads):
+def campus(
+    white: bpy.types.Material,
+    dark: bpy.types.Material,
+    red: bpy.types.Material,
+    roads: bpy.types.Material,
+) -> None:
     buildings=[(-1.30,-.65,1.45,.31,.16),(-1.40,-.15,1.05,.24,.20),(-2.15,-.26,.26,.87,.15),(-.37,-.20,.32,.66,.23),(-1.02,.38,.85,.24,.13)]
     for idx,(x,y,w,d,h) in enumerate(buildings):
         z=terrain_height(x,y)
@@ -238,13 +311,20 @@ def campus(white,dark,red,roads):
     path('Transfer from injector',[(1.55,-.1,.27),(2.0,.75,.28),(3.0,1.45,.31),(4.2,2.55,.52)],.012,red,1)
 
 
-def area(name,pos,power,size,color,target=(0,0,.2)):
+def area(
+    name: str,
+    pos: tuple[float, float, float],
+    power: float,
+    size: float,
+    color: tuple[float, float, float],
+    target: tuple[float, float, float] = (0,0,.2),
+) -> None:
     data=bpy.data.lights.new(name,'AREA');data.energy=power;data.size=size;data.shape='DISK';data.color=color
     obj=bpy.data.objects.new(name,data);bpy.context.collection.objects.link(obj);obj.location=pos
     obj.rotation_euler=(Vector(target)-obj.location).to_track_quat('-Z','Y').to_euler()
 
 
-def merge_by_material():
+def merge_by_material() -> None:
     bpy.ops.object.select_all(action='DESELECT')
     for obj in list(bpy.context.scene.objects):
         if obj.type in ['MESH','CURVE']:
@@ -263,7 +343,7 @@ def merge_by_material():
     bpy.ops.object.select_all(action='SELECT')
 
 
-def main():
+def main() -> None:
     bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
     slate=material('Terrain / blue-grey limestone',(.22,.27,.31),.04,.82)
     cut=material('Upper geological cut',(.30,.34,.37),.02,.86)

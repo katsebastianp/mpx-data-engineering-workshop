@@ -1,11 +1,19 @@
 """Binary classification metrics for held-out predictions."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+    from workshop_types import Metrics
+
 import math
 
 import numpy as np
 
 
-def classification_metrics(labels, scores, threshold=.5):
+def classification_metrics(labels: ArrayLike, scores: ArrayLike, threshold: float = .5) -> Metrics:
     """Binary labels use 1=signal, 0=background; never pass raw JetClass labels."""
     from sklearn.metrics import average_precision_score, roc_auc_score
 

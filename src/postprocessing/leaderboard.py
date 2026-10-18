@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import Metrics, Record
+
 import argparse
 import hashlib
 import json
@@ -27,7 +33,7 @@ FIELDS = {
 LEGACY_FIELDS = FIELDS - {"trained"}
 
 
-def classification_metrics(labels: list[int], scores: list[float], threshold: float = .5) -> dict:
+def classification_metrics(labels: list[int], scores: list[float], threshold: float = .5) -> Metrics:
     """Independent binary metric reference; ties receive equal ranks/precision steps."""
     if (not labels or len(labels) != len(scores) or isinstance(threshold, bool)
             or not isinstance(threshold, (int, float)) or not math.isfinite(threshold) or not 0 <= threshold <= 1
@@ -65,7 +71,7 @@ def classification_metrics(labels: list[int], scores: list[float], threshold: fl
             "background_rejection": tn / negatives if negatives else None}
 
 
-def _unique_object(pairs: list[tuple[str, Any]]) -> dict:
+def _unique_object(pairs: list[tuple[str, Any]]) -> Record:
     result = {}
     for key, value in pairs:
         if key in result:
@@ -74,7 +80,7 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict:
     return result
 
 
-def read_json(path: Path, max_bytes: int = MAX_BYTES) -> dict:
+def read_json(path: Path, max_bytes: int = MAX_BYTES) -> Record:
     """Reject oversized or ambiguous JSON before trusting any fields."""
     if path.is_symlink():
         raise ValueError(f"Expected a regular JSON file, not a symlink: {path}")
@@ -123,7 +129,7 @@ def _number(value: Any, name: str, *, positive: bool = False) -> float:
     return float(value)
 
 
-def make_submission(result: dict, predictions: list[dict]) -> dict:
+def make_submission(result: Record, predictions: list[Record]) -> Record:
     """Copy only the public result contract; never include paths, models or code."""
     payload = {name: result[name] for name in LEGACY_FIELDS - {"predictions"}}
     payload["trained"] = _trained(result, require_explicit=True)
@@ -133,7 +139,7 @@ def make_submission(result: dict, predictions: list[dict]) -> dict:
     return payload
 
 
-def _trained(row: dict, *, require_explicit: bool = False) -> bool:
+def _trained(row: Record, *, require_explicit: bool = False) -> bool:
     """Legacy known models retain their status; unknown references never earn awards by default."""
     if "trained" in row and type(row["trained"]) is not bool:
         raise ValueError("trained must be a boolean.")
@@ -157,7 +163,7 @@ def _parameter_value(value: Any, depth: int = 0) -> bool:
             or isinstance(value, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_.:@-]{0,63}", value) is not None)
 
 
-def _validate_parameters(parameters: dict) -> None:
+def _validate_parameters(parameters: Record) -> None:
     """Only display metadata crosses this boundary; the local runtime validates supported settings."""
     for name, value in parameters.items():
         if (not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", name)
@@ -170,7 +176,7 @@ def _validate_parameters(parameters: dict) -> None:
                          "of these (32 items per list, two levels); no paths, objects or code.")
 
 
-def submission_name(payload: dict) -> str:
+def submission_name(payload: Record) -> str:
     team = re.sub(r"[^a-z0-9]+", "-", payload["team"].lower()).strip("-") or "team"
     run = payload["run_id"]
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", run):
@@ -188,7 +194,7 @@ def _metrics_match(actual: Any, expected: Any) -> bool:
     return actual == expected
 
 
-def _validate_metadata(payload: dict, dataset_id: str) -> None:
+def _validate_metadata(payload: Record, dataset_id: str) -> None:
     if type(payload["version"]) is not int or payload["version"] != 1:
         raise ValueError("Submission version must be 1.")
     if payload["dataset_id"] != dataset_id:
@@ -231,7 +237,7 @@ def _validate_metadata(payload: dict, dataset_id: str) -> None:
         raise ValueError("Test evaluation must be explicitly tagged as a final selection.")
 
 
-def _prediction_metrics(payload: dict, truth: dict[str, dict[str, int]]) -> dict:
+def _prediction_metrics(payload: Record, truth: dict[str, dict[str, int]]) -> Record:
     splits = payload["evaluated_splits"]
     predictions = payload["predictions"]
     if not isinstance(predictions, list) or not 0 < len(predictions) <= MAX_PREDICTIONS:
@@ -257,7 +263,7 @@ def _prediction_metrics(payload: dict, truth: dict[str, dict[str, int]]) -> dict
     return metrics
 
 
-def _validated_timings(payload: dict, truth: dict[str, dict[str, int]]) -> dict:
+def _validated_timings(payload: Record, truth: dict[str, dict[str, int]]) -> Record:
     timings = dict(payload["timings"])
     for name in ("training_seconds", "inference_seconds", "reference_seconds"):
         timings[name] = _number(timings.get(name), name, positive=name != "training_seconds")
@@ -287,8 +293,7 @@ def _validated_timings(payload: dict, truth: dict[str, dict[str, int]]) -> dict:
     return timings
 
 
-def validate_submission(payload: dict, dataset_id: str,
-                        truth: dict[str, dict[str, int]]) -> dict:
+def validate_submission(payload: Record, dataset_id: str, truth: dict[str, dict[str, int]]) -> Record:
     """Recompute metrics from reference truth, preserving only validated metadata.
 
     Scores and timings remain team-reported. This checks their structure and
@@ -308,7 +313,7 @@ def validate_submission(payload: dict, dataset_id: str,
             "reporting": "Team-reported scores and timings; quality recomputed against fixed reference labels."}
 
 
-def _leaderboard_entry(row: dict, rank: int) -> dict:
+def _leaderboard_entry(row: Record, rank: int) -> Record:
     return {
         "rank": rank,
         "team": row["team"],
@@ -327,9 +332,9 @@ def _leaderboard_entry(row: dict, rank: int) -> dict:
     }
 
 
-def _best_per_team(rows: list[dict]) -> list[dict]:
+def _best_per_team(rows: list[Record]) -> list[Record]:
     seen = set()
-    selected = []
+    selected: list[Record] = []
     for row in rows:
         if row["team"] not in seen:
             seen.add(row["team"])
@@ -337,7 +342,7 @@ def _best_per_team(rows: list[dict]) -> list[dict]:
     return selected
 
 
-def leaderboard(experiments: list[dict]) -> dict:
+def leaderboard(experiments: list[Record]) -> Record:
     """Two separate rankings; no weighted composite or hidden hardware correction."""
     references = [{**{name: row[name] for name in ("team", "experiment_id", "run_id", "model", "metrics", "timings")},
                    "trained": False} for row in experiments if not _trained(row)]
@@ -364,6 +369,8 @@ def load_evaluation(evaluation_path: Path) -> tuple[str, dict[str, dict[str, int
         raise ValueError("Expected the facilitator's version-1 canonical evaluation contract.")
     if set(reference["splits"]) != {"validation", "test"}:
         raise ValueError("Canonical evaluation must contain validation and test truth.")
+    truth: dict[str, dict[str, int]]
+    seen: set[str]
     truth, seen = {}, set()
     for split, rows in reference["splits"].items():
         truth[split] = {}
@@ -379,7 +386,7 @@ def load_evaluation(evaluation_path: Path) -> tuple[str, dict[str, dict[str, int
     return reference["dataset_id"], truth
 
 
-def build_leaderboard(evaluation_path: Path, submissions_dir: Path, output_path: Path) -> dict:
+def build_leaderboard(evaluation_path: Path, submissions_dir: Path, output_path: Path) -> Record:
     """Validate team JSON against the maintainer's fixed evaluation data; no models run."""
     dataset_id, truth = load_evaluation(evaluation_path)
     experiments, keys = [], set()
@@ -398,7 +405,7 @@ def build_leaderboard(evaluation_path: Path, submissions_dir: Path, output_path:
     return result
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evaluation", type=Path, default=CONFIG_DIR / "evaluation.json")
     parser.add_argument("--submissions", type=Path, default=SUBMISSIONS_DIR)

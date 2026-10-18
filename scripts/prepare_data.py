@@ -8,6 +8,11 @@ receive data/01_raw; they do not need this source download or a Hugging Face key
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from workshop_types import Record
+
 import argparse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -73,13 +78,14 @@ def measurement_columns(split: str) -> tuple[str, ...]:
     return (*BASE_SCALARS, *BASE_ARRAY_COLUMNS) if split == "train" else (*BASE_SCALARS, "jet_energy", *ARRAY_COLUMNS)
 
 
-def dataset_id(splits: dict[str, dict]) -> str:
+def dataset_id(splits: dict[str, Record]) -> str:
     """Content identity independent of output folder and JSON whitespace."""
     payload = {name: splits[name]["sha256"] for name in sorted(splits)}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def fetch_range(lock: dict, entry: dict, span: dict, cache_dir: Path, *, discover: bool = False) -> Path:
+def fetch_range(lock: Record, entry: Record, span: Record, cache_dir: Path, *, discover: bool = False) -> Path:
+    target: object  # Rebound from the temporary file handle to the final Path below.
     cache_dir.mkdir(parents=True, exist_ok=True)
     digest = span.get("sha256")
     if digest:
@@ -130,7 +136,7 @@ def fetch_range(lock: dict, entry: dict, span: dict, cache_dir: Path, *, discove
     raise AssertionError("unreachable")
 
 
-def write_sparse(path: Path, entry: dict, spans: list[dict], range_paths: list[Path]) -> None:
+def write_sparse(path: Path, entry: Record, spans: list[Record], range_paths: list[Path]) -> None:
     with path.open("wb") as target:
         target.truncate(entry["size_bytes"])
         for span, source_path in zip(spans, range_paths):
@@ -139,12 +145,12 @@ def write_sparse(path: Path, entry: dict, spans: list[dict], range_paths: list[P
                 shutil.copyfileobj(source, target)
 
 
-def discover_lock(cache_dir: Path, lock_path: Path = LOCK_PATH) -> dict:
+def discover_lock(cache_dir: Path, lock_path: Path = LOCK_PATH) -> Record:
     """Inspect pinned footer/labels first, then pin only required column ranges."""
     url = f"https://huggingface.co/api/datasets/{REPOSITORY}/tree/{REVISION}/data?limit=1000"
     with urllib.request.urlopen(url, timeout=30) as response:
         entries = {item["path"]: item for item in json.load(response)}
-    lock = {"version": 1, "repository": REPOSITORY, "revision": REVISION, "seed": SEED,
+    lock: Record = {"version": 1, "repository": REPOSITORY, "revision": REVISION, "seed": SEED,
             "task": {"id": "xbb-vs-qcd-v1", "signal_labels": [0], "background_labels": list(range(161, 188))},
             "split_rows": SPLIT_ROWS, "sampling": SAMPLING, "source_verification": VERIFICATION_BOUNDARY,
             "license": {"declared": "MIT", "evidence_url": f"https://huggingface.co/datasets/{REPOSITORY}/blob/{REVISION}/README.md"},
@@ -208,7 +214,7 @@ def discover_lock(cache_dir: Path, lock_path: Path = LOCK_PATH) -> dict:
     return lock
 
 
-def validate_row(row: dict, split: str, lock: dict) -> None:
+def validate_row(row: Record, split: str, lock: Record) -> None:
     if row.get("split") != split:
         raise ValueError("Row split differs from its file.")
     source = next((entry for entry in lock["files"] if entry["path"] == row.get("source_file") and entry["split"] == split), None)
@@ -244,7 +250,7 @@ def validate_row(row: dict, split: str, lock: dict) -> None:
         raise ValueError("Relative phi must lie within [-pi, pi].")
 
 
-def projected_sample(lock: dict, entry: dict, cache_dir: Path) -> list[dict]:
+def projected_sample(lock: Record, entry: Record, cache_dir: Path) -> list[Record]:
     """Decode one row group; take selected rows before converting arrays to Python."""
     with ThreadPoolExecutor(max_workers=4) as pool:
         paths = list(pool.map(lambda span: fetch_range(lock, entry, span, cache_dir), entry["ranges"]))
@@ -290,7 +296,7 @@ def output_schema(split: str) -> pa.Schema:
     return pa.schema(fields)
 
 
-def validate_bundle(output_dir: Path, lock: dict, lock_digest: str) -> dict:
+def validate_bundle(output_dir: Path, lock: Record, lock_digest: str) -> Record:
     manifest = json.loads((output_dir / "manifest.json").read_text())
     if (manifest.get("version") != 1 or manifest.get("repository") != lock["repository"]
             or manifest.get("revision") != lock["revision"] or manifest.get("seed") != lock["seed"]
@@ -301,7 +307,7 @@ def validate_bundle(output_dir: Path, lock: dict, lock_digest: str) -> dict:
             or manifest.get("simulated_collider_data") is not True
             or set(manifest.get("splits", {})) != set(lock["split_rows"])):
         raise ValueError("Bundle metadata does not match the current data lock.")
-    seen = set()
+    seen: set[str] = set()
     for split, count in lock["split_rows"].items():
         details = manifest["splits"][split]
         if details.get("file") != f"{split}.parquet" or details.get("rows") != count:
@@ -326,7 +332,7 @@ def validate_bundle(output_dir: Path, lock: dict, lock_digest: str) -> dict:
     return manifest
 
 
-def prepare(output_dir: Path, cache_dir: Path, lock_path: Path = LOCK_PATH) -> dict:
+def prepare(output_dir: Path, cache_dir: Path, lock_path: Path = LOCK_PATH) -> Record:
     lock_bytes = lock_path.read_bytes()
     lock = json.loads(lock_bytes)
     lock_digest = hashlib.sha256(lock_bytes).hexdigest()
@@ -369,7 +375,7 @@ def prepare(output_dir: Path, cache_dir: Path, lock_path: Path = LOCK_PATH) -> d
             shutil.rmtree(temporary)
 
 
-def write_evaluation_reference(raw_dir: Path, manifest: dict, destination: Path) -> dict:
+def write_evaluation_reference(raw_dir: Path, manifest: Record, destination: Path) -> Record:
     """Freeze the canonical held-out truth once; never silently replace it."""
     reference = {"version": 1, "dataset_id": manifest["dataset_id"], "splits": {}}
     for split in ("validation", "test"):

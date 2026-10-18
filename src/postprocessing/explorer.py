@@ -1,5 +1,12 @@
 """Render the shared model explorer as one HTML file with its results included."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from workshop_types import Record
+
 import json
 import os
 from pathlib import Path
@@ -35,7 +42,7 @@ def load_template(assets_dir: Path = ASSETS_DIR) -> str:
             .replace("</body>", f"<script>\n{javascript}\n</script>\n</body>"))
 
 
-def render_explorer(comparison: dict, template: str) -> str:
+def render_explorer(comparison: Record, template: str) -> str:
     """Embed every comparison row without allowing data to close its script tag."""
     if template.count(DATA_MARKER) != 1:
         raise ValueError("Model explorer template is missing its unique data marker.")

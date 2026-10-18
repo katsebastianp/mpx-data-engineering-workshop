@@ -1,5 +1,13 @@
 """Select predictors and read or write their shared artifact manifest."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import FilePath, Parameters, PredictorFactory, Record, Rows
+
 import json
 import logging
 from importlib.util import find_spec
@@ -13,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 # Extension point: implement Predictor in its own module, import it above, and
 # add its class here. Configuration, training and reload use this one registry.
 # Keep model files portable (e.g. JSON/ONNX), CPU settings bounded and fits seeded.
-PREDICTORS = {LogisticPredictor.kind: LogisticPredictor}
+PREDICTORS: dict[str, PredictorFactory] = {LogisticPredictor.kind: LogisticPredictor}
 
 # The optional reference pack adds this module; the starter does not require it.
 if find_spec("predict.sophon") is not None:
@@ -22,7 +30,7 @@ if find_spec("predict.sophon") is not None:
     PREDICTORS[SophonPredictor.kind] = SophonPredictor
 
 
-def require_predictor(kind):
+def require_predictor(kind: object) -> PredictorFactory:
     if not isinstance(kind, str) or kind not in PREDICTORS:
         detail = {
             "xgboost": "XGBoost is installed in Docker; implement and register its Predictor before selecting it.",
@@ -33,7 +41,14 @@ def require_predictor(kind):
     return PREDICTORS[kind]
 
 
-def train_model(kind, rows, feature_names, params, output_dir, seed=42):
+def train_model(
+    kind: str,
+    rows: Rows,
+    feature_names: Sequence[str],
+    params: Parameters,
+    output_dir: FilePath,
+    seed: int = 42,
+) -> Record:
     predictor = require_predictor(kind)
     if not isinstance(params, dict):
         raise ValueError("Model params must be a mapping.")
@@ -58,7 +73,7 @@ def train_model(kind, rows, feature_names, params, output_dir, seed=42):
     return {**metadata, "model_dir": str(directory.resolve())}
 
 
-def load_model(model) -> Predictor:
+def load_model(model: FilePath | Record) -> Predictor:
     directory = Path(model["model_dir"] if isinstance(model, dict) else model)
     metadata = json.loads((directory / "manifest.json").read_text())
     predictor = require_predictor(metadata.get("kind"))

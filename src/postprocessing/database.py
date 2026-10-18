@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from workshop_types import Record
+
 import json
 import logging
 from pathlib import Path
@@ -15,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 class AnalyticsStore:
     """Own a DuckDB connection for atomic comparison writes; use as a context manager."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         self.path = Path(path)
 
     def __enter__(self) -> AnalyticsStore:
@@ -29,10 +34,10 @@ class AnalyticsStore:
         })
         return self
 
-    def __exit__(self, *_):
+    def __exit__(self, *_: object) -> None:
         self._connection.close()
 
-    def replace(self, manifest: dict, datasets: dict[str, list[dict]], experiments: list[dict]) -> None:
+    def replace(self, manifest: Record, datasets: dict[str, list[Record]], experiments: list[Record]) -> None:
         """Replace the complete comparison in one transaction, preserving it on failure."""
         self._connection.execute("SET TimeZone = 'UTC'")
         self._connection.execute("BEGIN")
@@ -92,7 +97,7 @@ class AnalyticsStore:
                 FROM experiments JOIN metrics USING(experiment_key);
         """)
 
-    def _insert_dataset(self, manifest: dict, datasets: dict[str, list[dict]]) -> None:
+    def _insert_dataset(self, manifest: Record, datasets: dict[str, list[Record]]) -> None:
         self._connection.execute("INSERT INTO datasets VALUES (?, ?)", [manifest["dataset_id"], json.dumps(manifest)])
         columns = ["split", "record_id", "truth_label", "truth_group", "source_file", "source_row",
                    "jet_pt", "jet_sdmass", "jet_nparticles", "in_training_support", "particles_truncated",
@@ -112,7 +117,7 @@ class AnalyticsStore:
         """)
         self._connection.unregister("prepared_rows")
 
-    def _insert_experiment(self, experiment: dict) -> None:
+    def _insert_experiment(self, experiment: Record) -> None:
         timings = experiment["timings"]
         metadata = {key: value for key, value in experiment.items() if key != "predictions"}
         self._connection.execute("INSERT INTO experiments VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [

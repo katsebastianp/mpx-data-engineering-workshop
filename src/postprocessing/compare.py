@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import Record
+
 import argparse
 import json
 import logging
@@ -27,7 +33,7 @@ POPULATION_FIELDS = ("split", "record_id", "truth_label", "truth_group",
                      "in_training_support", "particles_truncated")
 
 
-def _validate_jet(row: dict, feature_names: list[str]) -> None:
+def _validate_jet(row: Record, feature_names: list[str]) -> None:
     label = row.get("truth_label")
     valid_label = type(label) is int and (label == 0 or 161 <= label <= 187)
     group = "signal" if label == 0 else "background"
@@ -54,7 +60,7 @@ def _validate_jet(row: dict, feature_names: list[str]) -> None:
         raise ValueError("Prepared support/truncation flags differ from the measurements.")
 
 
-def load_prepared(directory: Path) -> tuple[dict, dict[str, list[dict]], dict[str, dict[str, int]]]:
+def load_prepared(directory: Path) -> tuple[Record, dict[str, list[Record]], dict[str, dict[str, int]]]:
     """Read only pinned split files, preserving every ID and all measured particles."""
     manifest = read_json(directory / "manifest.json")
     if manifest.get("version") != 1 or set(manifest.get("splits", {})) != set(SPLITS):
@@ -91,7 +97,7 @@ def load_prepared(directory: Path) -> tuple[dict, dict[str, list[dict]], dict[st
     return manifest, datasets, truth
 
 
-def _load_local_submission(path: Path, result: dict) -> dict:
+def _load_local_submission(path: Path, result: Record) -> Record:
     prediction_path = path.parent / "predictions.parquet"
     if prediction_path.is_symlink():
         raise ValueError("Prediction files must be local regular files.")
@@ -108,7 +114,7 @@ def _load_local_submission(path: Path, result: dict) -> dict:
     return make_submission(result, predictions)
 
 
-def _unique_fields(pairs: list[tuple[str, object]]) -> dict:
+def _unique_fields(pairs: list[tuple[str, object]]) -> Record:
     result = {}
     for key, value in pairs:
         if key in result:
@@ -124,8 +130,12 @@ def _finite_json_number(value: str) -> float:
     return number
 
 
-def load_comparison(path: Path, dataset_id: str, datasets: dict[str, list[dict]],
-                    truth: dict[str, dict[str, int]]) -> list[dict]:
+def load_comparison(
+    path: Path,
+    dataset_id: str,
+    datasets: dict[str, list[Record]],
+    truth: dict[str, dict[str, int]],
+) -> list[Record]:
     """Recover complete validation runs from an explicitly chosen, bounded export."""
     if path.is_symlink():
         raise ValueError(f"Comparison must be a regular JSON file: {path}")
@@ -184,13 +194,18 @@ def load_comparison(path: Path, dataset_id: str, datasets: dict[str, list[dict]]
     return list(payloads.values())
 
 
-def collect_experiments(results_dir: Path, submissions_dir: Path, dataset_id: str,
-                        truth: dict[str, dict[str, int]],
-                        imported: list[dict] | None = None) -> tuple[list[dict], list[dict]]:
+def collect_experiments(
+    results_dir: Path,
+    submissions_dir: Path,
+    dataset_id: str,
+    truth: dict[str, dict[str, int]],
+    imported: list[Record] | None = None,
+) -> tuple[list[Record], list[Record]]:
     """Collect completed local runs and optional team JSON without executing their code."""
+    identities: dict[str, str]
     experiments, local, identities = [], [], {}
 
-    def add(payload: dict, source: str) -> dict:
+    def add(payload: Record, source: str) -> Record:
         checked = validate_submission(payload, dataset_id, truth)
         key = checked["experiment_key"]
         fields = {name: checked[name] for name in FIELDS}
@@ -225,7 +240,7 @@ def collect_experiments(results_dir: Path, submissions_dir: Path, dataset_id: st
     return experiments, local
 
 
-def _display_jet(row: dict, feature_names: list[str]) -> dict:
+def _display_jet(row: Record, feature_names: list[str]) -> Record:
     return {
         "record_id": row["record_id"],
         "split": row["split"],
@@ -240,7 +255,7 @@ def _display_jet(row: dict, feature_names: list[str]) -> dict:
     }
 
 
-def discovery_export(manifest: dict, datasets: dict[str, list[dict]], experiments: list[dict]) -> dict:
+def discovery_export(manifest: Record, datasets: dict[str, list[Record]], experiments: list[Record]) -> Record:
     """Full score population plus 200 bounded angular displays, ready to host with Sites."""
     evaluated = sorted({split for experiment in experiments for split in experiment["evaluated_splits"]})
     jets, population = [], []
@@ -267,7 +282,7 @@ def discovery_export(manifest: dict, datasets: dict[str, list[dict]], experiment
         "threshold_policy": "Compute threshold curves from complete prediction/population rows, never the 200 display jets."}
 
 
-def _write_submissions(local: list[dict], submissions_dir: Path) -> list[str]:
+def _write_submissions(local: list[Record], submissions_dir: Path) -> list[str]:
     submission_files = []
     # Select exports on validation quality, before looking at final test scores.
     candidates = sorted([row for row in local if row["test_selection"] == "final"], key=lambda row: (
@@ -283,8 +298,14 @@ def _write_submissions(local: list[dict], submissions_dir: Path) -> list[str]:
     return submission_files
 
 
-def compare(prepared_dir: Path, results_dir: Path, submissions_dir: Path, output_dir: Path,
-            reference_path: Path | None = None, import_comparisons: list[Path] | None = None) -> dict:
+def compare(
+    prepared_dir: Path,
+    results_dir: Path,
+    submissions_dir: Path,
+    output_dir: Path,
+    reference_path: Path | None = None,
+    import_comparisons: list[Path] | None = None,
+) -> Record:
     manifest, datasets, truth = load_prepared(prepared_dir)
     if reference_path is not None:
         dataset_id, reference_truth = load_evaluation(reference_path)
@@ -310,7 +331,7 @@ def compare(prepared_dir: Path, results_dir: Path, submissions_dir: Path, output
             "submission_files": submission_files}
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prepared-dir", type=Path, default=PREPROCESSED_DIR)
     parser.add_argument("--results-dir", type=Path, default=PREDICTIONS_DIR)

@@ -1,5 +1,15 @@
 """Run the editable Spark preprocessing job: docker compose run --rm lab -m preprocessing."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from pyspark import SparkContext
+    from pyspark.status import SparkJobInfo, SparkStageInfo
+    from pyspark.sql import DataFrame
+    from workshop_types import ExecutionCounts, FilePath, Record, SplitFile, SplitFiles
+
 import hashlib
 import json
 import logging
@@ -20,21 +30,21 @@ LOGGER = logging.getLogger(__name__)
 SHUFFLE_PARTITIONS = 2048
 
 
-def execution_counts(context):
+def execution_counts(context: SparkContext) -> ExecutionCounts:
     """Count unique scheduled stages; these are planned tasks, not retry attempts."""
     tracker = context.statusTracker()
     jobs = [tracker.getJobInfo(identifier) for identifier in tracker.getJobIdsForGroup("particle-preprocessing")]
     if not jobs or any(job is None for job in jobs):
         raise ValueError("Spark job metadata is unavailable for task counting.")
-    identifiers = {int(stage) for job in jobs for stage in job.stageIds}
+    identifiers = {int(stage) for job in jobs for stage in cast("SparkJobInfo", job).stageIds}
     stages = [tracker.getStageInfo(identifier) for identifier in identifiers]
     if any(stage is None for stage in stages):
         raise ValueError("Spark stage metadata is unavailable for task counting.")
     return {"job_count": len(jobs), "stage_count": len(stages),
-            "scheduled_tasks": sum(stage.numTasks for stage in stages)}
+            "scheduled_tasks": sum(cast("SparkStageInfo", stage).numTasks for stage in stages)}
 
 
-def _read_raw_manifest(directory):
+def _read_raw_manifest(directory: Path) -> Record:
     manifest = json.loads((directory / "manifest.json").read_text())
     if set(manifest["splits"]) != {"train", "validation", "test"}:
         raise ValueError("Expected separate train, validation and test files.")
@@ -45,7 +55,7 @@ def _read_raw_manifest(directory):
     return manifest
 
 
-def _check_raw_split(directory, split, entry):
+def _check_raw_split(directory: Path, split: str, entry: SplitFile) -> set[str]:
     """Validate one split and return its record IDs for the overlap check."""
     if entry["file"] != f"{split}.parquet":
         raise ValueError("Unexpected input filename.")
@@ -65,10 +75,10 @@ def _check_raw_split(directory, split, entry):
     return ids
 
 
-def check_inputs(directory):
+def check_inputs(directory: Path) -> Record:
     """Check the supplied split files before starting a JVM."""
     manifest = _read_raw_manifest(directory)
-    observed = set()
+    observed: set[str] = set()
     for split, entry in manifest["splits"].items():
         ids = _check_raw_split(directory, split, entry)
         if observed & ids:
@@ -77,7 +87,7 @@ def check_inputs(directory):
     return manifest
 
 
-def _validate_features(features, splits):
+def _validate_features(features: DataFrame, splits: SplitFiles) -> None:
     from pyspark.sql import functions as F
 
     invalid = F.lit(False)
@@ -93,7 +103,7 @@ def _validate_features(features, splits):
     LOGGER.info("Feature checks passed: %s", {row["split"]: row["rows"] for row in summaries})
 
 
-def _write_spark_features(raw_dir, splits, output_dir):
+def _write_spark_features(raw_dir: Path, splits: SplitFiles, output_dir: Path) -> ExecutionCounts:
     from pyspark.sql import SparkSession
 
     spark = (SparkSession.builder.master("local[1]").appName("particle-preprocessing")
@@ -116,9 +126,9 @@ def _write_spark_features(raw_dir, splits, output_dir):
         spark.stop()
 
 
-def _consolidate_splits(output_dir, splits):
+def _consolidate_splits(output_dir: Path, splits: SplitFiles) -> SplitFiles:
     """Give models one portable Parquet file per split, after Spark has stopped."""
-    outputs = {}
+    outputs: SplitFiles = {}
     spark_output = output_dir / "spark-output"
     for split in splits:
         files = sorted((spark_output / f"split={split}").glob("*.parquet"))
@@ -131,7 +141,7 @@ def _consolidate_splits(output_dir, splits):
     return outputs
 
 
-def _replace_output(temporary, output_dir):
+def _replace_output(temporary: Path, output_dir: Path) -> None:
     """Keep the previous preparation recoverable until its replacement succeeds."""
     previous = output_dir.with_name(f".{output_dir.name}-previous")
     if previous.exists():
@@ -148,7 +158,7 @@ def _replace_output(temporary, output_dir):
         shutil.rmtree(previous)
 
 
-def prepare_data(raw_dir=RAW_DIR, output_dir=PREPROCESSED_DIR):
+def prepare_data(raw_dir: FilePath = RAW_DIR, output_dir: FilePath = PREPROCESSED_DIR) -> Record:
     """Validate → calculate features → check quality → write reusable split tables."""
     raw_dir, output_dir = Path(raw_dir), Path(output_dir)
     started = time.perf_counter()
@@ -181,7 +191,7 @@ def prepare_data(raw_dir=RAW_DIR, output_dir=PREPROCESSED_DIR):
             shutil.rmtree(temporary)
 
 
-def main():
+def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     try:
         result = prepare_data()

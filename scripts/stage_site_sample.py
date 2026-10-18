@@ -6,6 +6,12 @@ The generated site/public/downloads/ files are excluded from the GitHub repo.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import Record
+
 import argparse
 import json
 import logging
@@ -18,13 +24,13 @@ if __package__:
     from .setup_workshop import SAMPLE_FILES, verify_sample
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from setup_workshop import SAMPLE_FILES, verify_sample
+    from setup_workshop import SAMPLE_FILES, verify_sample  # type: ignore[no-redef]  # Direct-script fallback.
 
 ROOT = Path(__file__).resolve().parents[1]
 LOGGER = logging.getLogger(__name__)
 
 
-def stage_sample(source: Path, output: Path, lock: Path) -> dict:
+def stage_sample(source: Path, output: Path, lock: Path) -> Record:
     """Verify a complete snapshot before replacing any published sample file."""
     if output.is_symlink() or (output.exists() and not output.is_dir()):
         raise ValueError(f"The Site sample destination must be a regular directory: {output}")
@@ -53,7 +59,7 @@ def stage_sample(source: Path, output: Path, lock: Path) -> dict:
             "size_bytes": total_bytes, "output": str(output), "verified": True}
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=ROOT / "data/01_raw")
     parser.add_argument("--output", type=Path, default=ROOT / "site/public/downloads/jetclass2-v1")

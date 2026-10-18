@@ -1,5 +1,12 @@
 """Repository paths and atomic file helpers shared by the three pipeline stages."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from workshop_types import FilePath
+
 import hashlib
 import json
 import os
@@ -18,7 +25,7 @@ MODELS_DIR = ROOT / "models"
 SOPHON_DIR = MODELS_DIR / "pretrained/sophon"
 
 
-def sha256(path):
+def sha256(path: FilePath) -> str:
     digest = hashlib.sha256()
     with Path(path).open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
@@ -26,11 +33,11 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def utc_now():
+def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def write_json(path, value):
+def write_json(path: FilePath, value: object) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     content = json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n"

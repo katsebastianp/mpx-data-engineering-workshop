@@ -1,5 +1,13 @@
 """Serial inference timing, CPU reference workload and hardware metadata."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from predict.base import Predictor
+    from workshop_types import Record, Rows
+
 import hashlib
 import importlib.metadata
 import math
@@ -17,7 +25,7 @@ REFERENCE_ITERATIONS = 64
 LATENCY_PROTOCOL = "jetclass2-cpu-128-v1"
 
 
-def reference_seconds():
+def reference_seconds() -> float:
     """A fixed numeric CPU workload, an approximate hardware correction only."""
     rng = np.random.default_rng(42)
     left, right = rng.standard_normal((256, 256)), rng.standard_normal((256, 256))
@@ -35,7 +43,7 @@ def reference_seconds():
     return statistics.median(elapsed)
 
 
-def benchmark_model(model, validation):
+def benchmark_model(model: Predictor, validation: Rows) -> tuple[dict[str, float], Record]:
     rows = sorted(validation, key=lambda row: row["record_id"])[:BENCHMARK_ROWS]
     if len(rows) != BENCHMARK_ROWS:
         raise ValueError(f"Latency comparisons require exactly {BENCHMARK_ROWS} fixed validation jets.")
@@ -62,8 +70,8 @@ def benchmark_model(model, validation):
             "benchmark_rows": BENCHMARK_ROWS, "rows": BENCHMARK_ROWS, "repeat_count": 3}, protocol
 
 
-def hardware_info():
-    result = {"platform": platform.platform(), "architecture": platform.machine(), "python": platform.python_version(),
+def hardware_info() -> Record:
+    result: Record = {"platform": platform.platform(), "architecture": platform.machine(), "python": platform.python_version(),
               "cpu_count": os.cpu_count(), "cpu_description": platform.processor(), "threads_per_model": 1}
     for key, filename in (("cpu_quota", "cpu.max"), ("memory_limit", "memory.max")):
         path = Path("/sys/fs/cgroup") / filename

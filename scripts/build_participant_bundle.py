@@ -8,6 +8,12 @@ images, historical runs and hosting identity do not ship.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from workshop_types import Record
+
 import argparse
 import hashlib
 import json
@@ -23,8 +29,8 @@ PREFIX = "ringier-particle-workshop/"
 MANIFEST = "PARTICIPANT_BUNDLE.json"
 STATIC_REPOSITORY_FILES = (
     ".dockerignore", ".gitattributes", ".gitignore", ".worktreeinclude", "README.md", "AGENTS.md", "Dockerfile",
-    "compose.yaml", "pyproject.toml", "requirements.txt", "config/experiments.yaml",
-    "src/common.py", "src/preprocessing/__init__.py", "src/preprocessing/__main__.py",
+    "compose.yaml", "pyproject.toml", "requirements.txt", "requirements-dev.txt", "config/experiments.yaml",
+    "src/common.py", "src/workshop_types.py", "src/preprocessing/__init__.py", "src/preprocessing/__main__.py",
     "src/preprocessing/pipeline.py", "src/preprocessing/features.py",
     "src/predict/__init__.py", "src/predict/__main__.py", "src/predict/experiment.py",
     "src/predict/base.py", "src/predict/logistic.py", "src/predict/metrics.py",
@@ -111,7 +117,7 @@ def participant_files(root: Path) -> dict[str, bytes]:
     return files
 
 
-def verify_archive(path: Path) -> dict:
+def verify_archive(path: Path) -> Record:
     """Check every ZIP member against the included per-file SHA256 manifest."""
     with zipfile.ZipFile(path) as archive:
         names = archive.namelist()
@@ -133,7 +139,7 @@ def verify_archive(path: Path) -> dict:
     return manifest
 
 
-def write_archive(output: Path, files: dict[str, bytes], dataset_id: str) -> dict:
+def write_archive(output: Path, files: dict[str, bytes], dataset_id: str) -> Record:
     """Publish only after ZIP integrity and manifest verification succeed."""
     manifest = {
         "bundle_version": 2, "workshop_version": "0.6.0", "dataset_id": dataset_id,
@@ -174,7 +180,7 @@ def write_member(archive: zipfile.ZipFile, name: str, data: bytes) -> None:
     archive.writestr(info, data)
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "dist/ringier-particle-workshop.zip")
     parser.add_argument("--verify", type=Path, help="Verify an existing bundle instead of creating it")

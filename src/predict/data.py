@@ -1,5 +1,12 @@
 """Read prepared splits and verify their integrity before training."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from workshop_types import Datasets, FilePath, Record
+
 import json
 import logging
 from pathlib import Path
@@ -13,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 FEATURE_SOURCE_PATH = ROOT / "src/preprocessing/features.py"
 
 
-def load_prepared(prepared_dir):
+def load_prepared(prepared_dir: FilePath) -> tuple[Record, Datasets]:
     """Refuse stale, overlapping or modified prepared splits before fitting."""
     directory = Path(prepared_dir)
     manifest = json.loads((directory / "manifest.json").read_text())
