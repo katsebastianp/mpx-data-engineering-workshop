@@ -8,6 +8,9 @@ import { WorkshopSteps } from "./WorkshopSteps";
 import { Leaderboard } from "./Leaderboard";
 import { useParticipantProgress } from "./useParticipantProgress";
 import { ParticipantAccountMenu } from "./ParticipantAccount";
+import { WORKSHOP_REPOSITORY_URL } from "./workshop-content";
+import { WORKSHOP_READINESS_PROMPT } from "../lib/workshop-readiness";
+import { codexTaskUrl } from "../lib/codex-links";
 
 type Page = "physics" | "brief" | "workshop" | "leaderboard";
 const pages: { id: Page; title: string; href: string }[] = [{id:"physics",title:"Physics",href:"/"},{id:"brief",title:"Workshop brief",href:"/brief"},{id:"workshop",title:"Instructions",href:"/workshop"},{id:"leaderboard",title:"Leaderboard",href:"/leaderboard"}];
@@ -16,10 +19,10 @@ export function CopyButton({text}:{text:string}) {
   const [status,setStatus]=useState("");
   return <button className="copy-button" onClick={async()=>{try{await navigator.clipboard.writeText(text);setStatus("Copied");setTimeout(()=>setStatus(""),1800)}catch{setStatus("Select and copy the text")}}}>{status||<>Copy <Copy size={13}/></>}</button>;
 }
-export function Prompt({title="Reveal Codex prompt",children}:{title?:string;children:string}) {
+export function Prompt({title="Reveal Codex prompt",children,repositoryUrl=WORKSHOP_REPOSITORY_URL}:{title?:string;children:string;repositoryUrl?:string|null}) {
   const lines = children.split("\n").filter(line => line.trim());
   const bullets = lines.length > 0 && lines.every(line => line.startsWith("- "));
-  return <details className="prompt"><summary><span><span className="prompt-symbol">⌘</span>{title}</span><ChevronDown size={16}/></summary><div className="prompt-content"><CopyButton text={children}/>{bullets?<ul className="prompt-bullets">{lines.map((line,index)=><li key={index}>{line.slice(2)}</li>)}</ul>:<pre>{children}</pre>}</div></details>;
+  return <details className="prompt"><summary><span><span className="prompt-symbol">⌘</span>{title}</span><ChevronDown size={16}/></summary><div className="prompt-content"><div className="prompt-actions"><a className="open-codex" href={codexTaskUrl(children,repositoryUrl)}>Open in Codex <ArrowUpRight size={13}/></a><CopyButton text={children}/></div>{bullets?<ul className="prompt-bullets">{lines.map((line,index)=><li key={index}>{line.slice(2)}</li>)}</ul>:<pre>{children}</pre>}</div></details>;
 }
 export function ChapterIntro({number,eyebrow,title,description}:{number:string;eyebrow:string;title:string;description:string}) {return <header className="chapter-intro"><div className="eyebrow"><span>{number} / 04</span><span>{eyebrow}</span></div><h1>{title}</h1><p>{description}</p></header>}
 
@@ -38,13 +41,13 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
  const requirements = [
   ['Codex', 'Use your participant account and available model to read the repository before the session. Ultra is not required.'],
   ['GitHub plugin + access', 'With your participant account, confirm you can push a branch, open a PR and merge it in the workshop repository. Resolve access with the facilitator before the session.'],
-  ['Docker ready', 'Start Docker Desktop or Colima, build the workshop image and run setup before the session. The lab uses 2 CPUs and 2 GiB.'],
+  ['Container runtime ready', 'Use your company’s approved runtime and complete the image build, setup and tests beforehand. Docker Desktop is subject to company licensing. Colima, Podman or a prepared remote Linux host are alternatives once tested with this lab. Linux containers use 2 CPUs and 2 GiB.'],
   ['Four sample files', 'Download the four files from instruction step 02. Setup verifies them without downloading a model. No host Python, Java, GPU or API key is needed for the core workshop.'],
   ['Plan, Worktree and Code Review', 'Try /side, Plan and a Worktree chat. Confirm Review PR or Code Review works for the workshop repository.'],
   ['Your account', 'Sign in here with your participant account and check your personal prompts. You will upload your final result to the Leaderboard.'],
  ];
  return <div className="brief-page">
-  <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h1>Get setup out of the way</h1></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><p className="muted-note">A two-hour facilitation target, with setup completed beforehand. Timings vary by laptop and Codex model.</p></section>
+  <section className="section-wrap requirements"><div className="section-heading"><div><span className="section-kicker">BEFORE YOU ARRIVE</span><h1>Get setup out of the way</h1></div><p>Check access on the laptop<br/>you will bring to the workshop</p></div><div className="requirement-grid">{requirements.map((row, index) => <article key={row[0]}><span className="mono">0{index+1}</span><div><h3>{row[0]}</h3><p>{row[1]}</p></div></article>)}</div><Prompt title="Check my setup in Codex">{WORKSHOP_READINESS_PROMPT}</Prompt><p className="muted-note">Open your intended Codex profile first. Review the project and prompt before sending. If the app does not open correctly, copy the prompt into your workshop project. Tell the facilitator before the session if installation is blocked.</p><p className="muted-note">A two-hour facilitation target, with setup completed beforehand. Timings vary by laptop and Codex model.</p></section>
   <section className="section-wrap agenda"><span className="section-kicker">2-HOUR SESSION</span><h2>Agenda</h2>{[
    ["00–30", "Explore & run", "Get the code, trace a real jet, run the logistic baseline, open worktrees"],
    ["30–80", "Run & explore", "One Spark setting + planned model variants; explore results, choose a model and review both PRs"],

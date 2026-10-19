@@ -295,7 +295,8 @@ export const workshopParts: WorkshopPart[] = [
         ],
         prompt: [
           "- On {{branch}}, use the model chosen on validation. Keep its features and settings unchanged.",
-          "- Check the merged code, set evaluation: test in config/experiments.yaml, then run predict in {{composePrefix}}-integration. Stop if checks fail.",
+          "- Check the merged code and prepared inputs in this original checkout. If preprocessing/features.py changed or the prepared feature hash is stale, rerun preprocessing in {{composePrefix}}-integration. Run scripts/compare_preprocessing.py data/02_preprocessed_baseline data/02_preprocessed --allow-added-features to verify all original values are preserved. Stop if checks fail.",
+          "- Set evaluation: test in config/experiments.yaml, then run predict in {{composePrefix}}-integration with the frozen selected configuration.",
           "- Run postprocessing to update Model Explorer and generate the submission JSON in data/04_submissions/. Preserve earlier experiment results.",
           "- Open data/05_analytics/model-explorer.html, show the test results and give me the submission file path. Do not tune the model on test data.",
         ].join("\n"),

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, CheckCircle2, Circle } from "lucide-react";
 import { ChapterIntro, Prompt } from "./WorkshopApp";
-import { coreWorkshopExercises, workshopExercises, WORKSHOP_SOURCE_URL, SOPHON_PAPER_URL } from "./workshop-content";
+import { coreWorkshopExercises, workshopExercises, WORKSHOP_REPOSITORY_URL, WORKSHOP_SOURCE_URL, SOPHON_PAPER_URL } from "./workshop-content";
 import type { useParticipantProgress } from "./useParticipantProgress";
 import { ParticipantAccountPanel } from "./ParticipantAccount";
 import { WorktreeJourney } from "./WorktreeJourney";
@@ -104,7 +104,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
 
         <div key={`${selected.id}-${workspace?.branch ?? "signed-out"}-prompt`}>
           {workspace || selected.id === "download-data" ? <>
-            {selected.prompt && <Prompt title="Example prompt">{personalise(selected.prompt)}</Prompt>}
+            {selected.prompt && <Prompt title="Example prompt" repositoryUrl={selected.id === "codex-project" ? null : WORKSHOP_REPOSITORY_URL}>{personalise(selected.prompt)}</Prompt>}
             {selected.extraPrompts?.map(item => <Prompt key={item.title} title={item.title}>{personalise(item.prompt)}</Prompt>)}
           </> : selected.prompt || selected.extraPrompts?.length ? <p className="step-signin-notice">Sign in to get a prompt with your personal branch names.</p> : null}
         </div>
