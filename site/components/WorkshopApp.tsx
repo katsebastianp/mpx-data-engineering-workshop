@@ -39,9 +39,9 @@ function Physics(){
 }
 function Brief({navigate}:{navigate:(p:Page)=>void}) {
  const requirements = [
-  ['Codex', 'Use your participant account and available model to read the repository before the session. Ultra is not required.'],
-  ['GitHub plugin + access', 'With your participant account, confirm you can push a branch, open a PR and merge it in the workshop repository. Resolve access with the facilitator before the session.'],
-  ['Container runtime ready', 'Use your company’s approved runtime and complete the image build, setup and tests beforehand. Docker Desktop is subject to company licensing. Colima, Podman or a prepared remote Linux host are alternatives once tested with this lab. Linux containers use 2 CPUs and 2 GiB.'],
+  ['Codex', 'Install Codex, sign in with your participant account and run the preparation prompt on the laptop you will bring. Use your available model; Ultra is not required.'],
+  ['GitHub plugin + access', 'Confirm access to the Collision Lab repository, including branch/PR permissions and the Codex GitHub connection. Resolve missing access with the facilitator before the session.'],
+  ['Container runtime ready', 'Complete the image build, setup and tests with your approved Docker setup before arrival. Docker Desktop licensing follows company policy. Existing Colima, Podman or Rancher Desktop setups must pass the same check. Linux containers use 2 CPUs and 2 GiB. If blocked, join a team with a working machine.'],
   ['Four sample files', 'Download the four files from instruction step 02. Setup verifies them without downloading a model. No host Python, Java, GPU or API key is needed for the core workshop.'],
   ['Plan, Worktree and Code Review', 'Try /side, Plan and a Worktree chat. Confirm Review PR or Code Review works for the workshop repository.'],
   ['Your account', 'Sign in here with your participant account and check your personal prompts. You will upload your final result to the Leaderboard.'],
@@ -53,7 +53,8 @@ function Brief({navigate}:{navigate:(p:Page)=>void}) {
    ["30–80", "Run & explore", "One Spark setting + planned model variants; explore results, choose a model and review both PRs"],
    ["80–100", "Merge & test", "Merge both PRs, check the code and evaluate the chosen model on the test dataset"],
    ["100–105", "Publish your results", "Upload the generated JSON to the Leaderboard and confirm acceptance"],
-   ["Extra", "Choose your extension", "Try the ready-made Sophon demo pack"],
+   ["105–120", "Discuss & recover", "Questions, lessons and time for slower runs. Voice fits into the code tour; Cloud is a brief optional mention."],
+   ["Extra", "Choose your extension", "Try the Sophon demo pack after the core walkthrough"],
   ].map(row => <div className="agenda-row" key={row[0]}><span className="mono">{row[0]} <small>{row[0] === 'Extra' ? '' : 'MIN'}</small></span><h3>{row[1]}</h3><p>{row[2]}</p></div>)}</section>
   <PredictionFlow/>
   <section className="split-section section-wrap"><div><span className="section-kicker">SAME DATA, FAIR COMPARISONS</span><h2>Learn, compare, then test</h2></div><div className="split-bars">{[

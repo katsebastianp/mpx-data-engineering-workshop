@@ -4,6 +4,10 @@
 
 The starter is logistic regression with three features. Add your own experiments using the [model contract](docs/model-outputs.md).
 
+## Prepare for the session
+
+Run the [before-arrival setup prompt](docs/workshop-preparation.md). Facilitators can use the [two-hour walkthrough](docs/facilitator-walkthrough.md).
+
 ## Run
 
 Requires Docker Compose and the four Site downloads in `data/01_raw/`.
