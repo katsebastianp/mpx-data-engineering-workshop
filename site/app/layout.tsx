@@ -6,5 +6,5 @@ import "./participant-account.css";
 import "./participant-workspace.css";
 import "./learning-visuals.css";
 import "./prediction-flow.css";
-export const metadata: Metadata = { title: "From particle collisions to better models — Ringier × OpenAI", description: "A hands-on Codex workshop in particle physics, data engineering, and machine learning", icons: {icon:"/favicon.svg"} };
+export const metadata: Metadata = { title: "Collision Lab: Data Engineering with Codex | Ringier × OpenAI", description: "A hands-on Codex workshop in particle physics, data engineering, and machine learning", icons: {icon:"/favicon.svg"} };
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){return <html lang="en"><body>{children}</body></html>}

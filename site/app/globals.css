@@ -530,3 +530,9 @@ td{font-size:11px;padding:18px 12px}
 .workshop-run-controls input { min-width: 180px; max-width: 360px; flex: 1; padding: 12px 14px; border: 1px solid #76828d; border-radius: 4px; background: #272b30; color: #f4f1eb; font: inherit; }
 .workshop-run-controls input:focus-visible { outline: 2px solid #ff6675; outline-offset: 3px; }
 .workshop-run-form p { margin: 10px 0 0; color: #bdc4cd; font-size: 13px; }
+
+/* Prompt actions share the exact personalized text. */
+.prompt-actions{position:absolute;top:12px;right:12px;display:flex;gap:8px;align-items:center}
+.prompt-content .prompt-actions .copy-button{position:static}
+.open-codex{display:inline-flex;align-items:center;gap:6px;border:1px solid #6a7582;border-radius:4px;background:#474e57;color:#edf0f4;padding:7px 10px;font-size:11px;white-space:nowrap}
+.open-codex:hover{border-color:var(--accent);color:white}
