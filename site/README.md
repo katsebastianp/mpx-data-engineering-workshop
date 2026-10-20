@@ -1,20 +1,23 @@
 # Workshop Site
 
-Participant instructions: [ringier-collision-lab.openai.chatgpt.site](https://ringier-collision-lab.openai.chatgpt.site/workshop).
+Hosted guide: [ringier-collision-lab.openai.chatgpt.site](https://ringier-collision-lab.openai.chatgpt.site/brief).
+Your account must be on its access list. Ask the facilitator to confirm access;
+GitHub and Codex access are separate. If you cannot use the hosted guide, start
+this local copy with the [Codex startup prompt](../README.md#local-startup-prompt-for-codex)
+or the commands below. A hosted invitation is not needed for local use.
 
 ## Run the participant guide locally
 
-Use the workshop branch `codex/workshop-readiness-20261019` until the
-facilitator confirms it has been merged. Keep this branch available while the
-hosted prompts point to it.
+For a new checkout, use `main`, which includes the local guide setup:
 
 ```sh
-git clone -b codex/workshop-readiness-20261019 https://github.com/RingierIMU/mpx-data-engineering-workshop.git
+git clone --branch main https://github.com/RingierIMU/mpx-data-engineering-workshop.git
 cd mpx-data-engineering-workshop/site
 ```
 
 If you already have a checkout, ask Codex to verify its branch and preserve
-your changes instead of cloning over it. On Windows, run these commands in
+your changes instead of cloning over it or switching branches automatically.
+On Windows, run these commands in
 WSL 2 with Node and your approved container runtime available there.
 
 From `site/`, with Node 22.13+ and npm:
@@ -27,16 +30,22 @@ npm run build
 For a fresh local database, apply all migrations:
 
 ```sh
+set -e
 for migration in drizzle/*.sql; do
   node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file "$migration"
 done
 npm run dev -- --hostname 127.0.0.1 --port 8789
 ```
 
+If this checkout already has a healthy guide server, reuse it. If another
+application uses port 8789, select a free port and use it in the commands and
+URLs below; do not stop an unrelated server.
+
 Open **http://127.0.0.1:8789/brief**, then choose Instructions. The local
 development server uses its own simulated sign-in and local database.
 If prompted, use http://127.0.0.1:8789/signin-with-chatgpt?return_to=/workshop.
-Create a fresh run with your own unique name before starting.
+Choose a unique run name in the guide before starting the exercises, or keep
+your existing run if you are continuing it.
 
 Local progress and leaderboard results stay on this laptop. They do not publish
 to the shared hosted leaderboard. If hosted access is unavailable, give the
