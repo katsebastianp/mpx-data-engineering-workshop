@@ -6,7 +6,7 @@ The starter is logistic regression with three features. Add your own experiments
 
 ## Prepare for the session
 
-Run the [before-arrival setup prompt](docs/workshop-preparation.md). Facilitators can use the [two-hour walkthrough](docs/facilitator-walkthrough.md).
+Run the [before-arrival setup prompt](docs/workshop-preparation.md). Facilitators can use the [two-hour walkthrough](docs/facilitator-walkthrough.md). If hosted access is unavailable, [run the guide locally](site/README.md).
 
 ## Run
 

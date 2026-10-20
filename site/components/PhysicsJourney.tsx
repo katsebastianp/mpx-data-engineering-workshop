@@ -10,21 +10,21 @@ const stages = [
     label: "Collision",
     title: "Two examples start with a collision",
     bullets: [
-      "Proton collisions can produce different kinds of particles",
-      "Pink follows a simulated signal example; blue follows a QCD background example",
+      "At CERN, proton beams collide at very high energy and can produce new particles",
+      "Pink shows a simulated target signal; blue shows ordinary background",
       "We show the two examples together for comparison, not as one measured event"
     ],
-    animation: "Both examples follow the same timeline, with fixed positions and paths."
+    animation: "Start with the collision, then follow what each example produces."
   },
   {
     label: "Origin",
     title: "Different origins, different patterns",
     bullets: [
       "Signal: a hypothetical particle X decays into a bottom quark and a bottom antiquark",
-      "QCD background: an ordinary collision produces an outgoing quark or gluon",
-      "Only the signal example contains the target X decay; both examples continue into a shower"
+      "Background: we follow an ordinary outgoing quark or gluon",
+      "Different origins can leave different patterns. Can we tell them apart?"
     ],
-    animation: "Follow the pink X decay and the blue outgoing quark or gluon."
+    animation: "Pink starts with the hypothetical X decay; blue starts with a quark or gluon."
   },
   {
     label: "Shower",
@@ -32,9 +32,9 @@ const stages = [
     bullets: [
       "The quarks and gluons radiate, creating branching showers",
       "They form hadrons, which leave measurements in the detector",
-      "The pink and blue showers grow along the same paths established in the previous step"
+      "Both examples produce sprays of particles; a spray alone does not identify the signal"
     ],
-    animation: "Watch both showers develop together. The camera and trajectories stay in place."
+    animation: "Follow how both starting points develop into sprays of particles."
   },
   {
     label: "Jet",
@@ -113,8 +113,8 @@ export default function PhysicsJourney() {
   return <section className="physics-journey">
     <header className="physics-intro">
       <div className="eyebrow"><span className="swiss-cross" aria-hidden="true"/><span>RINGIER × OPENAI · CODEX WORKSHOP</span></div>
-      <h1>From particle collisions<br/><span>to better models</span></h1>
-      <p>A hands-on workshop in data engineering and machine learning with Codex</p>
+      <h1>Collision Lab:<br/><span>Data Engineering with Codex</span></h1>
+      <p>Explore the data. Improve the pipeline. Compare the models.</p>
     </header>
 
     <div className={`journey-exhibit${inside ? " is-inside" : ""}`} id="collision">

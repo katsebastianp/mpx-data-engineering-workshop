@@ -8,7 +8,7 @@ Participants install and sign into Codex, verify GitHub access to `RingierIMU/mp
 
 Each team needs one working, company-approved Docker/Compose machine. Pair people whose machines are blocked. Existing alternatives must pass the same precheck; do not spend session time installing runtimes. Check the actual Windows/WSL or ARM laptop, rather than assuming another machine's result transfers.
 
-The presenter checks the intended Codex profile/account, repository, microphone, native prompt handoff and PR review before the room arrives. Open the workshop Site, the project and one saved validation-only Explorer as a recovery aid. The Site's hosted content must match the reviewed branch if demonstrating revised wording. A source branch alone does not deploy the Site.
+The presenter checks the intended Codex profile/account, repository, microphone, native prompt handoff and PR review before the room arrives. Open the workshop Site, the project and one saved validation-only Explorer as a recovery aid. The current workshop source is `codex/workshop-readiness-20261019` in the customer repository. Keep that branch available while the hosted prompts use it. The Site's hosted content must match this branch when demonstrating revised wording. A source branch alone does not deploy the Site.
 
 ## Run of show
 
@@ -22,8 +22,8 @@ The presenter checks the intended Codex profile/account, repository, microphone,
 | 30-42 | Pipeline: inspect, change 2,048 to 4, measure. While it runs, plan models in the other chat. | One measured change; agree baseline plus two quick model variants before execution. An extra classifier is a stretch choice, not a requirement. |
 | 42-60 | When the benchmark finishes, run the agreed model batch. Review the pipeline diff/PR while models run. | No overlapping timed container jobs. Read all benchmark timings and equivalence evidence; inspect the PR base and changes. |
 | 60-72 | Explore results, move a threshold, choose the model. | All agreed experiments and unchanged baseline are visible. Record a validation-based choice before any test score. Do not add another experiment loop. |
-| 72-80 | Open the model PR in Codex Code Review. Inspect changes and discuss a finding if there is one. | Check evidence and relevant fixes; do not invent a finding for the demonstration. Both PRs target the personal branch. |
-| 80-100 | Merge reviewed PRs into the personal branch, return to the original checkout, test, regenerate stale features, compare original values, evaluate the frozen choice. | Tests and feature checks pass. Preserve model-worktree comparison history. Exactly 1,000 held-out test predictions and generated submission JSON. |
+| 72-80 | Open the PR link with Open in > Code review. Choose Review with Codex, inspect changes and discuss a real finding. | Check evidence and relevant fixes; do not invent a finding for the demonstration. Both PRs target the personal branch. |
+| 80-100 | In the full Code review view, Mark ready if needed and Merge both reviewed PRs into the personal branch. Use GitHub if the control is unavailable. Return to the original checkout, test, regenerate stale features, compare original values and evaluate the frozen choice. | Tests and feature checks pass. Import `data/evidence/models/comparison.json` during postprocessing to preserve the model-worktree history. Exactly 1,000 held-out test predictions and generated submission JSON. |
 | 100-105 | Leaderboard: choose the generated JSON, inspect run/model, submit under the participant account. | Only mark success after acceptance and the persisted result appear. A locally valid JSON is a different checkpoint. |
 | 105-120 | Questions, slower runs and closing discussion. | Explain what Codex helped with and which decisions remained human. Mention Cloud as an optional execution path; no live environment provisioning. Sophon remains after-session/early-finisher material. |
 
@@ -34,7 +34,7 @@ The presenter checks the intended Codex profile/account, repository, microphone,
 - Keep Docker computation serial on each machine while measuring. Parallel chats can plan or review without competing for CPU.
 - If a model integration exceeds its timebox, use the completed baseline and planned simpler variants. Mark incomplete variants clearly; do not claim they ran.
 - If PR access or the native review control fails, review the local diff and record that remote review is still unverified. Do not merge into shared main to save time.
-- If the leaderboard is unavailable, validate and retain the generated JSON. Record the upload as pending.
+- If hosted access is unavailable, use the [local guide](../site/README.md) with Node 22.13+ and npm, and supply the four pinned files separately. Local progress and leaderboard records stay on that laptop. Validate and retain the final JSON for the facilitator; record shared-board publication as pending until accepted there.
 - Saved presenter artifacts are useful for explanation during recovery. Label them as the prior rehearsal; do not present old scores or timings as a fresh participant run.
 
 ## Manual rehearsal with the presenter
@@ -45,7 +45,7 @@ Use this same agenda and pause at each checkpoint. Keep a simple record: elapsed
 2. Open chapter 02, use Open in Codex, and inspect the selected project and complete prompt before sending. Also try Copy and manually paste once. The link does not select an isolated profile for you.
 3. Open the prepared checkout through chapter 03; confirm it is reused without an extra nested clone. Check each data filename and readiness result.
 4. Follow the timed flow through both worktrees. Verify the actual app copies inputs, rather than inferring that from the existence of `.worktreeinclude`.
-5. Open a real PR in Code Review and inspect its latest changes. A review result is not a merge or posted comment.
+5. Open a real PR via Open in > Code review, choose Review with Codex and inspect its latest changes. In the full PR view, use Mark ready for a draft and Merge after review. Verify the personal target branch and merged status. A review result is not a merge or posted comment.
 6. Check integration and leaderboard separately. Keep the selected model frozen. End by recording exactly which native/UI steps passed and which remain open.
 
 Suggested discussion prompts: “Why separate these worktrees?”, “What evidence makes this optimization worth keeping?”, “Would you choose the same model if false positives cost more?”, and “What changed when we moved from validation to test?”

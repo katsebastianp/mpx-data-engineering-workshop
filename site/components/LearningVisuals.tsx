@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 export function NextStepsFlow() {
-  return <div className="learning-visual next-steps-flow"><h3>What comes next?</h3><div className="next-flow-line"><span>Particles</span><b>→</b><span>Features</span><b>→</b><span>Model</span><b>→</b><span>Signal / background</span></div><div className="next-flow-branches"><p><strong>A · Pipeline</strong>Can we do the same work faster?</p><p><strong>B · Model</strong>Can we make fewer mistakes?</p></div></div>;
+  return <div className="learning-visual next-steps-flow"><h3>Two things we’ll improve</h3><p>Run once and save the starting results.</p><div className="next-flow-branches"><p><strong>A · Pipeline</strong>Can we process the same data faster?</p><p><strong>B · Model</strong>Can we distinguish signal from background more accurately?</p></div></div>;
 }
 
 export function PipelineVisual() {

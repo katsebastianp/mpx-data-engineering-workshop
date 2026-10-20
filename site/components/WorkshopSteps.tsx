@@ -69,7 +69,13 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
   }
 
   async function toggleComplete() {
-    if (canSave) await participant.setStepComplete(selected.id, !done);
+    if (!canSave) return;
+    const saved = await participant.setStepComplete(selected.id, !done);
+    if (saved && !done) {
+      const steps = selected.optional ? workshopExercises : coreWorkshopExercises;
+      const next = steps[steps.findIndex(step => step.id === selected.id) + 1];
+      if (next) selectStep(next.id);
+    }
   }
 
   return <div className="workshop-tree-page">
@@ -109,7 +115,8 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
           </> : selected.prompt || selected.extraPrompts?.length ? <p className="step-signin-notice">Sign in to get a prompt with your personal branch names.</p> : null}
         </div>
         {selected.commands && workspace && <details className="step-command-details"><summary>{selected.commandTitle || "Show terminal commands"}</summary><pre>{personalise(selected.commands)}</pre></details>}
-        {(selected.concept || selected.hint || selected.checkpoint) && <details className="step-help"><summary>More context</summary>
+        {(selected.context?.length || selected.concept || selected.hint || selected.checkpoint) && <details className="step-help"><summary>More context</summary>
+          {selected.context?.map(item => <p key={item.title} className="step-context"><strong>{item.title} </strong>{personalise(item.body)}</p>)}
           {selected.concept && <p className="step-context"><strong>{selected.concept.title} </strong>{personalise(selected.concept.body)}</p>}
           {selected.hint && <p className="step-hint">{personalise(selected.hint)}</p>}
           {selected.checkpoint && <p className="step-context"><strong>Done when: </strong>{personalise(selected.checkpoint)}</p>}
@@ -117,7 +124,7 @@ export function WorkshopSteps({ participant }: { participant: ReturnType<typeof 
 
         <button className={`complete-step-button${done ? " is-complete" : ""}`} onClick={toggleComplete} aria-pressed={done} disabled={!canSave}>
           {done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
-          {participant.saving ? "Saving…" : participant.status !== "authenticated" ? "Sign in to track this step" : done ? "Completed · Undo" : "Mark complete"}
+          {participant.saving ? "Saving…" : participant.status !== "authenticated" ? "Sign in to track this step" : done ? "Completed · Undo" : "Mark complete & next"}
         </button>
         {selected.id === "worktrees" && <p className="completion-explainer">Mark complete saves this checklist. It does not merge your code.</p>}
         {participant.status === "anonymous" && <a href={participant.signInUrl || "/signin-with-chatgpt?return_to=/workshop"} target="_top" className="step-signin-link">Sign in with ChatGPT <ArrowUpRight size={13} /></a>}
